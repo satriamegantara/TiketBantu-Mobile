@@ -1,4 +1,13 @@
-# APP_FLOW.md — Alur Aplikasi TiketBantu (Mobile Helpdesk & Pengaduan Fasilitas Kampus)
+# APP_FLOW.md — Alur Aplikasi TiketBantu (Native Android — Jetpack Compose)
+
+> **Stack**: Native Android (Kotlin) + Jetpack Compose, REST API (Retrofit), Backend API + MySQL.
+> **Catatan**: Aplikasi **tidak menggunakan Laravel/Livewire sama sekali** — seluruh realtime & data
+> di-handle via Retrofit (REST API) dengan pola polling + Coroutines. Prinsip alur mengikuti
+> catatan inti: *Admin hanya monitoring, Agen claim linear, User melihat semua (search + Most Liked),
+* prioritas manual dihapus, tampilan dua kolom, aduan Selesai di bawah dengan badge centang hijau,
+> infinite scroll sampai habis, dashboard Agen default Most Liked.*
+
+---
 
 ## 📐 Sitemap Overview
 
@@ -7,19 +16,21 @@ graph TD
     A["🔐 Login / Register"] --> B["📊 Dashboard"]
 
     B --> C["🎫 Aduan"]
-    B --> D["📈 Statistik & Monitoring"]
-    B --> E["👤 Profil & Pengaturan"]
+    B --> D["📈 Monitoring (Admin)"]
+    B --> E["👤 Profil & Aduan Saya"]
 
-    C --> C1["Feed Aduan Publik"]
+    C --> C1["Feed Aduan Publik (2 Kolom)"]
     C --> C2["Buat Aduan Baru"]
     C --> C3["Detail Aduan"]
 
     C3 --> C3a["Riwayat Penanganan"]
     C3 --> C3b["Thread Komentar"]
     C3 --> C3c["Lampiran / Foto"]
+    C3 --> C3d["Dukungan Most Liked"]
 
-    D --> D1["Monitoring Aduan (Admin)"]
-    D --> D2["Statistik Per Kategori"]
+    D --> D1["Monitoring Total & Status"]
+    D --> D2["Statistik Per Kategori & Lokasi"]
+    D --> D3["Manajemen Akun & Kategori"]
 
     E --> E1["Profil Saya"]
     E --> E2["Aduan Saya"]
@@ -27,36 +38,44 @@ graph TD
 
 ---
 
-## 🗂️ Route Structure (React Native / Mobile Navigation)
+## 🗂️ Route Structure (Navigation Compose — Type-Safe)
 
-```
-/                           → Redirect ke /dashboard
+```kotlin
+// === Nested Graph: Auth ===
+Login                       → Halaman login (User / Agen / Admin)
+Register                    → Pendaftaran akun pelapor (role default = User)
 
-/auth/login                 → Halaman login (User / Agen / Admin)
-/auth/register              → Pendaftaran akun pelapor umum (Mahasiswa/Dosen/Civitas)
-/auth/logout                → Logout & clear session
+// === Nested Graph: Main (Scaffold + BottomNavigation) ===
+Dashboard                   → Feed aduan publik, layout 2 kolom
+                              (default Agen: sort = most_liked)
+CreateTicket                → Form buat aduan baru (FAB / quick action)
+TicketDetail/{id}           → Detail aduan (read-only + komentar + lampiran)
+MyTickets                   → Aduan Saya (hanya aduan milik user login)
+Profile                     → Profil & logout
 
-/dashboard                  → Dashboard utama (layout 2 kolom: Feed + Sidebar)
-/dashboard?sort=most_liked  → Feed diurutkan berdasarkan dukungan terbanyak (default Agen)
-/dashboard?status=baru      → Feed tersaring berdasarkan status
-/dashboard?category=it      → Feed tersaring berdasarkan kategori
-
-/tickets                    → Feed Aduan Publik (alias dashboard feed)
-/tickets/create             → Form buat aduan baru
-/tickets/[id]               → Detail aduan (read-only view + komentar + lampiran)
-/tickets/mine               → Aduan Saya (aduan yang dibuat user login)
-
-/admin/monitoring           → Pure Monitoring Dashboard (Admin only, tanpa assignment)
-/admin/users                → Manajemen akun pengguna & kategori (Admin only)
-
-/profile                    → Profil saya
+// === Nested Graph: Admin ===
+Monitoring                  → Pure Monitoring Dashboard (Admin only)
+UserManagement              → Manajemen akun & kategori (Admin only)
 ```
 
-> **Note**: Tidak ada route atau fitur `/admin/assign` — **Admin 100% monitoring & pengelolaan sistem**, tidak menugaskan agen secara manual. Agen mengambil tugas secara mandiri (claim) dari feed publik.
+```kotlin
+@Serializable object Login
+@Serializable object Register
+@Serializable object Dashboard
+@Serializable object CreateTicket
+@Serializable data class TicketDetail(val id: Int)   // type-safe arg
+@Serializable object MyTickets
+@Serializable object Profile
+@Serializable object Monitoring                       // Admin only
+@Serializable object UserManagement                   // Admin only
+```
+
+> **Note**: Tidak ada route `AssignTicket` / route penugasan agen manapun —
+> **Admin 100% monitoring & pengelolaan sistem**, tidak menugaskan agen secara manual.
 
 ---
 
-## 🔐 Alur 1: Login, Register & Authentication
+## 🔐 Alur 1: Login, Register & Session (Auth)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -67,81 +86,72 @@ graph TD
           │
           ▼
    ┌──────────────┐     Ya      ┌──────────────────────────────┐
-   │ Sudah login? │────────────▶│  Dashboard (sesuai role)      │
-   │ (token valid) │             │  • User   → Feed Publik       │
-   └──────┬───────┘             │  • Agen   → Feed Most Liked   │
-          │ Tidak               │  • Admin  → Monitoring        │
-          ▼                     └──────────────────────────────┘
-   ┌──────────────┐
-   │  Halaman     │
-   │  Login       │
-   └──────┬───────┘
-          │ Klik "Masuk" / "Daftar Akun Baru"
+   │ Token masih  │────────────▶│  Dashboard (sesuai role)      │
+   │ valid?       │  (splash)   │  • User   → Feed Publik       │
+   │(DataStore)   │             │  • Agen   → Feed Most Liked   │
+   └──────┬───────┘             │  • Admin  → Monitoring        │
+          │ Tidak/expire        └──────────────────────────────┘
           ▼
    ┌────────────────────────────┐
-   │  INPUT KREDENSIAL          │
+   │  LOGIN SCREEN (Compose)    │
    │                            │
-   │  Email    : [____________] │
-   │  Password : [____________] │
+   │  Email    : [OutlinedText] │
+   │  Password : [OutlinedText] │
    │                            │
-   │  [Login]  [Daftar Baru]    │
+   │  [Masuk]   [Daftar Akun]   │
    └──────────┬─────────────────┘
               │
-              ├── Login ──────────────────────────────┐
-              │                                       │
-              └── Register ──▶ Form Register ──▶ Setelah daftar, auto login
-                  (Nama, Email, NIM/NIP,            atau redirect ke login
-                   Password, Role default = User)
-                          │
-                          ▼
-   ┌──────────────┐     Gagal   ┌──────────────┐
-   │  Server      │────────────▶│  Error:      │
-   │  Validasi    │             │  Coba lagi   │
-   │  (Laravel    │             │  / Form      │
-   │   Auth)      │             │  errors      │
-   └──────┬───────┘             └──────────────┘
-          │ Berhasil
-          ▼
-   ┌──────────────────────────────────────┐
-   │  Token disimpan (secure storage)     │
-   │                                      │
-   │  Middleware Guard per role:          │
-   │  ┌────────────────────────────────┐  │
-   │  │ Admin (A):                     │  │
-   │  │  → /admin/monitoring           │  │
-   │  ├────────────────────────────────┤  │
-   │  │ Agen (G):                      │  │
-   │  │  → /dashboard (Most Liked)     │  │
-   │  │  + bisa claim & update status  │  │
-   │  ├────────────────────────────────┤  │
-   │  │ User (U):                      │  │
-   │  │  → /dashboard (Feed Publik)    │  │
-   │  │  + bisa buat aduan & dukung    │  │
-   │  └────────────────────────────────┘  │
-   └──────────┬───────────────────────────┘
+              ├── "Daftar Akun" ──▶ REGISTER SCREEN
+              │     (Nama, Email, NIM/NIP, Password)
+              │     → success → auto redirect Login
               │
-              ▼
-   ┌──────────────┐
-   │  Redirect ke │
-   │  Dashboard   │
-   └──────────────┘
+              ▼  Klik "Masuk"
+   ┌──────────────────────────────────────┐
+   │  POST /api/login  (Retrofit)         │
+   │  Response: { token, user, role }     │
+   └──────┬───────────────────────────────┘
+          │
+     ┌────┴────┐
+     ▼         ▼
+  Berhasil   Gagal/401/422
+     │         │
+     ▼         ▼
+┌─────────┐  ┌──────────────────────────────┐
+│ Simpan  │  │ UiState.Error                │
+│ token ke│  │ → snackbar "Email/password   │
+│DataStore│  │   salah" / error per-field   │
+│(Session)│  └──────────────────────────────┘
+└────┬────┘
+     │
+     ▼
+┌──────────────────────────────────────┐
+│  NavController.navigate(Dashboard)   │
+│  sesuai role default:                │
+│  • User   → Feed (terbaru)           │
+│  • Agen   → Feed (MOST LIKED default)│
+│  • Admin  → Monitoring               │
+└──────────────────────────────────────┘
 ```
 
-### Session Management
+### Session Management (Compose)
 
 ```
-   ┌────────────────────────────────────────────────────┐
-   │  • Token expired → auto redirect ke /auth/login     │
-   │  • Middleware guard membatasi rute sesuai role      │
-   │  • Logout → clear token, session & cookies          │
-   │  • Profile Bar menampilkan nama, role, email,       │
-   │    avatar user yang sedang login                    │
-   └────────────────────────────────────────────────────┘
+   ┌──────────────────────────────────────────────────────────┐
+   │  • Token disimpan di DataStore Preferences                │
+   │  • OkHttp Interceptor melampirkan "Authorization: Bearer" │
+   │    ke setiap request Retrofit                             │
+   │  • Response 401 → interceptor clear token →               │
+   │    navController.navigate(Login) { popUpTo(0) }           │
+   │  • Middleware guard berbasis role di setiap destination   │
+   │    (Admin route tidak muncul di BottomNav non-admin)      │
+   │  • Logout → hapus token DataStore + clear back stack      │
+   │  • Profile Bar (TopAppBar): nama, role, avatar user login │
+   └──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Alur 2: Dashboard (Tampilan 2 Kolom)
+## 📊 Alur 2: Dashboard (Layout 2 Kolom)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -151,53 +161,67 @@ graph TD
 │  │  Feed Aduan Publik (Kolom Kiri)        │  │  SIDEBAR      │ │
 │  │                                        │  │  (Kolom Kanan)│ │
 │  │  ┌──────────────────────────────────┐  │  │               │ │
-│  │  │ 🔍 [Cari aduan...______________] │  │  │  Filter:      │ │
-│  │  └──────────────────────────────────┘  │  │  [Status: ▼]  │ │
-│  │                                        │  │  [Kategori: ▼]│ │
-│  │  ┌──────────────────────────────────┐  │  │               │ │
-│  │  │ ⚡ Proyektor rusak di GK Lantai 3│  │  │  🔥 Most      │ │
-│  │  │    4                           │  │  │     Liked     │ │
-│  │  │ 📍 Gedung Kampus A · Lantai 3   │  │  │  [Urutkan     │ │
-│  │  │ 🏷️ Teknologi & IT              │  │  │   berdasarkan │ │
-│  │  │ ❤️ 128 orang mengalami          │  │  │   dukungan ▼] │ │
-│  │  │ 🟡 Diproses oleh: Pak Budi (IT) │  │  │               │ │
-│  │  │ [Detail] [Saya Juga Mengalami ❤️]│ │  │  Statistik:   │ │
-│  │  └──────────────────────────────────┘  │  │  • Baru: 12   │ │
-│  │                                        │  │  • Diproses: 8│ │
-│  │  ┌──────────────────────────────────┐  │  │  • Selesai: 45│ │
-│  │  │ 💧 Kebocoran AC di Lab Komputer  │  │  │  • Terdampak: │ │
-│  │  │    2                           │  │  │    312 orang  │ │
-│  │  │ 📍 Gedung B · Lantai 2          │  │  │               │ │
-│  │  │ ❤️ 96 orang mengalami           │  │  │  Quick Action:│ │
-│  │  │ 🔵 Baru · Belum di-claim        │  │  │  [➕ Buat     │ │
-│  │  │ [Detail] [Saya Juga Mengalami ❤️]│ │  │   Aduan]      │ │
-│  │  └──────────────────────────────────┘  │  │  [📋 Aduan    │ │
-│  │                                        │  │   Saya]       │ │
-│  │              ⋮ (infinite scroll)       │  │               │ │
+│  │  │ 🔍 [SearchBar aduan..._________] │  │  │ Filter Status:│ │
+│  │  └──────────────────────────────────┘  │  │ [Semua ▼]     │ │
 │  │                                        │  │               │ │
-│  │  ═══ BAGIAN BAWAH: ADUAN SELESAI ═══   │  │               │ │
-│  │  ┌──────────────────────────────────┐  │  │               │ │
-│  │  │ 💡 Lampu koridor gelap Lt. 1     │  │  │               │ │
-│  │  │    ✓ Selesai  ← Badge Centang    │  │  │               │ │
-│  │  │    Hijau                         │  │  │               │ │
-│  │  │ ❤️ 210 orang mengalami          │  │  │               │ │
-│  │  └──────────────────────────────────┘  │  │               │ │
+│  │  ┌─ Card ─────────────────────────┐   │  │ Filter Kategori│ │
+│  │  │ ⚡ Proyektor rusak GK Lt.3     │   │  │ [Semua ▼]     │ │
+│  │  │ 📍 Gd. A · L3 · R.301         │   │  │               │ │
+│  │  │ 🏷 Teknologi & IT             │   │  │ 🔥 Sort:      │ │
+│  │  │ ❤ 128 orang terdampak         │   │  │ [Most Liked ▼]│ │
+│  │  │ 🟡 Diproses — Pak Budi (IT)   │   │  │  (default Agen)│ │
+│  │  │ [Detail]  [❤ Saya Juga]        │   │  │               │ │
+│  │  └────────────────────────────────┘   │  │ Statistik:    │ │
+│  │                                        │  │ • Baru: 12    │ │
+│  │  ┌─ Card ─────────────────────────┐   │  │ • Diproses: 8 │ │
+│  │  │ 💧 AC bocor Lab Komputer      │   │  │ • Selesai: 45 │ │
+│  │  │ 🔵 Baru · belum di-claim      │   │  │ • Terdampak:  │ │
+│  │  │ [Detail]  [🖐 Claim Tugas ←AGEN│   │  │   312         │ │
+│  │  └────────────────────────────────┘   │  │               │ │
+│  │                                        │  │ Quick Action: │ │
+│  │              ⋮ LazyColumn               │  │ [➕ Buat Aduan]│ │
+│  │         (infinite scroll)              │  │ [📋 Aduan Saya]│ │
+│  │                                        │  │               │ │
+│  │  ══ BAGIAN BAWAH: ADUAN SELESAI ══     │  │               │ │
+│  │  ┌─ Card ─────────────────────────┐   │  │               │ │
+│  │  │ 💡 Lampu koridor gelap Lt.1    │   │  │               │ │
+│  │  │ ✅ ✓ Selesai  ← Badge Centang  │   │  │               │ │
+│  │  │    Hijau (M3 AssistChip/Badge) │   │  │               │ │
+│  │  │ ❤ 210 orang terdampak          │   │  │               │ │
+│  │  └────────────────────────────────┘   │  │               │ │
 │  └────────────────────────────────────────┘  └───────────────┘ │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Implementasi 2 Kolom di Compose
+
+```kotlin
+Row(Modifier.fillMaxSize()) {
+    // Kolom kiri: feed (selalu tampil)
+    FeedColumn(Modifier.weight(1f))                 // LazyColumn
+
+    // Kolom kanan: sidebar — hanya di layar lebar (tablet/foldable)
+    if (windowSizeClass.widthSizeClass >= WidthSizeClass.Medium) {
+        SidebarColumn(Modifier.width(300.dp))       // filter, sort, statistik
+    }
+}
+// Di HP (compact): sidebar menjadi ModalNavigationDrawer / BottomSheet
+// yang dibuka lewat ikon filter di SearchBar.
+```
+
 ### Perbedaan Dashboard per Role
 
-| Aspek                     | User (U)                        | Agen (G)                              | Admin (A)                     |
-| ------------------------- | ------------------------------- | ------------------------------------- | ----------------------------- |
-| Feed default              | Aduan publik terbaru            | **Aduan diurutkan Most Liked (default)** | Monitoring (bukan feed claim) |
-| Kolom kiri                | Feed publik                     | Feed publik                           | Statistik & status aduan      |
-| Kolom kanan               | Search, Filter, Most Liked      | Search, Filter, Most Liked            | Ringkasan monitoring          |
-| Tombol aksi               | Buat Aduan, Dukung              | **Claim Tugas**, Update Status        | Hanya lihat & hapus (soft delete) |
-| Penugasan                 | —                               | **Claim mandiri (linear queue)**      | ❌ Tidak ada assignment       |
+| Aspek                | User (U)                     | Agen (G)                                  | Admin (A)                          |
+| -------------------- | ---------------------------- | ----------------------------------------- | ---------------------------------- |
+| Feed default         | Aduan publik **terbaru**     | **Most Liked (default)**                  | Monitoring (bukan feed claim)      |
+| Kolom kiri           | Feed publik                  | Feed publik                               | Statistik & status aduan           |
+| Kolom kanan          | Search, Filter, Most Liked   | Search, Filter, Most Liked                | Ringkasan monitoring               |
+| Tombol aksi          | Buat Aduan, Dukung           | **Claim Tugas**, Update Status            | Lihat & hapus (soft delete)        |
+| Penugasan            | —                            | **Claim mandiri (linear queue)**          | ❌ Tidak ada assignment            |
 
-> **Prinsip Linear Queue**: Agen **tidak menunggu tugas dari Admin**. Agen melihat aduan di dashboard → klik **Claim** → aduan langsung menjadi milik agen tersebut → status berubah ke `Diproses`.
+> **Prinsip Linear Queue**: Agen **tidak menunggu tugas dari Admin**. Agen melihat aduan di
+> dashboard → klik **Claim** → aduan langsung menjadi milik agen → status berubah `Baru → Diproses`.
 
 ---
 
@@ -208,103 +232,104 @@ graph TD
 │                    ALUR BUAT ADUAN BARU                         │
 └─────────────────────────────────────────────────────────────────┘
 
-   Klik "➕ Buat Aduan" (Quick Action / FAB)
+   Klik "➕ Buat Aduan" (Quick Action di Sidebar / FAB)
           │
           ▼
    ┌──────────────────────────────────────────────────────┐
    │              FORM ADUAN BARU (100% PUBLIK)            │
    │                                                       │
-   │  Judul Aduan *      : [____________________________] │
-   │  Kategori *         : [Teknologi & IT ▼]             │
-   │                        Fasilitas Ruangan              │
-   │                        Infrastruktur Umum             │
+   │  Judul Aduan *      : [OutlinedTextField____________] │
+   │  Kategori *         : [ExposedDropdownMenuBox: ▼]    │
+   │                         • Teknologi & IT              │
+   │                         • Fasilitas Ruangan           │
+   │                         • Infrastruktur Umum          │
    │  Lokasi *           :                                   │
-   │    Gedung  : [____________________________]           │
-   │    Lantai  : [____________________________]           │
-   │    Ruangan : [____________________________]           │
-   │  Deskripsi Masalah* : [____________________________] │
-   │                       [____________________________] │
+   │    Gedung  : [OutlinedTextField____________________] │
+   │    Lantai  : [OutlinedTextField____________________] │
+   │    Ruangan : [OutlinedTextField____________________] │
+   │  Deskripsi *        : [OutlinedTextField multiline__] │
    │                                                       │
    │  📎 Lampiran (opsional, max 5MB/file):                │
-   │     [📷 Ambil Foto]  [📁 Pilih File]                  │
+   │     [📷 Photo Picker] / [📁 File Picker]              │
    │     Format: JPG, PNG, PDF, DOCX, ZIP, TXT             │
-   │     ✓ foto_ac.jpg (1.2MB)  [🗑️]                      │
+   │     ✓ foto_ac.jpg (1.2 MB)  [🗑 Hapus]               │
    │                                                       │
-   │  ⚠️ Semua aduan bersifat PUBLIK dan dapat            │
-   │     dilihat seluruh civitas akademika                 │
+   │  ⚠️ HelperText: "Semua aduan bersifat PUBLIK"        │
    │                                                       │
    │            [Batal]  [Kirim Aduan →]                   │
    └──────────────────────────────────────────────────────┘
           │
-          │ Validasi server (mime types + max 5MB)
+          │ POST /api/tickets (Retrofit, @Multipart utk file)
           ▼
-   ┌──────────────┐     Gagal    ┌──────────────┐
-   │  Simpan ke   │─────────────▶│ Tampilkan    │
-   │  Database    │              │ error field  │
-   │  (MySQL)     │              │ + toast ❌   │
-   │  status=Baru │              └──────────────┘
-   └──────┬───────┘
-          │ Berhasil
+   ┌──────────────┐     422 Gagal    ┌─────────────────────────┐
+   │  Simpan via  │─────────────────▶│ UiState.Error → error    │
+   │  Repository  │  (validasi mime  │ tampil di tiap field     │
+   │  → API       │   + max 5MB)     │ (judul, lokasi, file) +  │
+   │  status=Baru │                  │ snackbar ❌              │
+   └──────┬───────┘                  └─────────────────────────┘
+          │ 201 Berhasil
           ▼
-   ┌──────────────────────────────────┐
-   │  Toast ✅ "Aduan berhasil dibuat" │
-   │  Counter dukungan = 0 (otomatis   │
-   │  pelapor tercatat terdampak)      │
-   │  Redirect → Detail Aduan          │
-   └──────────────────────────────────┘
+   ┌──────────────────────────────────────┐
+   │  Snackbar ✅ "Aduan berhasil dibuat"  │
+   │  Counter dukungan = 0 (pelapor         │
+   │  otomatis tercatat terdampak)          │
+   │  navController.navigate(               │
+   │      TicketDetail(newId))              │
+   └──────────────────────────────────────┘
 ```
 
 ### Aturan Metadata Aduan
 
-| Aturan                        | Keterangan                                                              |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| Prioritas Low/Med/High        | ❌ **DIHAPUS** — urgensi ditentukan otomatis dari akumulasi dukungan (Most Liked) |
-| Visibilitas                   | 100% Publik — semua civitas bisa melihat                                |
-| Edit                          | Hanya saat status = `Baru`, hanya judul & deskripsi                     |
-| Kunci                         | Status `Selesai` / `Ditutup` → terkunci dari pengeditan                 |
-| Agregasi duplikat             | User diarahkan memberi dukungan pada aduan serupa, bukan membuat tiket baru |
+| Aturan                    | Keterangan                                                                 |
+| ------------------------- | -------------------------------------------------------------------------- |
+| Prioritas Low/Med/High    | ❌ **DIHAPUS** — urgensi otomatis dari akumulasi dukungan (Most Liked)      |
+| Visibilitas               | 100% Publik — semua civitas bisa melihat                                    |
+| Edit                      | Hanya saat status = `Baru`, hanya judul & deskripsi                         |
+| Kunci                     | Status `Selesai` / `Ditutup` → terkunci dari pengeditan                     |
+| Agregasi duplikat         | User diarahkan memberi dukungan pada aduan serupa, bukan membuat tiket baru |
 
 ---
 
-## 🙋 Alur 4: Claim Tugas oleh Agen (Linear Queue)
+## 🖐️ Alur 4: Claim Tugas oleh Agen (Linear Queue)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              ALUR CLAIM TUGAS (AGEN, TANPA ADMIN)               │
+│              ALUR CLAIM TUGAS (AGEN — TANPA ADMIN)              │
 └─────────────────────────────────────────────────────────────────┘
 
-   Agen membuka Dashboard (default urutan Most Liked)
+   Agen membuka Dashboard (default urutan = Most Liked)
           │
           ▼
    ┌──────────────────────────────────────────┐
    │  ⚡ Proyektor rusak di GK Lantai 3       │
-   │  ❤️ 128 orang · 🔵 Baru · Belum di-claim │
+   │  ❤ 128 orang · 🔵 Baru · belum di-claim  │
    │                                          │
-   │     [Detail]  [🖐️ Claim Tugas]           │
+   │     [Detail]   [🖐 Claim Tugas]           │
    └──────────────────┬───────────────────────┘
                       │ Klik "Claim Tugas"
                       ▼
-   ┌──────────────┐   Validasi: apakah masih
-   │  Server lock │   status "Baru" & belum ada
-   │  aduan       │   agen lain yg claim?
-   └──────┬───────┘
+   ┌─────────────────────────────────────────┐
+   │ POST /api/tickets/{id}/claim (Retrofit) │
+   │ Server lock: status "Baru" & agent null?│
+   └──────┬──────────────────────────────────┘
           │
-          ├── Sudah di-claim agen lain ──▶ Toast: "Aduan sudah diambil agen lain"
-          │                                   Feed auto-refresh
-          │
-          └── Berhasil
-                │
-                ▼
-   ┌──────────────────────────────────┐
-   │  • tickets.agent_id = agen login  │
-   │  • status: Baru → Diproses        │
-   │  • Toast ✅ "Tugas berhasil       │
-   │    di-claim"                      │
-   │  • Feed update realtime           │
-   └──────────────────────────────────┘
+     ┌────┴───────────────────────────┐
+     ▼                                ▼
+  Berhasil (200)               Sudah di-claim agen lain (409)
+     │                                │
+     ▼                                ▼
+┌───────────────────────┐   ┌────────────────────────────────┐
+│ • agent_id = agen     │   │ Snackbar: "Aduan sudah diambil │
+│   login               │   │ agen lain"                     │
+│ • status Baru→Diproses│   │ Feed auto-refresh (re-fetch)   │
+│ • Snackbar ✅          │   └────────────────────────────────┘
+│ • Card update: 🟡      │
+│   Diproses — saya      │
+└───────────────────────┘
 ```
 
-> **Linear Queue**: Satu aduan = satu agen. Alur penanganan linier: `Baru → Diproses → Selesai / Ditutup`. Tidak ada mekanisme assign manual oleh Admin di manapun.
+> **Linear Queue**: Satu aduan = satu agen. Alur linier: `Baru → Diproses → Selesai / Ditutup`.
+> First-come-first-served, tanpa mekanisme assign manual oleh Admin di manapun.
 
 ---
 
@@ -312,41 +337,40 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                ALUR UPDATE STATUS (AGEN/ADMIN)                  │
+│                ALUR UPDATE STATUS (AGEN / ADMIN)                │
 └─────────────────────────────────────────────────────────────────┘
 
-   Dari Detail Aduan (oleh agen yang meng-claim / admin)
+   Dari Detail Aduan (oleh agen yang meng-claim, atau admin)
           │
           ▼
    ┌────────────────────────────────────────────┐
    │  Status saat ini: 🟡 Diproses               │
    │                                             │
-   │  Ubah Status: [Diproses ▼]                  │
-   │                 Selesai                     │
-   │                 Ditutup                     │
+   │  Ubah Status: [DropdownMenu: ▼]             │
+   │                 • Selesai                   │
+   │                 • Ditutup                   │
    │                                             │
-   │  [Catatan Penanganan / Komentar] (opsional) │
-   │  [Simpan Status]                            │
+   │  Catatan Penanganan (opsional):             │
+   │  [OutlinedTextField____________________]    │
+   │                                             │
+   │              [Simpan Status]                │
    └──────────────────┬─────────────────────────┘
-                      │
+                      │ PATCH /api/tickets/{id}/status
           ┌───────────┼───────────┐
           ▼                       ▼
    ┌──────────────┐      ┌──────────────────────────┐
    │  → Selesai   │      │  → Ditutup               │
    │              │      │                          │
    │ • Badge ✓    │      │ • Tiket terkunci         │
-   │   Centang    │      │ • Masuk bagian bawah     │
-   │   Hijau      │      │   feed                   │
-   │ • Aduan      │      │ • Terkunci dari edit     │
-   │   pindah ke  │      │   & komentar lanjutan    │
-   │   bagian     │      │                          │
-   │   bawah feed │      │                          │
-   │ • Email ke   │      │                          │
-   │   pelapor    │      │                          │
+   │   Centang    │      │ • Masuk blok bawah feed  │
+   │   Hijau      │      │ • Terkunci dari edit &   │
+   │ • Aduan      │      │   komentar lanjutan      │
+   │   pindah ke  │      │                          │
+   │   blok bawah │      │                          │
    └──────────────┘      └──────────────────────────┘
 ```
 
-### Notulen Status Lifecycle (Tiket)
+### Tiket Lifecycle
 
 ```
    ┌─────────┐         ┌──────────┐
@@ -354,11 +378,21 @@ graph TD
    └────┬────┘         └────┬─────┘
         │                   │
         │ Ditutup (Admin)   ├── Selesai ──▶ 🔒 terkunci
-        ▼                   │                ✓ badge hijau
-   ┌─────────┐              │                pindah ke bawah feed
+        ▼                   │                ✓ badge centang hijau
+   ┌─────────┐              │                pindah ke blok bawah feed
    │Ditutup  │              │
-   │ 🔒      │              └── Ditutup (G/A) ──▶ 🔒
-   └─────────┘
+   │ 🔒      │              └── Ditutup (A/G) ──▶ 🔒
+   └────┬────┘
+        │ Admin soft delete
+        ▼
+   ┌──────────────────┐
+   │ TRASH (deleted_at)│
+   └────┬─────────┬───┘
+        ▼         ▼
+   ┌────────┐  ┌─────────────┐
+   │Restore │  │ Permanent   │
+   │(→Baru) │  │ Delete      │
+   └────────┘  └─────────────┘
 ```
 
 ### Aturan Penguncian
@@ -368,9 +402,9 @@ graph TD
    │  Status Selesai / Ditutup:                             │
    │  • ❌ Tidak bisa edit judul/deskripsi                  │
    │  • ❌ Tidak bisa ubah status lagi                      │
-   │  • ❌ Tidak bisa komentar lanjutan (read-only)         │
-   │  • ❌ Tombol "Saya Juga Mengalami" tetap aktif         │
-   │    (dukungan tetap bisa bertambah sebagai data urgensi)│
+   │  • ❌ Komentar lanjutan dinonaktifkan (read-only)      │
+   │  • ✅ Tombol "Saya Juga Mengalami" TETAP aktif         │
+   │    (dukungan tetap bertambah sebagai data urgensi)     │
    └────────────────────────────────────────────────────────┘
 ```
 
@@ -387,24 +421,25 @@ graph TD
           │
           ▼
    ┌──────────────────────────────────────┐
-   │  ❤️ 128 orang mengalami masalah ini  │
+   │  ❤ 128 orang mengalami masalah ini   │
    │                                      │
-   │     [❤️ Saya Juga Mengalami]          │
+   │     [❤ Saya Juga Mengalami]           │
    └──────────────────┬───────────────────┘
                       │ Klik (satu kali per user)
                       ▼
-   ┌──────────────┐   Sudah pernah dukung?
-   │  Cek di      │────────▶ Toggle off / ignore
-   │  ticket_     │   (1 user = 1 dukungan)
-   │  supports    │
-   └──────┬───────┘
+   ┌─────────────────────────────────────┐
+   │ POST /api/tickets/{id}/support      │
+   │ Cek: user sudah pernah dukung?      │
+   │ (1 user = 1 dukungan → toggle off)  │
+   └──────┬──────────────────────────────┘
           │ Baru
           ▼
    ┌──────────────────────────────────────┐
-   │  • INSERT ticket_supports             │
-   │  • Counter real-time +1               │
-   │  • Toast ✅ "Dukungan tercatat"       │
-   │  • Posisi aduan bisa naik di feed     │
+   │  • Row dukungan tersimpan di DB       │
+   │  • Counter di Card update +1          │
+   │    (state Compose, tanpa reload)      │
+   │  • Snackbar ✅ "Dukungan tercatat"    │
+   │  • Posisi aduan naik di feed          │
    │    (jika sort = Most Liked)           │
    └──────────────────────────────────────┘
 ```
@@ -423,7 +458,11 @@ graph TD
 
 ---
 
-## 💬 Alur 7: Thread Komentar (Realtime)
+## 💬 Alur 7: Thread Komentar (Polling via Retrofit)
+
+> **Bukan Livewire** — realtime diimplementasikan dengan **polling Coroutines** di Compose:
+> `LaunchedEffect` + `while(true) { refresh(); delay(5000) }`, berhenti otomatis saat
+> composable keluar dari composition.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -431,49 +470,43 @@ graph TD
 │                                                                 │
 │  ◀ Kembali    ⚡ Proyektor rusak di GK Lantai 3    🟡 Diproses  │
 │                                                                 │
-│  📍 Gedung Kampus A · Lantai 3 · Ruang 301                      │
-│  🏷️ Teknologi & IT  · 👤 Dilaporkan oleh: Andi (Mahasiswa)      │
-│  ❤️ 128 orang mengalami   [❤️ Saya Juga Mengalami]              │
+│  📍 Gedung A · L3 · Ruang 301                                   │
+│  🏷 Teknologi & IT · 👤 Andi (Mahasiswa)                        │
+│  ❤ 128 orang terdampak    [❤ Saya Juga Mengalami]               │
 │                                                                 │
-│  ┌─ Deskripsi ──────────────────────────────────────────────┐  │
-│  │ Proyektor tidak menyala sejak Senin, sudah coba         │  │
-│  │ ganti kabel tetap tidak bisa...                          │  │
+│  ┌─ Deskripsi (Card) ──────────────────────────────────────┐  │
+│  │ Proyektor tidak menyala sejak Senin...                  │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌─ Lampiran ──────────────────────────────────────────────┐  │
-│  │ [🖼️ foto_ac.jpg] [🖼️ foto2.jpg] [📄 nota.pdf]          │  │
+│  │ AsyncImage thumbnails / ikon dokumen (klik → preview)   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌─ Riwayat Penanganan ────────────────────────────────────┐  │
-│  │ 🟢 13 Sep 09:00 · Dibuat oleh Andi                     │  │
-│  │ 🟡 13 Sep 10:15 · Di-claim oleh Pak Budi (Agen IT)     │  │
-│  │ 🟡 13 Sep 13:40 · Komentar agen: "Unit pengganti       │  │
-│  │                   sedang diambil dari gudang"            │  │
+│  │ 🟢 Dibuat oleh Andi → 🟡 Di-claim Pak Budi → ...        │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
-│  ┌─ 💬 Komentar (Livewire/Realtime Polling) ────────────────┐  │
-│  │ 👤 Andi    : Kak, sudah dicek belum?                    │  │
-│  │ 🛠️ Pak Budi: Sudah, proyektornya perlu diganti unit    │  │
-│  │ 👤 Andi    : Oh iya, terima kasih kak!                  │  │
+│  ┌─ 💬 Komentar (LazyColumn kecil / Column scroll) ────────┐  │
+│  │ 👤 Andi     : Kak, sudah dicek belum?                   │  │
+│  │ 🛠 Pak Budi : Sudah, unit pengganti diambil dari gudang │  │
 │  │                                                         │  │
-│  │ [Tulis komentar...____________________]  [Kirim]        │  │
+│  │ [OutlinedTextField________]  [Kirim]                    │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ```
-   User mengetik komentar → Kirim
-          │
-          ▼
-   ┌─────────────────────────────────────────────┐
-   │  Polling engine (Livewire)                  │
-   │  • Komentar langsung muncul TANPA reload    │
-   │  • Counter dukungan update real-time        │
-   │  • Toast ✅ "Komentar terkirim"             │
-   │  • Agen bisa menulis "Catatan Penanganan"   │
-   │    sebagai komentar ber-label khusus        │
-   └─────────────────────────────────────────────┘
+   Polling Engine (Compose):
+   LaunchedEffect(ticketId) {
+       while (true) {
+           viewModel.refreshCommentsAndCounter()   // GET Retrofit
+           delay(5_000)                             // interval polling
+       }
+   }
+   • Komentar baru muncul tanpa reload halaman
+   • Counter dukungan & status ikut ter-refresh
+   • Agen menulis "Catatan Penanganan" sebagai komentar ber-label 🛠
 ```
 
 ---
@@ -482,79 +515,77 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              ALUR PENCARIAN & FILTER FEED                       │
+│              ALUR PENCARIAN, FILTER & LAZYCOLUMN                │
 └─────────────────────────────────────────────────────────────────┘
 
-   SIDEBAR (Kolom Kanan)
+   SIDEBAR (Kolom Kanan — tablet) / Drawer & BottomSheet (HP)
    ┌──────────────────────────────────────┐
-   │ 🔍 [Cari aduan...___________]        │──▶ Filter judul & deskripsi
-   │                                      │    (LIKE search di query)
-   │ Filter Status: [Semua ▼]             │──▶ Baru / Diproses / Selesai / Ditutup
+   │ 🔍 SearchBar "Cari aduan..."         │──▶ filter judul & deskripsi
+   │                                      │    (query ke API)
+   │ Filter Status:   [Semua ▼]           │──▶ Baru / Diproses / Selesai / Ditutup
    │ Filter Kategori: [Semua ▼]           │──▶ IT / Ruangan / Umum
    │                                      │
-   │ 🔥 Sort: [Terbaru ▼]                 │──▶ Terbaru / Most Liked
+   │ 🔥 Sort: [Most Liked ▼]              │──▶ Most Liked (default Agen) / Terbaru
    │                                      │
-   │ [Terapkan Filter]  [Reset]           │
+   │ [Terapkan]  [Reset]                  │
    └──────────────────────────────────────┘
           │
           ▼
    ┌────────────────────────────────────────────────────┐
    │  LOGIKA URUTAN FEED (selalu aktif):                │
-   │                                                    │
    │  1. Aduan aktif (Baru & Diproses) di bagian atas   │
    │     → sort sesuai pilihan: Terbaru ATAU Most Liked │
-   │  2. Aduan Selesai SELALU di bagian paling bawah    │
-   │     → dengan Badge Centang Hijau ✓ Selesai         │
-   │  3. Aduan Ditutup juga di bagian bawah (locked)    │
+   │  2. Aduan Selesai SELALU di blok paling bawah      │
+   │     → Badge Centang Hijau ✓ Selesai                │
+   │  3. Aduan Ditutup juga di blok bawah (locked)      │
    └────────────────────────────────────────────────────┘
           │
           ▼
    ┌────────────────────────────────────────────────────┐
-   │              INFINITE SCROLL                       │
+   │           INFINITE SCROLL (LazyColumn)             │
    │                                                    │
-   │  User scroll ke bawah                              │
-   │        │                                           │
-   │        ▼                                           │
-   │  ┌──────────────┐                                  │
-   │  │ Threshold    │  Mendekati item terakhir         │
-   │  │ tercapai     │  (offset + limit pagination)     │
-   │  └──────┬───────┘                                  │
-   │         │                                          │
-   │         ▼                                          │
-   │  ┌──────────────┐     Loading spinner "Memuat..."  │
-   │  │ Fetch next   │                                  │
-   │  │ page (API)   │                                  │
-   │  └──────┬───────┘                                  │
-   │         │                                          │
-   │    ┌────┴────┐                                     │
-   │    ▼         ▼                                     │
-   │  Ada data  Data habis                              │
-   │    │         │                                     │
-   │    ▼         ▼                                     │
-   │  Render    Tampilkan "✅ Semua aduan               │
-   │  items        telah dimuat"                        │
-   │            (scroll berhenti)                       │
+   │  LazyColumn {                                      │
+   │      items(activeTickets, key = { it.id }) { ... } │
+   │      item { CompletedSectionHeader() }             │
+   │      items(completedTickets, key = { it.id }) {    │
+   │          Card(badge = GreenCheckBadge)             │
+   │      }                                             │
+   │  }                                                 │
+   │                                                    │
+   │  // deteksi item terakhir terlihat:                │
+   │  val shouldLoadMore = remember {                   │
+   │      derivedStateOf {                              │
+   │          lastVisibleIndex >= list.size - 3         │
+   │      }                                             │
+   │  }                                                 │
+   │  LaunchedEffect(shouldLoadMore) {                  │
+   │      if (shouldLoadMore) viewModel.loadNextPage()  │
+   │  }                                                 │
+   │                                                    │
+   │  Footer item:                                      │
+   │   • loading → CircularProgressIndicator            │
+   │   • habis     → "✅ Semua aduan telah dimuat"      │
    └────────────────────────────────────────────────────┘
 ```
 
-### Data Filtering (API Query)
+### Data Filtering (API Query via Retrofit)
 
 ```
-   API GET /tickets?search=proyektor&status=baru&category=it&sort=most_liked&page=2
+   GET /api/tickets?search=proyektor&status=baru&category=it
+       &sort=most_liked&page=2&per_page=10
           │
           ▼
-   ┌────────────────────────────────────────────────────────┐
-   │  WHERE deleted_at IS NULL                              │
-   │  AND (title LIKE %q% OR description LIKE %q%)          │
-   │  AND (status = :status jika ada)                       │
-   │  AND (category_id = :cat jika ada)                     │
-   │  ORDER BY:                                             │
-   │    • most_liked → (SELECT COUNT(*) FROM ticket_supports)│
-   │      DESC, created_at DESC                             │
-   │    • terbaru    → created_at DESC                      │
-   │  ── Lalu pisah: Selesai/Ditutup selalu pindah          │
-   │     ke blok bawah (client-side atau query union)       │
-   └────────────────────────────────────────────────────────┘
+   ┌────────────────────────────────────────────────────────────┐
+   │  WHERE deleted_at IS NULL                                  │
+   │  AND (title LIKE %q% OR description LIKE %q%)              │
+   │  AND (status = :status)                                    │
+   │  AND (category_id = :cat)                                  │
+   │  ORDER BY:                                                 │
+   │    • most_liked → COUNT(ticket_supports) DESC, created_at  │
+   │      DESC                                                  │
+   │    • terbaru    → created_at DESC                          │
+   │  ── Selesai/Ditutup dipisahkan ke blok bawah ──            │
+   └────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -573,24 +604,19 @@ graph TD
 │  │    12       │ │     8       │ │    45       │ │   312     │ │
 │  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
 │                                                                 │
-│  ┌─ Distribusi Per Kategori ──────────────────────────────┐    │
-│  │  Teknologi & IT       ██████████████████  42          │    │
-│  │  Fasilitas Ruangan    ████████████        30          │    │
+│  ┌─ Distribusi Per Kategori (LazyRow/Bar chart) ───────────┐    │
+│  │  Teknologi & IT       ██████████████████  42           │    │
+│  │  Fasilitas Ruangan    ████████████        30           │    │
 │  │  Infrastruktur Umum   ███████           18            │    │
 │  └────────────────────────────────────────────────────────┘    │
 │                                                                 │
-│  ┌─ Distribusi Per Lokasi ────────────────────────────────┐    │
-│  │  Gedung A ████████ 20 │ Gedung B █████ 12              │    │
-│  │  Gedung C ████ 8      │ Lainnya ██ 4                   │    │
-│  └────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  ┌─ Aksi yang TERSEDIA untuk Admin ───────────────────────┐    │
-│  │  ✏️ Manajemen Akun (buat/edit nonaktifkan User/Agen)   │    │
-│  │  🏷️ Manajemen Kategori                                  │    │
-│  │  🗑️ Hapus Aduan (soft delete → trash)                  │    │
-│  │  ♻️ Restore dari trash                                  │    │
+│  ┌─ Aksi TERSEDIA untuk Admin ─────────────────────────────┐    │
+│  │  ✏ Manajemen Akun (buat/edit/nonaktifkan User/Agen)     │    │
+│  │  🏷 Manajemen Kategori                                  │    │
+│  │  🗑 Hapus Aduan (soft delete → trash)                   │    │
+│  │  ♻ Restore dari trash                                   │    │
 │  │                                                         │    │
-│  │  ❌ TIDAK ADA: penugasan agen, ubah prioritas manual    │    │
+│  │  ❌ TIDAK ADA: penugasan agen, prioritas manual         │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -598,13 +624,13 @@ graph TD
 
 ### Batasan Admin (Sesuai Spesifikasi)
 
-| Admin BOLEH                          | Admin TIDAK BOLEH                     |
-| ------------------------------------ | ------------------------------------- |
-| Monitoring total & status aduan      | ❌ Assign / menugaskan agen            |
-| Lihat statistik per kategori & lokasi| ❌ Mengubah urutan claim agen          |
-| Manajemen akun & kategori            | ❌ Override hasil claim agen           |
-| Soft delete aduan duplikat/spam      | ❌ Mengedit isi aduan pelapor          |
-| Restore aduan dari trash             | ❌ Menetapkan prioritas manual         |
+| Admin BOLEH                           | Admin TIDAK BOLEH              |
+| ------------------------------------- | ------------------------------ |
+| Monitoring total & status aduan       | ❌ Assign / menugaskan agen     |
+| Lihat statistik per kategori & lokasi | ❌ Mengubah urutan claim agen   |
+| Manajemen akun & kategori             | ❌ Override hasil claim agen    |
+| Soft delete aduan duplikat/spam       | ❌ Mengedit isi aduan pelapor   |
+| Restore aduan dari trash              | ❌ Menetapkan prioritas manual  |
 
 ---
 
@@ -613,134 +639,217 @@ graph TD
 ```
    ┌──────────────────────────────────────────────────────────┐
    │                                                          │
-   │  📧 Email (P0):                                          │
-   │  • Status aduan berubah → email otomatis ke Pelapor      │
-   │  • (Baru→Diproses→Selesai/Ditutup)                       │
-   │                                                          │
-   │  🍞 Toast UI (P0):                                       │
+   │  🍞 Snackbar / Toast UI (Compose — P0):                  │
    │  • ✅ Claim tiket berhasil                               │
    │  • ✅ Status diperbarui                                  │
    │  • ✅ Komentar terkirim                                  │
    │  • ✅ Aduan berhasil dibuat                              │
-   │  • ❌ Gagal upload / validasi                            │
+   │  • ✅ Dukungan tercatat                                  │
+   │  • ❌ Gagal upload / validasi (422 per-field)            │
+   │  • ❌ "Aduan sudah diambil agen lain" (409)              │
    │                                                          │
-   │  📱 Push Notification (P2 — roadmap mobile):             │
-   │  • Status aduan berubah                                  │
-   │  • Komentar baru di aduan saya                           │
+   │  📧 Email (oleh backend, P0):                            │
+   │  • Status aduan berubah → email otomatis ke Pelapor      │
+   │                                                          │
+   │  📱 Push Notification (P2 — roadmap):                    │
+   │  • Status aduan berubah / komentar baru di aduan saya    │
    └──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🖥️ Layout Utama (Mobile)
+## 🖥️ Layout Utama (Scaffold + BottomNavigation)
 
 ```
 ┌───────────────────────────────────┐
-│  🎫 TiketBantu        🔔 👤      │  ← Header: logo, notif, profile bar
-│  ─────────────────────────────────│     (nama, role, email, avatar)
+│  🎫 TiketBantu          🔔 👤    │  ← TopAppBar: judul + Profile Bar
+│  ─────────────────────────────────│     (nama, role, avatar)
 │  ┌──────┐ ┌──────────────────────┐│
-│  │ Feed │ │  🔍 Search Bar       ││  ← Dua kolom (tablet/foldable)
-│  │      │ │  Filter Status ▼     ││     Pada HP: kolom kanan jadi
-│  │ Ad-  │ │  Filter Kategori ▼   ││     bottom sheet / drawer
-│  │ uan  │ │  🔥 Most Liked sort  ││
+│  │ Feed │ │  🔍 SearchBar        ││  ← 2 kolom (tablet/foldable);
+│  │      │ │  Filter Status ▼     ││     HP: kolom kanan jadi
+│  │ Ad-  │ │  Filter Kategori ▼   ││     drawer / bottom sheet
+│  │ uan  │ │  🔥 Sort Most Liked  ││
 │  │ List │ │  ────────────────    ││
-│  │ (in- │ │  📊 Statistik ringkas││
-│  │ fini-│ │  ➕ Buat Aduan       ││
-│  │ te)  │ │  📋 Aduan Saya       ││
+│  │(Lazy-│ │  📊 Statistik ringkas││
+│  │ Col) │ │  ➕ Buat Aduan       ││
 │  └──────┘ └──────────────────────┘│
 │  ─────────────────────────────────│
-│  🏠 Feed   ➕ Buat   📊 (A)  👤  │  ← Bottom Navigation
+│  🏠 Feed   ➕ Buat   📊 (A)  👤  │  ← BottomNavigation (Scaffold)
 └───────────────────────────────────┘
 ```
 
-### Bottom Navigation per Role
+### Bottom Navigation per Role (Compose)
 
-| Menu Item       | User | Agen | Admin |
-| --------------- | ---- | ---- | ----- |
-| 🏠 Feed Aduan   | ✅    | ✅    | ✅     |
-| ➕ Buat Aduan   | ✅    | ❌    | ✅     |
-| 📊 Monitoring   | ❌    | ❌    | ✅     |
-| 👤 Profil       | ✅    | ✅    | ✅     |
+```kotlin
+val items = when (role) {
+    USER  → listOf(Feed, Buat, Profil)
+    AGEN  → listOf(Feed, Profil)                 // agen tidak buat aduan
+    ADMIN → listOf(Feed, Buat, Monitoring, Profil)
+}
+```
+
+| Menu Item     | User | Agen | Admin |
+| ------------- | ---- | ---- | ----- |
+| 🏠 Feed Aduan | ✅    | ✅    | ✅     |
+| ➕ Buat Aduan | ✅    | ❌    | ✅     |
+| 📊 Monitoring | ❌    | ❌    | ✅     |
+| 👤 Profil      | ✅    | ✅    | ✅     |
 
 ---
 
-## ⚠️ Error Handling Flow (Mobile App)
+## 🗄️ Arsitektur & State Management (MVVM + UDF)
 
 ```
-   API Call
+   ┌──────────────────────────────────────────────────────────┐
+   │                      UI (Composable)                      │
+   │   Stateless → menerima State, mengirim Event ke ViewModel │
+   └──────────────┬───────────────────────▲────────────────────┘
+                  │ State (StateFlow)     │ Event (onClick, dll)
+                  ▼                       │
+   ┌─────────────────────────────────────┴────────────────────┐
+   │                   ViewModel (Hilt)                        │
+   │   expose: StateFlow<TicketUiState>                        │
+   │   fun onSearch(q) / onClaim(id) / onLoadNextPage()        │
+   └──────────────┬───────────────────────────────────────────┘
+                  │
+                  ▼
+   ┌────────────────────────────────────┐
+   │   Repository                       │
+   │   (single source of truth)         │
+   └──────────────┬─────────────────────┘
+                  ▼
+   ┌────────────────────────────────────┐
+   │   Retrofit API Service             │
+   │   + Token Interceptor (DataStore)  │
+   └────────────────────────────────────┘
+```
+
+### UiState (Unidirectional Data Flow)
+
+```kotlin
+sealed interface TicketUiState {
+    data object Loading : TicketUiState
+    data class Success(
+        val tickets: List<Ticket>,
+        val isLoadingMore: Boolean = false,
+        val endReached: Boolean = false
+    ) : TicketUiState
+    data class Error(val message: String) : TicketUiState
+}
+```
+
+### State Management di Compose
+
+| Konsep              | Penerapan di TiketBantu                                     |
+| ------------------- | ----------------------------------------------------------- |
+| `remember`          | Form state lokal (text field, dropdown expanded)            |
+| `rememberSaveable`  | State form yang bertahan saat rotasi layar                  |
+| State Hoisting      | Form state di-naikkan ke `CreateTicketViewModel`/composable parent |
+| UDF                 | UI ← StateFlow ← ViewModel; UI → Event → ViewModel          |
+| `derivedStateOf`    | Deteksi item terakhir LazyColumn untuk infinite scroll      |
+| `LazyColumn` + `key`| Feed aduan & komentar dengan `key = ticket.id`              |
+
+---
+
+## ⚠️ Error Handling Flow (UiState + Snackbar)
+
+```
+   Retrofit Call
       │
-      ├── 200 OK ────────────▶ Render data
+      ├── 200 OK ────────────▶ UiState.Success → render LazyColumn
       │
-      ├── 401 Unauthorized ──▶ Clear token → Redirect ke login
+      ├── 401 Unauthorized ──▶ Clear token DataStore →
+      │                         navigate(Login) { popUpTo(0) }
       │
-      ├── 403 Forbidden ─────▶ "Akses Ditolak" (role tidak sesuai)
+      ├── 403 Forbidden ─────▶ Snackbar "Akses Ditolak"
+      │                         (role tidak sesuai)
       │
       ├── 404 Not Found ─────▶ "Aduan tidak ditemukan / sudah dihapus"
       │
-      ├── 422 Validation ────▶ Error di field form (judul, lokasi, file > 5MB, dll)
+      ├── 409 Conflict ──────▶ "Aduan sudah diambil agen lain"
+      │                         → auto refresh feed
       │
-      ├── 500 Server Error ──▶ "Terjadi Kesalahan" + Toast + Retry
+      ├── 422 Validation ────▶ UiState.Error per-field
+      │                         (judul, lokasi, file > 5MB, mime salah)
       │
-      └── Network Error ─────▶ "Tidak dapat terhubung" + [Coba Lagi]
+      ├── 500 Server Error ──▶ Snackbar "Terjadi Kesalahan" + tombol retry
+      │
+      └── Network/IO Error ──▶ "Tidak dapat terhubung" + [Coba Lagi]
 ```
 
 ---
 
-## 🗄️ State Flow: Tiket Lifecycle
+## 🗄️ State Flow: Tiket Lifecycle (Ringkasan)
 
 ```
-                    ┌────────┐
-        User buat ─▶│  Baru  │──────────────┐
-                    └───┬────┘              │
-                        │                   │ Edit judul/deskripsi
-                        │                   │ (pelapor, saat Baru saja)
-                        │                   ▼
-                        │              ┌────────┐
-                        │              │  Baru  │ (ter-edit)
-                        │              └───┬────┘
-                        │ Agen claim       │
-                        ▼                  │
-                   ┌─────────┐             │
-                   │ Diproses │◀────────────┘
-                   └───┬─────┘
-                       │
-           ┌───────────┼───────────┐
-           ▼                       ▼
-      ┌─────────┐            ┌──────────┐
-      │ Selesai │            │ Ditutup  │
-      │ ✓ Hijau │            │ 🔒       │
-      │ 🔒      │            │          │
-      └───┬─────┘            └────┬─────┘
-          │                       │
-          │ Admin soft delete     │ Admin soft delete
-          ▼                       ▼
-      ┌───────────────────────────────┐
-      │         TRASH (deleted_at)     │
-      └───────┬───────────────┬───────┘
-              │               │
-              ▼               ▼
-        ┌──────────┐   ┌──────────────┐
-        │ Restore  │   │ Permanent    │
-        │ (→Draft) │   │ Delete       │
-        └──────────┘   │ (by Admin)   │
-                       └──────────────┘
+        User buat
+            │
+            ▼
+      ┌────────┐   edit judul/deskripsi   ┌────────┐
+      │  Baru  │◀────────────────────────▶│  Baru  │
+      └───┬────┘   (pelapor, saat Baru)  └───┬────┘
+          │ Agen claim (linear queue)          │
+          ▼                                  │
+     ┌─────────┐                             │
+     │ Diproses │◀────────────────────────────┘
+     └───┬─────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌─────────┐         ┌────────────┐
+│Selesai │ │ Ditutup │────────▶│ TRASH      │
+│ ✓ hijau│ │   🔒    │ soft del│ (deleted_at)│
+│   🔒   │ └─────────┘         └───┬────┬───┘
+└───┬────┘                         ▼    ▼
+    │                         Restore  Permanent
+    │                         (→Baru)  Delete
+    ▼
+pindah ke blok bawah feed
+(badge centang hijau, dukungan tetap aktif)
 ```
 
 ---
 
-## 📌 Ringkasan Prinsip Utama (sesuai catatan)
+## 🧩 Pemetaan Fitur → 7 Materi Jetpack Compose
 
-| # | Prinsip                                   | Implementasi di Flow |
-| - | ----------------------------------------- | -------------------- |
-| 1 | Admin hanya monitoring                    | Tidak ada route/aksi assignment; monitoring + soft delete + manajemen master data |
-| 2 | Agen claim langsung (linear queue)        | Alur 4: claim mandiri dari feed, `Baru → Diproses` otomatis, first-come-first-served |
-| 3 | User lihat semua, filter search & most liked | Alur 8: search bar, filter status/kategori, sort Most Liked |
-| 4 | Prioritas manual dihapus                  | Urgensi = counter `ticket_supports` (Most Liked) |
-| 5 | Tampilan 2 kolom                          | Layout utama: feed (kiri) + sidebar search/filter/statistik (kanan) |
-| 6 | Selesai di bawah + badge centang hijau    | Logika urutan feed + Badge `✓ Selesai` hijau di blok bawah |
-| 7 | Infinite scroll sampai habis              | Alur 8: offset/limit pagination hingga "semua aduan telah dimuat" |
-| 8 | Dashboard Agen default Most Liked         | `sort=most_liked` sebagai default untuk role Agen |
+| # | Materi Wajib                    | Penerapan di TiketBantu                                                                 |
+| - | ------------------------------- | --------------------------------------------------------------------------------------- |
+| 1 | UI & Layout Dasar               | Layout 2 kolom `Row` + `weight`, `Column`, `Box` overlay badge, Modifier chains         |
+| 2 | Material Design 3               | Color scheme + Typography, `Card`, `OutlinedTextField`, `Button`, `Badge` centang hijau, `Snackbar`, `DropdownMenu`, `AssistChip` |
+| 3 | State Management & UDF          | `remember` / `rememberSaveable`, State Hoisting form, StateFlow + UDF, `derivedStateOf`  |
+| 4 | Lazy Layouts                    | `LazyColumn` feed + komentar dengan `key`, infinite scroll, footer loading/habis       |
+| 5 | Networking & API                | Retrofit + Coroutines (`suspend`), token interceptor, multipart upload, polling 5 detik  |
+| 6 | Arsitektur Aplikasi (MVVM)      | ViewModel + Repository + `UiState` (Loading / Success / Error) + Hilt                    |
+| 7 | Navigation Compose              | Type-safe routes (`@Serializable`), arg `TicketDetail(id)`, nested graph Auth/Main/Admin, BottomNavigation di Scaffold |
 
 ---
 
-*Dokumen ini merupakan blueprint alur aplikasi TiketBantu (Mobile) — Phase 1 Web Helpdesk Core MVP. Phase 2: REST API adapter, kamera & GPS lokasi, push notification.*
+## 👥 Pembagian Peran Tim (maks. 4 orang)
+
+| Peran          | Tanggung Jawab                                                                 |
+| -------------- | ------------------------------------------------------------------------------ |
+| UI/UX Designer | Wireframe & mockup 2 kolom, Design System M3 (color, typography, badge status) |
+| Android Dev 1  | Screen: Dashboard, Feed, Detail, Search/Filter, Infinite Scroll (LazyColumn)   |
+| Android Dev 2  | Screen: Login/Register, Buat Aduan, Monitoring, Profil; Networking + Repository |
+| Backend Dev    | REST API + MySQL (auth token, tiket, dukungan, komentar, lampiran, statistik)  |
+
+---
+
+## 📌 Prinsip Utama (sesuai catatan tim)
+
+| # | Prinsip                                  | Implementasi di Flow                                  |
+| - | ---------------------------------------- | ----------------------------------------------------- |
+| 1 | Admin hanya monitoring                   | Alur 9: tanpa assignment, hanya statistik + soft delete |
+| 2 | Agen claim langsung (linear queue)       | Alur 4: claim mandiri, first-come-first-served         |
+| 3 | User lihat semua + search & Most Liked   | Alur 8: SearchBar, filter status/kategori, sort        |
+| 4 | Prioritas manual dihapus                 | Urgensi = counter dukungan (Most Liked)                |
+| 5 | Tampilan dua kolom                       | Alur 2: `Row` + `weight`; HP → drawer/bottom sheet     |
+| 6 | Selesai di bawah + badge centang hijau   | Blok bawah feed + M3 `Badge` hijau ✓ Selesai           |
+| 7 | Infinite scroll sampai habis             | Alur 8: `LazyColumn` + `derivedStateOf` + pagination   |
+| 8 | Dashboard Agen default Most Liked        | `sort=most_liked` default saat role = Agen             |
+
+---
+
+*Dokumen ini merupakan blueprint alur aplikasi TiketBantu — Native Android dengan Jetpack Compose.
+Backend berupa REST API (tidak Laravel); realtime komentar & counter dukungan di-handle dengan
+polling Coroutines. Phase 2 roadmap: push notification & integrasi GPS kamera.*
