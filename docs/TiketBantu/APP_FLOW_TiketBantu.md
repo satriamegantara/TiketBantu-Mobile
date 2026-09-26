@@ -1,11 +1,17 @@
 # APP_FLOW.md — Alur Aplikasi TiketBantu (Native Android — Jetpack Compose)
 
-> **Stack**: Native Android (Kotlin) + Jetpack Compose, REST API (Retrofit), Backend API + MySQL.
+> **Stack**: Native Android (Kotlin) + Jetpack Compose, REST API (Retrofit), Backend Kotlin/Ktor + PostgreSQL (Exposed ORM).
 > **Catatan**: Aplikasi **tidak menggunakan Laravel/Livewire sama sekali** — seluruh realtime & data
 > di-handle via Retrofit (REST API) dengan pola polling + Coroutines. Prinsip alur mengikuti
 > catatan inti: *Admin hanya monitoring, Agen claim linear, User melihat semua (search + Most Liked),
 * prioritas manual dihapus, tampilan dua kolom, aduan Selesai di bawah dengan badge centang hijau,
 > infinite scroll sampai habis, dashboard Agen default Most Liked.*
+
+> **📝 Catatan Revisi (Sinkronisasi dengan FEATURES.md & ARCHITRCTURE.md)**
+> Dokumen ini direvisi untuk menyelaraskan 3 hal berikut:
+> 1. Stack backend diubah dari **"Backend API + MySQL"** menjadi **Kotlin/Ktor + PostgreSQL (Exposed ORM)**, mengikuti `ARCHITRCTURE.md`.
+> 2. Fitur lampiran diubah dari **multi-format, multi-file** menjadi **1 foto per tiket, format JPG/PNG saja**, mengikuti `ARCHITRCTURE.md`.
+> 3. **Alur 10: Notifikasi** diubah namanya menjadi **Feedback UI (Snackbar/Toast)** — email & push notification dihapus, mengikuti `FEATURES.md` ("SLA Tracker dan Modul Notifikasi tidak digunakan").
 
 ---
 
@@ -25,7 +31,7 @@ graph TD
 
     C3 --> C3a["Riwayat Penanganan"]
     C3 --> C3b["Thread Komentar"]
-    C3 --> C3c["Lampiran / Foto"]
+    C3 --> C3c["Foto Bukti (1 Foto)"]
     C3 --> C3d["Dukungan Most Liked"]
 
     D --> D1["Monitoring Total & Status"]
@@ -249,23 +255,23 @@ Row(Modifier.fillMaxSize()) {
    │    Ruangan : [OutlinedTextField____________________] │
    │  Deskripsi *        : [OutlinedTextField multiline__] │
    │                                                       │
-   │  📎 Lampiran (opsional, max 5MB/file):                │
-   │     [📷 Photo Picker] / [📁 File Picker]              │
-   │     Format: JPG, PNG, PDF, DOCX, ZIP, TXT             │
-   │     ✓ foto_ac.jpg (1.2 MB)  [🗑 Hapus]               │
+   │  📎 Foto Bukti (opsional, maks. 1 foto, 5MB):         │
+   │     [📷 Photo Picker]                                 │
+   │     Format: JPG, PNG                                  │
+   │     ✓ foto_ac.jpg (1.2 MB)  [🗑 Hapus] [Ganti Foto]  │
    │                                                       │
    │  ⚠️ HelperText: "Semua aduan bersifat PUBLIK"        │
    │                                                       │
    │            [Batal]  [Kirim Aduan →]                   │
    └──────────────────────────────────────────────────────┘
           │
-          │ POST /api/tickets (Retrofit, @Multipart utk file)
+          │ POST /api/tickets (Retrofit, @Multipart utk foto)
           ▼
    ┌──────────────┐     422 Gagal    ┌─────────────────────────┐
    │  Simpan via  │─────────────────▶│ UiState.Error → error    │
    │  Repository  │  (validasi mime  │ tampil di tiap field     │
-   │  → API       │   + max 5MB)     │ (judul, lokasi, file) +  │
-   │  status=Baru │                  │ snackbar ❌              │
+   │  → API       │   jpg/png + max  │ (judul, lokasi, foto) +  │
+   │  status=Baru │   5MB)           │ snackbar ❌              │
    └──────┬───────┘                  └─────────────────────────┘
           │ 201 Berhasil
           ▼
@@ -287,6 +293,7 @@ Row(Modifier.fillMaxSize()) {
 | Edit                      | Hanya saat status = `Baru`, hanya judul & deskripsi                         |
 | Kunci                     | Status `Selesai` / `Ditutup` → terkunci dari pengeditan                     |
 | Agregasi duplikat         | User diarahkan memberi dukungan pada aduan serupa, bukan membuat tiket baru |
+| Lampiran                  | Maksimal **1 foto** per tiket, format **JPG/PNG**, maks. 5MB                |
 
 ---
 
@@ -478,8 +485,8 @@ Row(Modifier.fillMaxSize()) {
 │  │ Proyektor tidak menyala sejak Senin...                  │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
-│  ┌─ Lampiran ──────────────────────────────────────────────┐  │
-│  │ AsyncImage thumbnails / ikon dokumen (klik → preview)   │  │
+│  ┌─ Foto Bukti ────────────────────────────────────────────┐  │
+│  │ AsyncImage (1 foto, klik → preview fullscreen)          │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌─ Riwayat Penanganan ────────────────────────────────────┐  │
@@ -625,7 +632,7 @@ Row(Modifier.fillMaxSize()) {
 ### Batasan Admin (Sesuai Spesifikasi)
 
 | Admin BOLEH                           | Admin TIDAK BOLEH              |
-| ------------------------------------- | ------------------------------ |
+| -------------------------------------- | ------------------------------- |
 | Monitoring total & status aduan       | ❌ Assign / menugaskan agen     |
 | Lihat statistik per kategori & lokasi | ❌ Mengubah urutan claim agen   |
 | Manajemen akun & kategori             | ❌ Override hasil claim agen    |
@@ -634,7 +641,11 @@ Row(Modifier.fillMaxSize()) {
 
 ---
 
-## 🔔 Alur 10: Notifikasi
+## 🍞 Alur 10: Feedback UI (Snackbar / Toast)
+
+> **Catatan Sinkronisasi**: Sesuai `FEATURES.md` ("SLA Tracker dan Modul Notifikasi tidak digunakan"),
+> aplikasi ini **tidak** memiliki modul notifikasi (email maupun push notification). Feedback ke
+> pengguna hanya berupa Snackbar/Toast instan di dalam aplikasi saat sebuah aksi dilakukan.
 
 ```
    ┌──────────────────────────────────────────────────────────┐
@@ -648,11 +659,8 @@ Row(Modifier.fillMaxSize()) {
    │  • ❌ Gagal upload / validasi (422 per-field)            │
    │  • ❌ "Aduan sudah diambil agen lain" (409)              │
    │                                                          │
-   │  📧 Email (oleh backend, P0):                            │
-   │  • Status aduan berubah → email otomatis ke Pelapor      │
-   │                                                          │
-   │  📱 Push Notification (P2 — roadmap):                    │
-   │  • Status aduan berubah / komentar baru di aduan saya    │
+   │  ❌ Email Notification — TIDAK digunakan (di luar scope) │
+   │  ❌ Push Notification  — TIDAK digunakan (di luar scope) │
    └──────────────────────────────────────────────────────────┘
 ```
 
@@ -741,7 +749,7 @@ sealed interface TicketUiState {
 ### State Management di Compose
 
 | Konsep              | Penerapan di TiketBantu                                     |
-| ------------------- | ----------------------------------------------------------- |
+| ------------------- | ------------------------------------------------------------- |
 | `remember`          | Form state lokal (text field, dropdown expanded)            |
 | `rememberSaveable`  | State form yang bertahan saat rotasi layar                  |
 | State Hoisting      | Form state di-naikkan ke `CreateTicketViewModel`/composable parent |
@@ -770,7 +778,7 @@ sealed interface TicketUiState {
       │                         → auto refresh feed
       │
       ├── 422 Validation ────▶ UiState.Error per-field
-      │                         (judul, lokasi, file > 5MB, mime salah)
+      │                         (judul, lokasi, foto > 5MB, mime bukan jpg/png)
       │
       ├── 500 Server Error ──▶ Snackbar "Terjadi Kesalahan" + tombol retry
       │
@@ -813,12 +821,12 @@ pindah ke blok bawah feed
 ## 🧩 Pemetaan Fitur → 7 Materi Jetpack Compose
 
 | # | Materi Wajib                    | Penerapan di TiketBantu                                                                 |
-| - | ------------------------------- | --------------------------------------------------------------------------------------- |
+| - | ---------------------------------- | ------------------------------------------------------------------------------------- |
 | 1 | UI & Layout Dasar               | Layout 2 kolom `Row` + `weight`, `Column`, `Box` overlay badge, Modifier chains         |
 | 2 | Material Design 3               | Color scheme + Typography, `Card`, `OutlinedTextField`, `Button`, `Badge` centang hijau, `Snackbar`, `DropdownMenu`, `AssistChip` |
 | 3 | State Management & UDF          | `remember` / `rememberSaveable`, State Hoisting form, StateFlow + UDF, `derivedStateOf`  |
 | 4 | Lazy Layouts                    | `LazyColumn` feed + komentar dengan `key`, infinite scroll, footer loading/habis       |
-| 5 | Networking & API                | Retrofit + Coroutines (`suspend`), token interceptor, multipart upload, polling 5 detik  |
+| 5 | Networking & API                | Retrofit + Coroutines (`suspend`), token interceptor, multipart upload foto, polling 5 detik  |
 | 6 | Arsitektur Aplikasi (MVVM)      | ViewModel + Repository + `UiState` (Loading / Success / Error) + Hilt                    |
 | 7 | Navigation Compose              | Type-safe routes (`@Serializable`), arg `TicketDetail(id)`, nested graph Auth/Main/Admin, BottomNavigation di Scaffold |
 
@@ -827,18 +835,18 @@ pindah ke blok bawah feed
 ## 👥 Pembagian Peran Tim (maks. 4 orang)
 
 | Peran          | Tanggung Jawab                                                                 |
-| -------------- | ------------------------------------------------------------------------------ |
+| -------------- | -------------------------------------------------------------------------------- |
 | UI/UX Designer | Wireframe & mockup 2 kolom, Design System M3 (color, typography, badge status) |
 | Android Dev 1  | Screen: Dashboard, Feed, Detail, Search/Filter, Infinite Scroll (LazyColumn)   |
 | Android Dev 2  | Screen: Login/Register, Buat Aduan, Monitoring, Profil; Networking + Repository |
-| Backend Dev    | REST API + MySQL (auth token, tiket, dukungan, komentar, lampiran, statistik)  |
+| Backend Dev    | REST API Kotlin/Ktor + PostgreSQL (auth token, tiket, dukungan, komentar, foto, statistik) |
 
 ---
 
 ## 📌 Prinsip Utama (sesuai catatan tim)
 
 | # | Prinsip                                  | Implementasi di Flow                                  |
-| - | ---------------------------------------- | ----------------------------------------------------- |
+| - | ------------------------------------------- | ------------------------------------------------------- |
 | 1 | Admin hanya monitoring                   | Alur 9: tanpa assignment, hanya statistik + soft delete |
 | 2 | Agen claim langsung (linear queue)       | Alur 4: claim mandiri, first-come-first-served         |
 | 3 | User lihat semua + search & Most Liked   | Alur 8: SearchBar, filter status/kategori, sort        |
@@ -851,5 +859,5 @@ pindah ke blok bawah feed
 ---
 
 *Dokumen ini merupakan blueprint alur aplikasi TiketBantu — Native Android dengan Jetpack Compose.
-Backend berupa REST API (tidak Laravel); realtime komentar & counter dukungan di-handle dengan
-polling Coroutines. Phase 2 roadmap: push notification & integrasi GPS kamera.*
+Backend berupa REST API Kotlin/Ktor + PostgreSQL (Exposed ORM); realtime komentar & counter dukungan
+di-handle dengan polling Coroutines. Phase 2 roadmap: integrasi GPS kamera.*
