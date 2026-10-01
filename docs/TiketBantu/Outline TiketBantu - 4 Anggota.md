@@ -6,14 +6,29 @@ Aplikasi dibangun berbasis **Android Native (Jetpack Compose)** dengan arsitektu
 
 ---
 
+## 🎯 Pemetaan 6 Aspek Teknis (Materi Jetpack Compose)
+
+Proyek ini mengimplementasikan **6 materi teknis Native Android dengan Jetpack Compose**:
+
+| No | Materi Teknis Wajib | Penerapan Konkret pada TiketBantu Mobile | Penanggung Jawab Utama |
+|---|---|---|---|
+| **1** | **UI & Layout Dasar** | Penggunaan `Column`, `Row`, `Box`, manipulasi `Modifier` (padding, fillMaxSize, weight, clip, clickable, border), serta perancangan antarmuka adaptif 2-kolom (HP compact vs Tablet landscape). | **Anggota 2** & **Anggota 4** |
+| **2** | **Material Design 3 (M3)** | Penerapan tema sistematis (`Color.kt`, `Type.kt`, `Shape.kt`, `Theme.kt`), komponen interaktif (`Button`, `OutlinedTextField`, `Card`, `FilterChip`), badge status dinamis (`✓ Selesai`), dan elevated surfaces. | **Anggota 2** |
+| **3** | **State Management & UDF** | Pola *Unidirectional Data Flow* (UDF), penggunaan `remember`, `rememberSaveable`, *State Hoisting* pada komponen interaktif, serta sinkronisasi reactive `StateFlow` dari ViewModel ke UI Composable. | **Satria** & **Anggota 4** |
+| **4** | **Lazy Layouts** | Penggunaan `LazyColumn` pada Feed Aduan Publik dan Daftar Aduan Saya dengan penanganan `key = { ticket.id }`, pagination / *infinite scroll*, pull-to-refresh, dan pemisahan blok tiket selesai di posisi bawah. | **Satria** |
+| **5** | **Arsitektur Aplikasi (MVVM)** | Implementasi arsitektur Clean MVVM terstruktur (`data`, `domain`, `ui`), `BaseViewModel` berbasis coroutines, dan pengelolaan status tampilan terpadu `UiState` (`Idle`, `Loading`, `Success<T>`, `Error`). | **Pancar** *(Lead Architect)* |
+| **6** | **Navigation Compose** | Navigasi multi-screen (9 destinasi: Login, Register, Feed, Detail, Buat Aduan, Aduan Saya, Profil, Monitoring, User Management) berbasis **Type-Safe Navigation** (`@Serializable`), pengiriman argumen `ticketId`, integrasi `Scaffold` & `BottomNavigation` adaptif per Role. | **Pancar** *(Lead Architect)* |
+
+---
+
 ## 👥 Struktur Tim & Pembagian Peran
 
-| No | Nama / Role | Fokus Utama | Tanggung Jawab Utama |
-|---|---|---|---|
-| **1** | **Pancar**<br>*(Lead Architect & Core Infrastructure)* | Arsitektur MVVM, Room DB, Navigation & DI | Fondasi arsitektur, setup Room SQLite, Type-Safe Navigation Graph, BaseViewModel/UiState, Dependency Injection, dan Code Review. |
-| **2** | **Anggota 2**<br>*(UI/UX Designer & Compose Specialist)* | Design System M3 & Reusable Components | Design Tokens (Color, Typography, Shape), Reusable UI Components, Badge Status (`✓ Selesai`), Micro-animations, dan layout adaptif 2-kolom. |
-| **3** | **Satria**<br>*(Feature Engineer — Feed, Interaction & Polling)* | Feed, Most Liked, Detail Tiket & Polling | Tampilan Feed Publik (`LazyColumn`), sistem *Most Liked* ("Saya Juga Mengalami"), Detail Aduan, Thread Komentar, Polling Coroutine, dan Linear Status Agen. |
-| **4** | **Anggota 4**<br>*(Feature Engineer — Auth, Form, Profile & Admin)* | Auth, Form Aduan, Profil & Admin Monitoring | Login & Register Multi-Role (3 Role), Sesi DataStore, Form Buat Aduan + 1 Lampiran Foto lokal, Layar Profil/Aduan Saya, dan Pure Monitoring Dashboard Admin. |
+| No | Nama / Role | Fokus Utama | Materi Teknis yang Dipegang | Tanggung Jawab Utama |
+|---|---|---|---|---|
+| **1** | **Pancar**<br>*(Lead Architect & Core Infrastructure)* | Arsitektur MVVM, Room DB, Navigation & DI | • **Arsitektur Aplikasi (MVVM + UiState)**<br>• **Navigation Compose (Type-Safe)** | Setup Clean Architecture modular, `BaseViewModel`, `UiState<T>`, `NavGraph.kt` (Type-Safe routes), integrasi Room SQLite lokal, Dependency Injection (Koin), dan Code Review. |
+| **2** | **Anggota 2**<br>*(UI/UX Designer & Compose Specialist)* | Design System M3 & Reusable Components | • **Material Design 3 (M3)**<br>• **UI & Layout Dasar (Adaptive)** | Pembuatan Theme Tokens M3 (Color, Typography, Shape), Reusable Components (`AppButton`, `AppTextField`, `AppTopBar`, `TicketCard`, `StatusBadge`), dan perancangan layout adaptif 2-kolom. |
+| **3** | **Satria**<br>*(Feature Engineer — Feed, Interaction & Polling)* | Feed, Most Liked, Detail Tiket & Polling | • **Lazy Layouts (`LazyColumn`)**<br>• **State Management & UDF** | Implementasi `LazyColumn` ber-parameter `key`, logika pengurutan *Most Liked* ("Saya Juga Mengalami"), Thread Komentar, Coroutines Polling loop, dan status linear agen. |
+| **4** | **Anggota 4**<br>*(Feature Engineer — Auth, Form, Profile & Admin)* | Auth, Form Aduan, Profil & Admin Monitoring | • **UI & Layout Dasar (Form Controls)**<br>• **State Management (`rememberSaveable`)** | Validasi form autentikasi (Login/Register 3 role), sesi DataStore, formulir buat aduan + image picker 1 foto, dialog claim agen, dan Pure Monitoring Dashboard Admin. |
 
 ---
 
