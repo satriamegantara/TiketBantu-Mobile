@@ -11,11 +11,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-
+import com.example.tiketbantu.ui.screens.dashboard.DashboardScreen
+import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
 
 /**
  * Root Navigation Graph for TiketBantu Mobile.
  * Connects all screens according to APP_FLOW_TiketBantu.md.
+ *
+ * Wired so far: Dashboard (feed) and TicketDetail. The other routes are still placeholders.
  */
 @Composable
 fun NavGraph(
@@ -32,19 +35,23 @@ fun NavGraph(
         composable<Screen.Register> {
             PlaceholderScreen(title = "Halaman Registrasi")
         }
-
         composable<Screen.Dashboard> {
-            FeedScreen(onTicketClick = { navController.navigate(Screen.TicketDetail(it)) })
+            DashboardScreen(
+                onTicketClick = { ticketId ->
+                    navController.navigate(Screen.TicketDetail(ticketId))
+                }
+            )
         }
-
         composable<Screen.CreateTicket> {
             PlaceholderScreen(title = "Form Buat Aduan Baru")
         }
-        composable<Screen.TicketDetail> { entry ->
-            val route = entry.toRoute<Screen.TicketDetail>()
-            TicketDetailScreen(ticketId = route.ticketId, onBack = { navController.popBackStack() })
+        composable<Screen.TicketDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.TicketDetail>()
+            TicketDetailScreen(
+                ticketId = route.ticketId,
+                onBack = { navController.popBackStack() }
+            )
         }
-
         composable<Screen.MyTickets> {
             PlaceholderScreen(title = "Aduan Saya")
         }
