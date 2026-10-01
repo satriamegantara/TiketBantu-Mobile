@@ -3,31 +3,31 @@ package com.example.tiketbantu.base
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Base class for all ViewModels in the project.
- * Provides a default [CoroutineExceptionHandler] that posts the exception to a
- * [handleError] method which can be overridden by subclasses.
+ * Base class for all ViewModels in TiketBantu Mobile.
+ * Encapsulates coroutine execution with safe exception handling.
  */
 open class BaseViewModel : ViewModel() {
+
     private val defaultExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         handleError(throwable)
     }
 
     /**
-     * Called when a coroutine launched from the ViewModel throws an exception.
-     * Sub‑classes can override to convert the exception into UI state, log it, etc.
+     * Override in subclasses to handle unhandled exceptions from coroutines.
      */
     protected open fun handleError(throwable: Throwable) {
-        // Default implementation does nothing – keep it lightweight.
-        // Subclasses should map the error to a UiState if needed.
+        // Default: no-op or log error
     }
 
     /**
-     * Convenience wrapper around [viewModelScope.launch] that automatically applies the
-     * default exception handler.
+     * Launches a coroutine safely in [viewModelScope] using the [defaultExceptionHandler].
      */
-    protected fun launchSafe(block: suspend () -> Unit) =
-        viewModelScope.launch(defaultExceptionHandler) { block() }
+    protected fun launchSafe(block: suspend CoroutineScope.() -> Unit) =
+        viewModelScope.launch(defaultExceptionHandler) {
+            block()
+        }
 }

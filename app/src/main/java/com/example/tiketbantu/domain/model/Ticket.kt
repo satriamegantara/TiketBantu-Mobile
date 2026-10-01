@@ -1,17 +1,26 @@
 package com.example.tiketbantu.domain.model
 
-import kotlinx.serialization.Serializable
-
 /**
- * Represents a single ticket/aduan in the system.
+ * Domain model representing a public campus ticket / complaint.
+ * 100% public, urgency determined by supportCount ("Saya Juga Mengalami").
  */
-@Serializable
 data class Ticket(
-    val id: String,
+    val id: Long = 0,
     val title: String,
     val description: String,
-    val status: String = "OPEN",
-    val authorId: String,
+    val categoryId: Long,
+    val categoryName: String = "",
+    val locationBuilding: String,
+    val locationFloor: String,
+    val locationRoom: String,
+    val status: String = "BARU", // BARU, DIPROSES, SELESAI, DITUTUP
+    val imageUrl: String? = null,
+    val reporterId: Long,
+    val reporterName: String = "",
+    val agentId: Long? = null,
+    val agentName: String? = null,
+    val supportCount: Int = 0,
+    val isSupportedByMe: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    val likedBy: List<String> = emptyList()
+    val updatedAt: Long = System.currentTimeMillis()
 )
