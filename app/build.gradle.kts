@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
     // Jetpack Compose UI & Material 3
     implementation(libs.androidx.compose.ui)
