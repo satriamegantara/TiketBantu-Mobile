@@ -1,172 +1,184 @@
-### CLAUDE.md — Aturan Utama untuk AI & Pedoman Pengembangan TiketBantu Mobile
-## 👥 Tim Pengembangan (4 orang)
+# CLAUDE.md — Aturan Utama & Pedoman Pengembangan TiketBantu Mobile
+
+## 👥 Tim Pengembangan & Pembagian Peran (4 Orang)
 
 | Peran | Nama | Fokus Utama | Dokumen Referensi |
-|------|------|-------------|-------------------|
-| **Backend Lead** | Anda | Arsitektur & Keamanan | [ANALYSIS_Compatibility.md](file:///C:/Users/hp_5c/.gemini/antigravity-ide/brain/306f8a85-861e-414d-a4dd-1c7c2452c708/ANALYSIS_Compatibility.md) |
-| **Backend Engineer** | Satria | Service & Repository | Same as above |
-| **Frontend Lead** | Anda | UI Architecture & State | Same as above |
-| **UI/UX Designer** | (Orang ke‑2) | Design System & Interaksi | Same as above |
+|---|---|---|---|
+| **Lead Architect & Core Infra** | Pancar | Arsitektur MVVM, Room DB, Navigation Graph & DI | [ARCHITECTURE_TiketBantu.md](file:///d:/Organize/Projects/Mobile%20Project/TiketBantu-Mobile/docs/TiketBantu/ARCHITECTURE_TiketBantu.md) |
+| **UI/UX Designer & Compose Specialist** | Anggota 2 | Design System M3, Components & Layout Adaptif | [DESIGN_TiketBantu.md](file:///d:/Organize/Projects/Mobile%20Project/TiketBantu-Mobile/docs/TiketBantu/DESIGN_TiketBantu.md) |
+| **Feature Engineer 1** | Satria | Feed, Most Liked, Detail Tiket & Coroutines Polling | [FEATURES_TiketBantu.md](file:///d:/Organize/Projects/Mobile%20Project/TiketBantu-Mobile/docs/TiketBantu/FEATURES_TiketBantu.md) |
+| **Feature Engineer 2** | Anggota 4 | Auth Multi-Role, Form Aduan, Profil & Admin Monitoring | [APP_FLOW_TiketBantu.md](file:///d:/Organize/Projects/Mobile%20Project/TiketBantu-Mobile/docs/TiketBantu/APP_FLOW_TiketBantu.md) |
 
-<!-- INTERNAL ONLY – this file is for team reference and AI tooling, not included in production bundles -->
-#### 🎯 Tentang Proyek
-**TiketBantu Mobile** adalah sistem helpdesk kampus publik dan transparan berbasis Android Native (**Jetpack Compose**) dengan backend **Kotlin/Ktor** dan **PostgreSQL**. Aplikasi ini menggantikan proses penanganan aduan sarana & prasarana kampus yang manual dengan model **urgensi publik (Most Liked)**, di mana aduan dengan dukungan terbanyak dari civitas akademika akan naik ke urutan teratas secara otomatis.
+<!-- INTERNAL ONLY – dokumen ini menjadi acuan pedoman AI dan seluruh pengembang proyek -->
 
-**Dokumen Sumber Kebenaran (Sources of Truth)**:
-* `README.md` — Ringkasan & Visi Sistem
-* `FEATURES_TiketBantu.md` — Spesifikasi Fitur & Kebutuhan Bisnis
-* `APP_FLOW_TiketBantu.md` — Alur Pengguna & Spesifikasi Layar
-* `ARCHITECTURE_TiketBantu.md` — Arsitektur Sistem, Database, & REST API
-* `DESIGN_TiketBantu.md` — Design System Material 3 (M3) & Panduan UI/UX
+---
 
---------------------------------------------------------------------------------
+## 🎯 Tentang Proyek
 
-#### 🏗️ Tech Stack
+**TiketBantu Mobile** adalah Sistem Helpdesk & Pengaduan Fasilitas Kampus publik berbasis **Android Native (Jetpack Compose)** dengan penyimpanan data permanen lokal menggunakan **Room Database** dan manajemen sesi lokal menggunakan **DataStore Preferences** (*Standalone Android / No Backend*).
+
+Aplikasi menggantikan model birokrasi penanganan manual dengan sistem **Urgensi Publik (Most Liked)**, di mana aduan yang paling banyak didukung civitas akademika ("Saya Juga Mengalami") akan diprioritaskan di feed secara otomatis.
+
+### Dokumen Sumber Kebenaran (Sources of Truth):
+* `README.md` — Ringkasan Visi Proyek & Panduan Menjalankan Aplikasi
+* `FEATURES_TiketBantu.md` — Spesifikasi Lengkap Modul & Prioritas Fitur
+* `APP_FLOW_TiketBantu.md` — Alur Navigasi Antar-Layar & Route Graph
+* `ARCHITECTURE_TiketBantu.md` — Arsitektur MVVM, Room SQLite Schema & State Flow
+* `DESIGN_TiketBantu.md` — Spesifikasi Material 3 (M3), Tokens, & Layout Adaptif
+* `Outline TiketBantu - 4 Anggota.md` — Master Timeline, Flowchart & Rincian Tugas
+
+---
+
+## 🏗️ Tech Stack
+
 | Layer | Teknologi | Keterangan |
-| ------ | ------ | ------ |
-| **Android Client** | Kotlin Native | Jetpack Compose, Material Design 3 (M3) |
-| **Architecture (Client)** | MVVM + UDF | StateFlow, UiState (`Loading`, `Success`, `Error`), ViewModel |
-| **Networking & Async** | Retrofit 2 + OkHttp 4 | AuthInterceptor (Bearer JWT), Coroutines & Flow |
-| **Realtime Updates** | Coroutines Polling | Polling interval ±5 detik untuk feed & komentar |
-| **Image Loading** | Coil | Memuat foto aduan dari backend |
-| **Local Storage (Client)** | Android DataStore | Penyimpanan token JWT & sesi pengguna |
-| **Backend API** | Kotlin / Ktor | REST API (JSON), Routing, Services, Repositories |
-| **Database & ORM** | PostgreSQL + Exposed ORM | Custom SQL & DAO API |
-| **Autentikasi** | Custom JWT Auth | Dikelola backend (tanpa Keycloak/Identity Provider eksternal) |
-| **File Storage** | Local Disk Storage | `/uploads/tickets/{id}/` (1 foto JPG/PNG max 5MB per tiket) |
+|---|---|---|
+| **Platform** | Android Native (Kotlin) | Min SDK 24, Target SDK 34/35 |
+| **UI Framework** | Jetpack Compose | Material Design 3 (M3), Compose Foundation, AnimatedVisibility |
+| **Arsitektur** | MVVM + UDF | Unidirectional Data Flow, `StateFlow`, `UiState<T>` sealed interface |
+| **Persistensi Data** | Room Database | SQLite lokal (`users`, `tickets`, `categories`, `ticket_supports`, `comments`) |
+| **Manajemen Sesi** | Jetpack DataStore Preferences | Penyimpanan token sesi lokal & data role pengguna yang aktif |
+| **Asynchronous & Polling** | Kotlin Coroutines & Flow | Coroutine Scope di ViewModel, Polling lokal (interval ±5 detik) |
+| **Penyimpanan Foto** | App Internal Storage | Direktori privat aplikasi (`filesDir/ticket_photos/{id}.jpg`), 1 foto per tiket |
+| **Image Loading** | Coil Compose | Memuat dan me-render foto lampiran dari file lokal |
+| **Navigasi** | Jetpack Navigation Compose | Type-Safe Navigation dengan object route `@Serializable` |
+| **Dependency Injection** | Hilt / Koin *(Lightweight)* | Inject Database, DAOs, Repositories, dan ViewModels |
 
---------------------------------------------------------------------------------
+---
 
-#### 📁 Struktur Repositori (Monorepo)
+## 📁 Struktur Repositori Android
+
 ```
-tiketbantu/
-├── android/                        # Aplikasi Android Native
-│   ├── app/src/main/java/com/tiketbantu/mobile/
-│   │   ├── data/                   # DTO, ApiService, AuthInterceptor, Repository Impl
-│   │   ├── domain/                 # Domain Models & Business Rules
-│   │   ├── ui/
-│   │   │   ├── theme/              # Color.kt, Type.kt, Theme.kt (M3 Tokens)
-│   │   │   ├── component/          # TicketCard, StatusBadge (✓ Selesai), AppTextField
-│   │   │   ├── screen/             # Login, Register, Feed, Detail, Create, Profile, Monitoring
-│   │   │   └── navigation/         # NavGraph, Route objects (@Serializable)
-│   │   └── MainActivity.kt
+TiketBantu-Mobile/
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/example/tiketbantu/
+│   │   │   ├── data/
+│   │   │   │   ├── local/              # Room Database, TypeConverters, Pre-populate Callback
+│   │   │   │   │   ├── AppDatabase.kt
+│   │   │   │   │   ├── dao/            # UserDao, TicketDao, CategoryDao, CommentDao, SupportDao
+│   │   │   │   │   └── entity/         # UserEntity, TicketEntity, CategoryEntity, dll.
+│   │   │   │   ├── preferences/        # DataStore Preferences (SessionManager)
+│   │   │   │   └── repository/         # Implementasi Repository (UserRepository, TicketRepository)
+│   │   │   ├── domain/
+│   │   │   │   ├── model/              # Domain Models (User, Ticket, Category, Comment)
+│   │   │   │   └── repository/         # Repository Interfaces
+│   │   │   ├── ui/
+│   │   │   │   ├── theme/              # Color.kt, Type.kt, Shape.kt, Theme.kt (Tokens M3)
+│   │   │   │   ├── components/         # AppButton, AppTextField, TicketCard, StatusBadge, MostLikedBtn
+│   │   │   │   ├── screens/            # Layar fitur utama:
+│   │   │   │   │   ├── auth/           # LoginScreen, RegisterScreen, AuthViewModel
+│   │   │   │   │   ├── feed/           # FeedScreen, FeedViewModel
+│   │   │   │   │   ├── detail/         # TicketDetailScreen, DetailViewModel
+│   │   │   │   │   ├── create/         # CreateTicketScreen, CreateTicketViewModel
+│   │   │   │   │   ├── profile/        # ProfileScreen, MyTicketsScreen, ProfileViewModel
+│   │   │   │   │   └── admin/          # MonitoringScreen, AdminViewModel
+│   │   │   │   └── navigation/         # NavGraph.kt, AppDestination routes
+│   │   │   ├── di/                     # AppModule.kt (DI Setup)
+│   │   │   ├── base/                   # BaseViewModel.kt, UiState.kt
+│   │   │   └── TiketBantuApp.kt        # Application class & MainActivity
+│   │   └── res/                        # Vector assets, strings.xml, icons
 │   └── build.gradle.kts
-├── backend/                        # Ktor Backend Service
-│   ├── src/main/kotlin/com/tiketbantu/backend/
-│   │   ├── routes/                 # Ktor Routing (/api/auth, /api/tickets, /api/users, dll)
-│   │   ├── services/               # Business logic & Linear Queue Status Validation
-│   │   ├── repositories/           # Exposed ORM (PostgreSQL Query)
-│   │   ├── models/                 # Entities & DTO Request/Response
-│   │   └── Application.kt          # Main Entry & Ktor Modules
-│   └── build.gradle.kts
-├── docs/                           # Dokumentasi Spesifikasi & Arsitektur
-│   ├── README.md
-│   ├── FEATURES_TiketBantu.md
-│   ├── APP_FLOW_TiketBantu.md
-│   ├── ARCHITECTURE_TiketBantu.md
-│   └── DESIGN_TiketBantu.md
-└── CLAUDE.md                       # Pedoman Utama AI & Dev Rules
+└── docs/TiketBantu/                    # Dokumentasi lengkap proyek
 ```
 
---------------------------------------------------------------------------------
+---
 
-#### 🔐 Role & Akses Pengguna (3 Role)
-| Fitur / Akses | PELAPOR (User) | AGEN (Petugas) | ADMIN |
-| ------ | :---: | :---: | :---: |
-| **Registrasi Mandiri** | ✅ (Default) | ❌ (Dibuat Admin) | ❌ (Dibuat Admin) |
-| **Buat Aduan Publik** | ✅ | ❌ | ✅ |
-| **Lihat Feed & Search** | ✅ | ✅ | ✅ |
+## 🔐 Matriks Akses Pengguna (3 Role)
+
+| Fitur / Akses | Pelapor (User) | Agen (Petugas) | Admin |
+|---|:---:|:---:|:---:|
+| **Pendaftaran Mandiri (Register)** | ✅ (Default) | ❌ (Dibuat Admin) | ❌ (Dibuat Admin) |
+| **Login Multi-Role** | ✅ | ✅ | ✅ |
+| **Lihat Feed Publik & Search** | ✅ (Sort Default: Terbaru) | ✅ (Sort Default: Most Liked) | ✅ |
 | **Dukungan "Saya Juga Mengalami"** | ✅ | ✅ | ✅ |
-| **Klaim Tiket Mandiri (Auto-Claim)** | ❌ | ✅ (Linear Queue) | ❌ |
-| **Ubah Status Aduan** | ❌ | ✅ (Baru → Diproses → Selesai/Ditutup) | ❌ |
-| **Monitoring Dashboard & Stats** | ❌ | ❌ | ✅ (Pure Monitoring) |
-| **Manajemen Akun (User/Agen)** | ❌ | ❌ | ✅ |
-| **Soft Delete & Trash (Restore)** | ❌ | ❌ | ✅ |
-| **Penugasan Agen Manual / Prioritas Manual** | ❌ (Dihapus) | ❌ (Dihapus) | ❌ (Dihapus) |
+| **Buat Aduan Publik (+1 Foto)** | ✅ | ❌ | ✅ |
+| **Linear Auto-Claim Tiket** | ❌ | ✅ (First-Come-First-Served) | ❌ |
+| **Pembaruan Status Penanganan** | ❌ | ✅ (`Baru` → `Diproses` → `Selesai`/`Ditutup`) | ❌ |
+| **Komentar pada Thread Aduan** | ✅ | ✅ | ✅ |
+| **Pure Monitoring & Statistik** | ❌ | ❌ | ✅ |
+| **Soft Delete & Kelola Kategori/Akun** | ❌ | ❌ | ✅ |
 
---------------------------------------------------------------------------------
+---
 
-#### 🗄️ Skema Database Utama (Exposed ORM / PostgreSQL)
+## 🗄️ Skema Room Database Lokal
+
 ```
-User
-├── id (PK, UUID/Int)
-├── name (String)
-├── email (String, UNIQUE)
-├── nim_nip (String, Nullable)   -- Identitas Sivitas Akademika
-├── password_hash (String)
-├── role (String)               -- PELAPOR | AGEN | ADMIN
-└── is_active (Boolean)         -- Status akun dari Admin
+UserEntity (tabel: "users")
+├── id: Long (PK, autoGenerate = true)
+├── name: String
+├── email: String (UNIQUE)
+├── nimNip: String?
+├── passwordHash: String
+├── role: String             -- PELAPOR | AGEN | ADMIN
+└── isActive: Boolean
 
-Category
-├── id (PK)
-└── name (String)               -- Teknologi & IT | Fasilitas Ruangan | Infrastruktur Umum
+CategoryEntity (tabel: "categories")
+├── id: Long (PK, autoGenerate = true)
+└── name: String             -- Teknologi & IT | Fasilitas Ruangan | Infrastruktur Umum
 
-Ticket
-├── id (PK)
-├── title (String)
-├── description (Text)
-├── category_id (FK → Category)
-├── location_building (String)  -- Gedung
-├── location_floor (String)     -- Lantai
-├── location_room (String)      -- Ruangan
-├── status (String)             -- BARU | DIPROSES | SELESAI | DITUTUP
-├── image_url (String, Nullable)-- 1 Foto Lampiran (JPG/PNG <= 5MB)
-├── reporter_id (FK → User)
-├── agent_id (FK → User, Nullable) -- Diisi saat Agen meng-claim
-├── created_at (Timestamp)
-├── updated_at (Timestamp)
-└── deleted_at (Timestamp, Nullable) -- Soft delete (Trash)
+TicketEntity (tabel: "tickets")
+├── id: Long (PK, autoGenerate = true)
+├── title: String
+├── description: String
+├── categoryId: Long (FK → categories.id)
+├── locationBuilding: String
+├── locationFloor: String
+├── locationRoom: String
+├── status: String           -- BARU | DIPROSES | SELESAI | DITUTUP
+├── imageUrl: String?        -- Path file lokal di filesDir (bukan URL remote)
+├── reporterId: Long (FK → users.id)
+├── agentId: Long? (FK → users.id)
+├── createdAt: Long
+├── updatedAt: Long
+└── deletedAt: Long?         -- Soft delete (Trash)
 
-TicketSupport (ticket_supports)  -- Dukungan "Saya Juga Mengalami" (Most Liked)
-├── id (PK)
-├── ticket_id (FK → Ticket)
-├── user_id (FK → User)
-├── created_at (Timestamp)
-└── UNIQUE (ticket_id, user_id)  -- 1 User = 1 Support (Toggle)
+TicketSupportEntity (tabel: "ticket_supports")
+├── id: Long (PK, autoGenerate = true)
+├── ticketId: Long (FK → tickets.id)
+├── userId: Long (FK → users.id)
+└── UNIQUE(ticketId, userId) -- 1 user = 1 dukungan (Toggle)
 
-Comment
-├── id (PK)
-├── ticket_id (FK → Ticket)
-├── user_id (FK → User)
-├── content (Text)
-└── created_at (Timestamp)
+CommentEntity (tabel: "comments")
+├── id: Long (PK, autoGenerate = true)
+├── ticketId: Long (FK → tickets.id)
+├── userId: Long (FK → users.id)
+├── content: String
+└── createdAt: Long
 ```
 
---------------------------------------------------------------------------------
+---
 
-#### ⚙️ Aturan Pengembangan Kode (Development Rules)
+## ⚙️ Aturan Pengembangan Kode (Development Rules)
 
-##### General Rules
-1. **Bahasa Kode**: Seluruh kode, DTO, nama variabel, komentar, dan commit message ditulis dalam **Bahasa Inggris**.
-2. **Bahasa UI**: Seluruh teks antarmuka pengguna pada Android App ditulis dalam **Bahasa Indonesia**.
-3. **No External Identity Provider**: Autentikasi dikelola oleh Ktor backend sendiri menggunakan JWT.
-4. **Source of Truth Alignment**: Semua penambahan fitur harus mengacu pada kelima dokumen utama (`README`, `FEATURES`, `APP_FLOW`, `ARCHITECTURE`, `DESIGN`).
+### 1. General Rules
+* **Bahasa Kode**: Seluruh nama variabel, fungsi, class, entity, DAO, dan commit message wajib menggunakan **Bahasa Inggris**.
+* **Bahasa Antarmuka (UI)**: Seluruh label tombol, placeholder, judul layar, teks pesan, dan dialog wajib menggunakan **Bahasa Indonesia**.
+* **Offline-First & Standalone**: Semua data disimpan di Room Database lokal dan sesi disimpan di DataStore Preferences. Tidak ada jaringan backend eksternal (no REST API / Ktor).
 
-##### Android (Jetpack Compose) Rules
-1. **MVVM + UDF**: Komponen UI harus *stateless*. State dikelola di ViewModel menggunakan `StateFlow<UiState>`.
-2. **Type-Safe Navigation**: Gunakan route object bertipe (@Serializable) dengan Compose Navigation.
-3. **BottomNavigation per Role**:
-   * **Pelapor**: Feed, Buat Aduan, Profil.
-   * **Agen**: Feed, Profil.
-   * **Admin**: Feed, Buat Aduan, Monitoring, Profil.
-   * *Catatan*: Layar "Aduan Saya" diakses dari dalam layar Profil, bukan sebagai tab navigasi utama.
-4. **Urutan Feed Aduan**: Aduan aktif (`BARU`, `DIPROSES`) berada di atas (diurutkan berdasarkan *Most Liked* / *Terbaru*). Aduan selesai (`SELESAI`, `DITUTUP`) **selalu berada di blok paling bawah** dengan **Badge Centang Hijau (`✓ Selesai`)**.
-5. **Feedback UI**: Gunakan **Material 3 Snackbar / Toast** untuk memberikan feedback sukses/gagal. Jangan gunakan/meminta Push Notification atau Email.
+### 2. UI / Jetpack Compose Rules
+* **State Hoisting & UDF**: UI Composable harus *stateless*. Seluruh state dikelola ViewModel dan di-expose menggunakan `StateFlow<UiState<T>>`.
+* **Design Tokens M3**: Wajib memanfaatkan token M3 yang telah didefinisikan di `Theme.kt` dan `Color.kt`. Hindari *hardcoded colors*.
+* **Bottom Navigation**:
+  * Pelapor: Feed, Buat Aduan, Profil.
+  * Agen: Feed, Profil.
+  * Admin: Feed, Buat Aduan, Monitoring, Profil.
+  * *Catatan*: Layar **"Aduan Saya"** dibuka dari dalam layar Profil, bukan sebagai tab navigasi utama tersendiri.
+* **Urutan Feed**: Aduan aktif (`BARU`, `DIPROSES`) tampil di posisi atas. Aduan yang sudah `SELESAI` / `DITUTUP` **wajib selalu berada di blok paling bawah feed** dan diberi indikator **Badge Centang Hijau (`✓ Selesai`)**.
+* **Feedback Pengguna**: Gunakan **Snackbar M3** atau **Toast**. Dilarang mengimplementasikan atau mensyaratkan Push Notification / Email.
 
-##### Backend (Ktor) Rules
-1. **Clean Layered Architecture**: `Route` → `Service` → `Repository`.
-2. **Linear Queue Atomicity**: Saat agen meng-claim tiket (`POST /api/tickets/{id}/claim`), Service harus mengunci tiket secara atomik (`status = 'BARU' AND agent_id IS NULL`). Jika sudah di-claim agen lain, kembalikan **HTTP 409 Conflict**.
-3. **No Admin Assignment**: Admin TIDAK memunculkan tombol/fitur untuk menugaskan agen ke tiket. Penanganan tiket MURNI diklaim oleh agen (*first-come-first-served*).
-4. **Validation**: Lampiran foto divalidasi server (MIME: `image/jpeg`, `image/png`, ukuran maks 5MB). Simpan ke `/uploads/tickets/{id}/` dan set kolom `image_url`.
-5. **Polling Support**: Sediakan query parameter pencarian, filter status/kategori, serta pagination untuk mendukung polling coroutines dari Android client.
+### 3. Data & Storage Rules
+* **Query Reaktif**: Gunakan Kotlin `Flow<List<Ticket>>` pada DAO agar UI otomatis ter-update saat data Room berubah.
+* **Penyimpanan Foto**: Simpan file foto langsung ke direktori privat aplikasi menggunakan `context.filesDir.resolve("ticket_photos/{id}.jpg")`. Simpan path string-nya ke kolom `imageUrl` di `TicketEntity`.
 
---------------------------------------------------------------------------------
+---
 
-#### 🚫 Dilarang keras (Anti-Patterns)
-1. **JANGAN** menambah kolom `priority` manual (`LOW`/`MEDIUM`/`HIGH`) pada tabel `Ticket` — tingkat urgensi murni dihitung dari jumlah akumulasi dukungan `TicketSupport` (*Most Liked*).
-2. **JANGAN** membuat fitur penugasan agen manual oleh Admin — Agen mengambil tiket secara mandiri (*Auto-Claim / Linear Queue*).
-3. **JANGAN** menggunakan WebSocket, Livewire, atau Laravel — pembaruan *realtime* menggunakan polling Coroutines 5 detik.
-4. **JANGAN** membuat tabel `Attachment` terpisah dengan multi-file/PDF/DOC/ZIP — lampiran dibatasi 1 foto (`image_url`) per tiket.
-5. **JANGAN** menambahkan fitur Email Notification, Push Notification, atau SLA Tracker — di luar scope sistem MVP.
-6. **JANGAN** meletakkan menu "Aduan Saya" sebagai tab Bottom Navigation utama.
-7. **JANGAN** menampilkan aduan yang sudah `SELESAI` / `DITUTUP` di atas aduan yang sedang `BARU` / `DIPROSES` pada feed utama.
+## 🚫 Batasan Mutlak & Larangan Keras (Anti-Patterns)
+
+1. **JANGAN membuat backend service terpisah** (Ktor, PostgreSQL, Laravel, Express, dsb.) atau menambahkan dependensi Retrofit/OkHttp untuk jaringan — proyek ini adalah aplikasi **Android Standalone lokal**.
+2. **JANGAN menambahkan kolom manual priority** (`LOW`/`MEDIUM`/`HIGH`) pada tiket — tingkat urgensi murni ditentukan otomatis oleh jumlah dukungan civitas akademika (*Most Liked*).
+3. **JANGAN membuat fitur penugasan tiket manual oleh Admin** — Agen mengambil tiket secara mandiri (*Linear Auto-Claim / First-Come-First-Served*).
+4. **JANGAN membuat fitur upload multi-file atau format dokumen** (PDF, DOCX, ZIP) — lampiran dibatasi maksimal **1 foto** (JPG/PNG, ukuran maks. 5MB).
+5. **JANGAN menambahkan modul Notifikasi Email, Push Notifications (FCM), atau SLA Tracker** — di luar cakupan sistem MVP.
+6. **JANGAN menempatkan menu "Aduan Saya" sebagai item Bottom Navigation utama** — harus diakses melalui layar Profil pengguna.
+7. **JANGAN menampilkan tiket yang berstatus `SELESAI` / `DITUTUP` bercampur acak di atas tiket aktif** — tiket selesai selalu dikelompokkan di bagian terbawah feed.

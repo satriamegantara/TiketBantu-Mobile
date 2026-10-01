@@ -216,7 +216,7 @@ Font Utama: **Roboto** / **Plus Jakarta Sans** (Primary UI) dan **JetBrains Mono
 
 ##### D. Feedback UI (Pengganti Notifikasi)
 * **Snackbar M3**: Tampil di bagian bawah layar di atas Bottom Navigation untuk konfirmasi aksi (contoh: *"Aduan berhasil dibuat"*, *"Status berhasil diperbarui"*, *"Dukungan ditambahkan"*).
-* **Toast**: Untuk pesan singkat error sistem (contoh: *"Koneksi terputus, memperbarui data..."*).
+* **Toast**: Untuk pesan singkat error atau peringatan sistem (contoh: *"Gagal memuat data lokal"*, *"Format file tidak valid"*).
 
 ---
 

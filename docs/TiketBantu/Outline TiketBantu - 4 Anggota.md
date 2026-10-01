@@ -1,57 +1,205 @@
-##  Job‑Description Break‑down – Anggota 1  (Pancar – Arsitektur MVVM, Navigation Graph & State Engine)
+# 📋 Outline Pengembangan TiketBantu Mobile (Tim 4 Anggota)
 
-| No.   | Area                                   | Sub‑task                                                                                                                                                                                                                                                                                         | Tujuan / Deliverable                                                                                                  | Contoh File yang Terlibat                                                                                                                                     |
-| ----- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1** | **Inisialisasi Project Structure**     | • Buat modul‑modul terpisah (`:app`, `:core`, `:domain`, `:data`)  <br>• Setup package hierarchy: `ui`, `navigation`, `viewmodel`, `state`, `di`                                                                                                                                                 | Memastikan kode ter‑organisir, mudah di‑scale, dan mengikuti prinsip Clean‑Architecture.                              | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/kotlin.svg)<br><br>`settings.gradle.kts`     |
-| **2** | **Arsitektur MVVM**                    | • Definisikan **BaseViewModel** yang meng‑extend `ViewModel` dan meng‑handle `CoroutineScope`.  <br>• Buat **BaseRepository** (interface) + **FakeRepository** untuk data mock.  <br>• Tentukan contract **UseCase** (interactor) yang dipanggil ViewModel.                                      | Menyediakan pola pemisahan **UI ↔ Business Logic ↔ Data** yang konsisten di seluruh fitur.                            | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/kotlin.svg)<br><br>`BaseViewModel.kt`        |
-| **3** | **Navigation Graph**                   | • Implementasikan **NavHost** di `MainActivity`.  <br>• Buat file **NavGraph.kt** dengan semua `composable` routes (Home, Feed, Detail, Form, Profile, dll.).  <br>• Definisikan **SafeArgs** (argument classes) untuk tiap destination.  <br>• Tambahkan **deep‑link** support bila diperlukan. | Mengatur alur layar secara deklaratif, memudahkan navigasi ter‑type‑safe dan modular.                                 | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/kotlin.svg)<br><br>`NavGraph.kt`             |
-| **4** | **State Engine** (State‑Management)    | • Buat **UiState** sealed class (`Loading`, `Success<T>`, `Error`).  <br>• Implementasikan **MutableStateFlow** / **StateFlow** di setiap ViewModel.  <br>• Buat **SharedStateHolder** (mis. `AppState`) untuk data yang dipakai lintas screen (user session, token, role).                      | Menyediakan satu sumber kebenaran untuk UI, mengurangi bug _state‑leak_ dan mempermudah testing.                      | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/kotlin.svg)<br><br>`UiState.kt`              |
-| **5** | **Dependency Injection (lightweight)** | • Pilih **Koin** atau **Hilt** (pilihan ringan karena tidak ada backend).  <br>• Registrasi modul: `viewModelModule`, `repositoryModule`, `navModule`.                                                                                                                                           | Memudahkan penggantian implementasi (mis. Fake → Real) tanpa mengubah kode klien.                                     | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/kotlin.svg)<br><br>`AppModule.kt`            |
-| **6** | **Dokumentasi Arsitektural**           | • Buat **README‑Architecture.md** yang menjelaskan diagram MVVM, alur navigation, dan contoh penggunaan StateFlow.  <br>• Sertakan **Mermaid diagram** untuk visualisasi.                                                                                                                        | Memastikan semua anggota tim memahami fondasi teknis dan dapat mengikuti standar.                                     | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/markdown.svg)<br><br>`docs/Architecture.md`  |
-| **7** | **Code Review & Guardrails**           | • Set standar linting (detekt) & format (ktfmt).  <br>• Review pull request untuk setiap modul UI/Feature, pastikan patuhi **BaseViewModel**, **UiState**, dan **NavGraph**.                                                                                                                     | Menjaga kualitas kode, mencegah _technical debt_ pada fase awal.                                                      | N/A (proses di Git Hub/Bitbucket)                                                                                                                             |
-| **8** | **CI Setup (opsional)**                | • Configure **GitHub Actions** untuk menjalankan lint, unit‑test, dan UI‑test pada setiap push.                                                                                                                                                                                                  | Memastikan build selalu dalam keadaan _green_ dan memudahkan integrasi tim.                                           | ![](vscode-file://vscode-app/d:/Capture/Antigravity%20IDE/resources/app/extensions/theme-symbols/src/icons/files/yaml.svg)<br><br>`./github/workflows/ci.yml` |
-| **9** | **On‑boarding tim**                    | • Buat **template** untuk feature branch (`feature/<nama-fitur>`).  <br>• Sediakan contoh `ViewModel` dan `Composable` yang sudah ter‑hook ke navigation & state.                                                                                                                                | Mempercepat ramp‑up anggota 3 & 4 sehingga mereka dapat langsung meng‑implementasi UI tanpa harus menebak arsitektur. | N/A (panduan internal)                                                                                                                                        |
-##  Job‑Description Break‑down – Anggota 2 (UI/UX Designer)
+Dokumen ini memuat pembagian tugas (*Job Description*), *Timeline* pengembangan, dan *Flowchart* teknis kerja untuk masing-masing dari 4 anggota tim pengembang aplikasi **TiketBantu Mobile**.
 
-| No.   | Fokus Kerja                               | Sub‑task Rinci                                                                                                                                                                                                                                                                                      | Tujuan / Deliverable                                                                                                            | Contoh File / Folder                                                  |
-| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| **1** | **Design System (M3)**                    | • Definisikan **color palette**, **typography**, **shape** (rounded‑corner, elevation)  <br>• Buat **Material 3 token** file (`ThemeTokens.kt`)  <br>• Tetapkan **spacing & sizing** (8dp grid)                                                                                                     | • Satu set token yang dapat di‑import oleh semua modul UI  <br>• Dokumentasi singkat untuk developer                            | `app/src/main/java/com/example/tiketbantu/ui/theme/ThemeTokens.kt`    |
-| **2** | **Reusable UI Components**                | • Rancang **Composable** komponen:  <br>   - `AppButton` (primary, secondary)  <br>   - `AppTextField` (outlined, password)  <br>   - `AppCard` (elevated, clickable)  <br>   - `AppTopBar` (with back‑arrow & title)  <br>• Buat **preview** (`@Preview`) untuk tiap komponen                      | • Library komponen yang konsisten & theme‑aware  <br>• Contoh penggunaan di README                                              | `app/src/main/java/com/example/tiketbantu/ui/components/*.kt`         |
-| **3** | **Icon & Asset Library**                  | • Pilih **Material Icons** (or custom SVG) untuk – Home, Feed, Like, Submit, Profile, Logout  <br>• Konversi ke **VectorDrawable** dan letakkan di `res/drawable`  <br>• Buat **icon‑usage guide** (size, tint)                                                                                     | • Semua ikon tersedia dalam format scalable  <br>• Panduan penggunaan untuk developer                                           | `app/src/main/res/drawable/*`                                         |
-| **4** | **Screen Wireframes & Mockups**           | • Buat **low‑fi wireframe** (sketch) untuk tiap screen:  <br>   - Home / Dashboard  <br>   - Feed Aduan  <br>   - Detail Tiket  <br>   - Form Buat Aduan  <br>   - Form Klaim Agen  <br>   - Profil  <br>• Sempurnakan menjadi **high‑fi mockup** (Figma/Adobe XD) dengan brand colors dan token M3 | • Dokumen visual yang menjadi acuan UI dev (Developer hand‑off)  <br>• Link ke file Figma dalam repo (`docs/DesignMockups.fig`) | `docs/Mockups/`                                                       |
-| **5** | **Interaction Design (Micro‑animations)** | • Definisikan **transition spec** untuk:  <br>   - Navigation fade/slide  <br>   - Like button ripple  <br>   - Form field focus  <br>   - Snackbar / Toast  <br>• Implementasi **animation utils** (`AnimatedVisibility`, `animate*AsState`)                                                       | • Konsistensi animasi di seluruh aplikasi  <br>• Kode utils yang dapat dipakai kembali                                          | `app/src/main/java/com/example/tiketbantu/ui/animation/Animations.kt` |
-| **6** | **Responsive Layout & Accessibility**     | • Pastikan semua layout **responsive** pada phone “normal” (360‑720dp) dan tablet (720‑960dp)  <br>• Tambahkan **contentDescription** untuk semua elemen visual  <br>• Uji **contrast** warna (WCAG AA)                                                                                             | • UI yang dapat diakses & skalabel  <br>• Laporan audit aksesibilitas (PDF)                                                     | `app/src/main/res/values/strings.xml` (descriptions)                  |
-| **7** | **Design Documentation**                  | • Tulis **Design System Guide** (Markdown) yang meliputi:  <br>   - Palet warna, tipografi, elevasi  <br>   - Component usage & API (parameter list)  <br>   - Animation specs  <br>   - Accessibility checklist  <br>• Sertakan **Mermaid diagram** untuk hierarchical component tree              | • Dokumen yang mudah di‑referensi tim (di folder `docs/`)                                                                       | `docs/DesignSystem.md`                                                |
-| **8** | **Collaboration & Handoff**               | • Export **Figma prototype** ke PDF & embed di repo  <br>• Gunakan **GitHub Pull Request** untuk review desain dengan Lead (Anggota 1)  <br>• Update **Jira/Trello** card dengan “Design ready” status                                                                                              | • Desain ter‑verifikasi sebelum dev mulai coding  <br>• Jejak perubahan desain yang dapat dilacak                               | N/A (workflow)                                                        |
-| **9** | **Quality Assurance**                     | • Lakukan **design sanity check** pada implementasi UI (pixel‑perfect)  <br>• Buat **screenshot test suite** (e.g., Paparazzi) untuk komponen utama                                                                                                                                                 | • Validasi bahwa UI di‑app sesuai dengan mockup  <br>• Feedback cepat bila ada drift                                            | `app/src/test/screenshots/...`                                        |
-## Job‑Description Break‑down – Anggota 3 (Satria – Feature Engineer)
+Aplikasi dibangun berbasis **Android Native (Jetpack Compose)** dengan arsitektur **MVVM + Unidirectional Data Flow (UDF)**, persistensi lokal **Room Database**, manajemen sesi **DataStore Preferences**, serta desain **Material Design 3 (M3) Adaptive Design** tanpa backend eksternal (Standalone).
 
-| No.    | Fokus Kerja                          | Sub‑task Rinci                                                                                                                                                                                                                              | Tujuan / Deliverable                                                                             | Contoh File / Folder                                                    |
-| ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| **1**  | **Domain & Data Model**              | • Definisikan **Ticket** data class (id, title, description, status, author, createdAt, likedBy, …).  <br>• Buat **User** model (id, name, role, avatar).  <br>• Simulasikan **seed‑data** di `assets/tickets.json`.                        | • Model yang konsisten untuk seluruh fitur.  <br>• Data mock yang dapat dipakai oleh repository. | `app/src/main/java/com/example/tiketbantu/domain/model/Ticket.kt`       |
-| **2**  | **Repository – Fake Implementation** | • Implementasikan `TicketRepository` interface (CRUD‑like).  <br>• `FakeTicketRepository` membaca/menulis ke `MutableStateFlow<List<Ticket>>`.  <br>• Tambahkan **Like** operation (`toggleLike(userId)`).                                  | • Backend‑like layer yang dapat diganti dengan real API di masa depan.                           | `app/src/main/java/com/example/tiketbantu/data/FakeTicketRepository.kt` |
-| **3**  | **Use‑Cases / Interactors**          | • `GetFeedUseCase` → mengembalikan **StateFlow<List>**.  <br>• `GetTicketDetailUseCase(ticketId)` → **StateFlow<Ticket?>**.  <br>• `ToggleLikeUseCase(ticketId, userId)` → memperbarui state.                                               | • Logika bisnis ter‑isolasi dari UI.                                                             | `app/src/main/java/com/example/tiketbantu/domain/usecase/*UseCase.kt`   |
-| **4**  | **ViewModel – Feed**                 | • `FeedViewModel` : expose `feedState: StateFlow<UiState<List<Ticket>>>`.  <br>• Menangani **pull‑to‑refresh**, **pagination (optional)**, dan **error handling**.                                                                          | • UI dapat meng‑observe data secara reactive.                                                    | `app/src/main/java/com/example/tiketbantu/ui/feed/FeedViewModel.kt`     |
-| **5**  | **Composable – Feed Screen**         | • `FeedScreen` (LazyColumn) menampilkan list item `TicketItem`.  <br>• Integrasi **AppButton**, **AppCard**, **AppTopBar** dari Design System.  <br>• Swipe‑to‑refresh & _infinite scroll_ skeleton.                                        | • Tampilan utama yang men‑list semua aduan.                                                      | `app/src/main/java/com/example/tiketbantu/ui/feed/FeedScreen.kt`        |
-| **6**  | **Like Feature**                     | • Tambahkan **IconButton** pada `TicketItem` yang memanggil `viewModel.toggleLike(ticket.id)`.  <br>• Animasi _scale_ + heart‑fill change (menggunakan `AnimatedVisibility`/`animateColorAsState`).                                         | • Interaksi “Like” yang persisten di session mock.                                               | `app/src/main/java/com/example/tiketbantu/ui/feed/TicketItem.kt`        |
-| **7**  | **ViewModel – Detail**               | • `DetailViewModel` expose `detailState: StateFlow<UiState<Ticket>>`.  <br>• Menyediakan **actions**: `like`, `claimAgent`, `openChat`.                                                                                                     | • Data detail yang dapat di‑observe serta aksi terkait.                                          | `app/src/main/java/com/example/tiketbantu/ui/detail/DetailViewModel.kt` |
-| **8**  | **Composable – Detail Screen**       | • `DetailScreen` menampilkan semua field ticket (title, description, status, likes, comments placeholder).  <br>• Tambahkan **BottomBar** dengan aksi “Klaim Agen” & “Buat Aduan”.                                                          | • UI lengkap untuk melihat dan berinteraksi dengan satu tiket.                                   | `app/src/main/java/com/example/tiketbantu/ui/detail/DetailScreen.kt`    |
-| **9**  | **Navigation Integration**           | • Tambahkan route **"feed"** → `FeedScreen` dan **"detail/{ticketId}"** → `DetailScreen` di `NavGraph.kt`.  <br>• Pastikan **safe args** (`ticketId: String`) dikirim dari `TicketItem` ke `DetailScreen`.                                  | • Alur navigasi end‑to‑end antara feed dan detail.                                               | `app/src/main/java/com/example/tiketbantu/navigation/NavGraph.kt`       |
-| **10** | **Testing (Unit + UI)**              | • Unit‑test untuk `FakeTicketRepository` (CRUD & like).  <br>• Unit‑test untuk setiap Use‑Case.  <br>• Compose UI‑test untuk `FeedScreen` (list renders, like toggles).                                                                     | • Jaminan kualitas logika dan UI.                                                                | `app/src/test/java/.../repository/FakeTicketRepositoryTest.kt`          |
-| **11** | **Documentation & Handoff**          | • Update **Feature Spec** (`docs/Feature_Feed_Detail.md`) yang berisi:  <br>   - Data model diagram  <br>   - Flowchart user story (feed → like → detail)  <br>   - API (mock) contract  <br>• Sertakan screenshot composable pada dokumen. | • Referensi jelas bagi QA & anggota lain.                                                        | `docs/Feature_Feed_Detail.md`                                           |
-| **12** | **Collaboration with Anggota 1 & 2** | • Konsultasi rutin dengan Lead (Arsitektur) untuk memastikan ViewModel/State mengikuti standar.  <br>• Minta komponen UI (Button, Card) dari Design System (Anggota 2) dan gunakan langsung.                                                | • Integrasi mulus tanpa konflik arsitektur atau desain.                                          | N/A (meeting/PR reviews)                                                |
-##  Job‑Description Break‑down – Anggota 4 (Feature Engineer)
+---
 
-|No.|Fokus Kerja|Sub‑task Rinci|Tujuan / Deliverable|Contoh File / Folder|
+## 👥 Struktur Tim & Pembagian Peran
+
+| No | Nama / Role | Fokus Utama | Tanggung Jawab Utama |
+|---|---|---|---|
+| **1** | **Pancar**<br>*(Lead Architect & Core Infrastructure)* | Arsitektur MVVM, Room DB, Navigation & DI | Fondasi arsitektur, setup Room SQLite, Type-Safe Navigation Graph, BaseViewModel/UiState, Dependency Injection, dan Code Review. |
+| **2** | **Anggota 2**<br>*(UI/UX Designer & Compose Specialist)* | Design System M3 & Reusable Components | Design Tokens (Color, Typography, Shape), Reusable UI Components, Badge Status (`✓ Selesai`), Micro-animations, dan layout adaptif 2-kolom. |
+| **3** | **Satria**<br>*(Feature Engineer — Feed, Interaction & Polling)* | Feed, Most Liked, Detail Tiket & Polling | Tampilan Feed Publik (`LazyColumn`), sistem *Most Liked* ("Saya Juga Mengalami"), Detail Aduan, Thread Komentar, Polling Coroutine, dan Linear Status Agen. |
+| **4** | **Anggota 4**<br>*(Feature Engineer — Auth, Form, Profile & Admin)* | Auth, Form Aduan, Profil & Admin Monitoring | Login & Register Multi-Role (3 Role), Sesi DataStore, Form Buat Aduan + 1 Lampiran Foto lokal, Layar Profil/Aduan Saya, dan Pure Monitoring Dashboard Admin. |
+
+---
+
+## 🗓️ Master Timeline Pengembangan (4 Minggu / 1 Bulan)
+
+```mermaid
+gantt
+    title Master Timeline Pengembangan TiketBantu Mobile
+    dateFormat  YYYY-MM-DD
+    section Minggu 1: Fondasi & Setup
+    Setup Project & Room DB (Pancar)        :a1, 2026-10-05, 7d
+    Design System & Token M3 (Anggota 2)    :a2, 2026-10-05, 7d
+    Domain Models & Seed Data (Satria)      :a3, 2026-10-07, 5d
+    Auth Flow & DataStore Setup (Anggota 4) :a4, 2026-10-07, 5d
+    section Minggu 2: Core Components & Screens
+    Type-Safe NavGraph & BaseVM (Pancar)    :b1, 2026-10-12, 7d
+    Reusable Compose Components (Anggota 2) :b2, 2026-10-12, 7d
+    FeedScreen & Infinite Scroll (Satria)   :b3, 2026-10-14, 5d
+    CreateTicketScreen & Photo (Anggota 4)  :b4, 2026-10-14, 5d
+    section Minggu 3: Integrasi Fitur & Interaksi
+    DI Hilt/Koin & DB Repositories (Pancar) :c1, 2026-10-19, 7d
+    Layout Adaptif 2-Kolom (Anggota 2)      :c2, 2026-10-19, 7d
+    DetailScreen, Like & Polling (Satria)   :c3, 2026-10-19, 7d
+    Claim Task & Profile/Admin (Anggota 4)  :c4, 2026-10-19, 7d
+    section Minggu 4: Polishing, Testing & QA
+    Code Review & Unit Testing (Pancar)     :d1, 2026-10-26, 7d
+    UI Sanity Check & Accessibility (Anggota 2):d2, 2026-10-26, 7d
+    Bug Fixing & Performance Feed (Satria)  :d3, 2026-10-26, 7d
+    Admin Stats Verification & Demo (Anggota 4):d4, 2026-10-26, 7d
+```
+
+---
+
+## 📌 Rincian Job Description, Timeline & Flowchart Tiap Anggota
+
+```
+================================================================================
+ANGGOTA 1: PANCAR (Lead Architect & Core Infrastructure)
+================================================================================
+```
+
+### 1. Job Description — Anggota 1 (Pancar)
+
+| No | Fokus Kerja | Rincian Tugas | Deliverable & Output | Target Waktu |
 |---|---|---|---|---|
-|**1**|**Form Buat Aduan**|• Definisikan **CreateTicketRequest** data class (title, description, kategori, foto optional).  <br>• Implementasikan **CreateTicketUseCase** yang menyimpan tiket baru ke `FakeTicketRepository`.  <br>• Buat **CreateTicketViewModel** (exposes `UiState<CreateResult>` & `submitTicket()` ).|Form yang dapat men‑create ticket secara mock dan meng‑update feed.|`app/src/main/java/com/example/tiketbantu/domain/model/CreateTicketRequest.kt`|
-|**2**|**Composable – CreateTicketScreen**|• UI dengan **AppTopBar**, **AppTextField**, **DropdownMenu** (kategori), **ImagePicker** (optional).  <br>• Validasi inline (required fields).  <br>• Button “Kirim” yang memanggil `viewModel.submitTicket()`.  <br>• Tampilkan **Snackbar** dengan hasil (success / error).|Layar form yang lengkap, mudah dipakai, dan ter‑integrasi dengan state engine.|`app/src/main/java/com/example/tiketbantu/ui/create/CreateTicketScreen.kt`|
-|**3**|**Alur Klaim Agen**|• Tambahkan properti **assignedAgentId** pada `Ticket`.  <br>• Buat **ClaimAgentUseCase(ticketId, agentId)** yang men‑set field tersebut.  <br>• `ClaimAgentViewModel` dengan `claim()` dan `UiState` untuk loading / result.|Memungkinkan user (role Agent) men‑klaim tiket untuk ditangani.|`app/src/main/java/com/example/tiketbantu/domain/usecase/ClaimAgentUseCase.kt`|
-|**4**|**Composable – ClaimAgentDialog**|• Dialog modal yang men‑show agen‑available (list static atau mock).  <br>• Pilih agen → panggil `viewModel.claim(agentId)`.  <br>• Animasi muncul/menutup (fade‑scale).|UI interaktif untuk proses klaim.|`app/src/main/java/com/example/tiketbantu/ui/claim/ClaimAgentDialog.kt`|
-|**5**|**Profil & Auth‑State**|• Extend **User** model dengan fields: `name`, `email`, `avatarUrl`, `role` (User / Agent).  <br>• Buat **ProfileViewModel** yang membaca data dari `DataStore` (mock login).  <br>• `ProfileScreen` men‑display info, tombol **Logout** & **Edit Profile** (placeholder).|Halaman profil yang men‑show identitas & peran, serta meng‑handle logout.|`app/src/main/java/com/example/tiketbantu/ui/profile/ProfileScreen.kt`|
-|**6**|**Navigation Integration**|• Tambahkan route **"createTicket"** → `CreateTicketScreen`.  <br>• Tambahkan route **"profile"** → `ProfileScreen`.  <br>• Hubungkan dari **BottomNavigationBar** (dari Design System) sehingga user dapat berpindah ke ketiga fitur utama (Feed, Buat, Profil).|Alur navigasi lengkap untuk semua fitur yang dikerjakan.|`app/src/main/java/com/example/tiketbantu/navigation/NavGraph.kt`|
-|**7**|**State Persistence (Local)**|• Simpan **list tiket** dan **user session** ke **DataStore** (proto atau Preferences) sehingga data tidak hilang ketika app di‑restart.  <br>• Pada startup, `TicketRepository` memuat data dari DataStore → `MutableStateFlow`.|Data yang “persist” meskipun tidak ada backend.|`app/src/main/java/com/example/tiketbantu/data/LocalDataStore.kt`|
-|**8**|**Testing (Unit + UI)**|• Unit‑test untuk `CreateTicketUseCase`, `ClaimAgentUseCase`.  <br>• Compose UI‑test untuk `CreateTicketScreen` (field validation, submit success).  <br>• UI‑test untuk `ProfileScreen` (display user info, logout).|Jaminan kualitas masing‑masing fitur.|`app/src/test/java/.../CreateTicketUseCaseTest.kt`|
-|**9**|**Documentation & Handoff**|• Buat **Feature Spec** di `docs/Feature_Create_Claim_Profile.md` yang mencakup:  <br>   - User story & acceptance criteria  <br>   - Data model & API contract (mock)  <br>   - Wireframe / mockup (link ke Figma)  <br>   - Screenshots composable  <br>• Update **README** dengan instruksi cara menjalankan fitur (mis. `adb shell am start -n com.example.tiketbantu/.MainActivity`).|Dokumen yang dapat di‑referensi developer lain dan QA.|`docs/Feature_Create_Claim_Profile.md`|
-|**10**|**Collaboration & Review**|• Submit Pull Request ke **feature/create‑claim‑profile**.  <br>• Review dengan **Anggota 1** (pastikan ViewModel mengikuti standar BaseViewModel) dan **Anggota 2** (gunakan design token & component).  <br>• Perbaiki feedback dan merge ke `main`.|Kode ter‑audit, konsisten dengan arsitektur & UI design.|N/A (workflow)|
-|**11**|**Optional – File Upload (Foto Aduan)**|• Implementasikan **ImagePicker** menggunakan `ActivityResultContracts.GetContent`.  <br>• Simpan URI gambar di ticket model (`photoUri: String?`).  <br>• Tampilkan preview gambar di `CreateTicketScreen`.|Menambah nilai fungsionalitas bila waktu memungkinkan.|`app/src/main/java/com/example/tiketbantu/ui/create/ImagePicker.kt`|
+| **1.1** | **Project Setup & Architecture** | Inisialisasi struktur package (`data`, `domain`, `ui`, `navigation`, `di`), integrasi Gradle dependencies (Compose, Room, DataStore, Coroutines, Serialization). | Repositori bersih dan modular sesuai pola Clean MVVM. | Minggu 1 (Hari 1-3) |
+| **1.2** | **Room Database Infrastructure** | Konfigurasi `AppDatabase`, buat entitas tabel (`users`, `tickets`, `categories`, `ticket_supports`, `comments`), migration builder, dan database pre-population/seeder. | Database SQLite lokal siap pakai dengan mock awal data kampus. | Minggu 1 (Hari 4-7) |
+| **1.3** | **State Engine & Base ViewModel** | Membuat sealed interface `UiState<T>` (`Loading`, `Success<T>`, `Error`), `BaseViewModel` berbasis `StateFlow`, dan shared state holder untuk session. | Standar state management UDF yang seragam untuk developer lain. | Minggu 2 (Hari 8-10) |
+| **1.4** | **Type-Safe Navigation Graph** | Mengimplementasikan Jetpack Compose Navigation dengan `@Serializable` route destination (`Login`, `Register`, `Dashboard`, `CreateTicket`, `Detail/{id}`, `Profile`, `Monitoring`). | `NavGraph.kt` yang type-safe dan anti-crash antar-layar. | Minggu 2 (Hari 11-14) |
+| **1.5** | **Dependency Injection** | Setup module DI (Hilt atau Koin) untuk singleton Room Database, DAO injection, DataStore, dan ViewModel injection. | `AppModule.kt` yang mengotomatisasi injeksi dependency ke ViewModel. | Minggu 3 (Hari 15-18) |
+| **1.6** | **Code Review, Testing & Guardrails** | Review Pull Request, enforce standar kode, unit testing pada database DAO & Repository, serta persiapan rilis APK/AAB tugas akhir. | Kode bebas regresi dan siap didemonstrasikan. | Minggu 4 (Hari 22-28) |
+
+### 2. Flowchart Kerja — Anggota 1 (Pancar)
+
+```mermaid
+flowchart TD
+    Start1["Mulai: Inisialisasi Proyek"] --> PkgSetup["Setup Package & Gradle Dependencies"]
+    PkgSetup --> SetupRoom["Rancang AppDatabase, Entities & DAOs"]
+    SetupRoom --> Prepop["Implementasi Room DB Callback (Prepopulate Seeder)"]
+    Prepop --> BaseArch["Buat BaseViewModel & UiState<T>"]
+    BaseArch --> NavSetup["Rancang Type-Safe Navigation Graph"]
+    NavSetup --> DISetup["Konfigurasi Dependency Injection (AppModule)"]
+    DISetup --> ReviewMerge["Code Review PR Anggota 2, 3, & 4"]
+    ReviewMerge --> UnitTesting["Jalankan Unit Test DAO & Arsitektur"]
+    UnitTesting --> Done1["Selesai: Fondasi Siap & Stabil"]
+```
+
+---
+
+```
+================================================================================
+ANGGOTA 2: ANGGOTA 2 (UI/UX Designer & Compose Design System Specialist)
+================================================================================
+```
+
+### 1. Job Description — Anggota 2
+
+| No | Fokus Kerja | Rincian Tugas | Deliverable & Output | Target Waktu |
+|---|---|---|---|---|
+| **2.1** | **Design System M3 & Tokens** | Menentukan Color Palette M3 (*Cobalt Blue*, *Cyan*, *Emerald Green* untuk selesai), tipografi Roboto/Plus Jakarta Sans, Spacing scale (4/8dp grid), dan Shape tokens. | `Color.kt`, `Type.kt`, `Shape.kt`, `Theme.kt` di package `ui/theme/`. | Minggu 1 (Hari 1-4) |
+| **2.2** | **Wireframe & Component Specs** | Menyusun visual wireframe & spesifikasi komponen di Figma/Dokumen (`DESIGN_TiketBantu.md`) untuk handoff ke tim developer. | Spesifikasi visual antarmuka dan preview komponen. | Minggu 1 (Hari 5-7) |
+| **2.3** | **Reusable Core UI Components** | Mengembangkan komponen Compose umum: `AppButton`, `AppTextField`, `AppTopBar`, `BottomNavigationBar` adaptif per Role, dialog konfirmasi. | File Composable di package `ui/components/` lengkap dengan `@Preview`. | Minggu 2 (Hari 8-11) |
+| **2.4** | **Specialized TiketBantu Components** | Membuat komponen khas: `TicketCard`, `StatusBadge` (dengan tanda khusus `✓ Selesai`), `MostLikedButton` ("Saya Juga Mengalami" toggle & counter). | Komponen siap pakai untuk Feed dan Detail Screen. | Minggu 2 (Hari 12-14) |
+| **2.5** | **Micro-animations & Transitions** | Menambahkan transisi navigasi (*fade/slide*), ripple effect pada tombol like/dukungan, dan skeleton loading state (`ShimmerEffect`). | Interaksi UI terasa halus, modern, dan responsif. | Minggu 3 (Hari 15-18) |
+| **2.6** | **Adaptive 2-Column Layout** | Mengimplementasikan layout adaptif: 1 kolom untuk ponsel (<600dp) dan 2 kolom (*Feed List + Sidebar Filter/Stats*) untuk tablet (≥600dp). | Tampilan responsif optimal di semua ukuran layar Android. | Minggu 3 (Hari 19-21) |
+| **2.7** | **UI Quality Assurance & Accessibility** | Cek kontras warna (WCAG AA), kelayakan touch target minimal 48dp, audit `contentDescription` untuk TalkBack, dan pixel-perfect check. | Laporan audit visual dan perbaikan UI final. | Minggu 4 (Hari 22-28) |
+
+### 2. Flowchart Kerja — Anggota 2
+
+```mermaid
+flowchart TD
+    Start2["Mulai: Rancang UI/UX"] --> ThemeTokens["Definisikan Palet M3 & Typography"]
+    ThemeTokens --> Mockup["Buat Wireframe & Mockup Layar Utama"]
+    Mockup --> CoreComp["Koding Reusable Components (Button, Field, Bar)"]
+    CoreComp --> CustomComp["Koding TicketCard, StatusBadge (✓), MostLikedBtn"]
+    CustomComp --> Adaptive["Terapkan Responsive Layout (Compact & 2-Kolom Tablet)"]
+    Adaptive --> Motion["Tambahkan Shimmer Loading & Micro-animations"]
+    Motion --> UIAudit["Audit Aksesibilitas (Touch Target 48dp, Kontras M3)"]
+    UIAudit --> Done2["Selesai: UI/UX Siap & Konsisten"]
+```
+
+---
+
+```
+================================================================================
+ANGGOTA 3: SATRIA (Feature Engineer — Feed, Interaction & Polling)
+================================================================================
+```
+
+### 1. Job Description — Anggota 3 (Satria)
+
+| No | Fokus Kerja | Rincian Tugas | Deliverable & Output | Target Waktu |
+|---|---|---|---|---|
+| **3.1** | **Repository & DAO Binding** | Menyusun `TicketRepository` dan `TicketDao` untuk query tiket: sorting `most_liked` vs `terbaru`, filter kategori/status, dan pencarian teks. | Layer data query tiket Room yang reaktif berbasis `Flow`. | Minggu 1 (Hari 3-7) |
+| **3.2** | **Feed Screen (`LazyColumn`)** | Membuat `FeedViewModel` dan `FeedScreen` dengan `LazyColumn`, pull-to-refresh, pencarian terintegrasi, dan pemisahan tiket `Selesai` ke blok bawah. | Layar utama feed aduan publik dengan infinite scroll. | Minggu 2 (Hari 8-11) |
+| **3.3** | **Sistem Dukungan Most Liked** | Menghubungkan tombol "Saya Juga Mengalami" dengan tabel `ticket_supports`: toggle dukungan satu-klik per user, increment counter, dan re-sort instan. | Fungsionalitas akumulasi urgensi publik tanpa prioritas manual. | Minggu 2 (Hari 12-14) |
+| **3.4** | **Ticket Detail Screen** | Mengembangkan `TicketDetailViewModel` dan `TicketDetailScreen`: info komprehensif aduan, riwayat status, foto bukti terlampir, dan identitas pelapor. | Layar detail tiket yang bersih dan informatif. | Minggu 3 (Hari 15-17) |
+| **3.5** | **Thread Komentar & Polling Engine** | Menampilkan daftar komentar aduan, form kirim komentar lokal, serta simulasi update real-time menggunakan Kotlin Coroutines `LaunchedEffect` (polling per 5 detik). | Thread komentar interaktif yang otomatis ter-refresh. | Minggu 3 (Hari 18-21) |
+| **3.6** | **Linear Status Update Agen** | Menambahkan aksi pembaruan status (`Diproses` → `Selesai` / `Ditutup`) khusus untuk akun Agen pada halaman detail tiket. | Alur penanganan aduan linier yang terkunci setelah selesai. | Minggu 3 (Hari 20-21) |
+| **3.7** | **Optimasi Feed & Testing** | Profiling performa rendering `LazyColumn`, testing konkurensi dukungan ganda, serta integrasi feedback Snackbar/Toast. | Modul feed & detail stabil tanpa lag atau jank. | Minggu 4 (Hari 22-28) |
+
+### 2. Flowchart Kerja — Anggota 3 (Satria)
+
+```mermaid
+flowchart TD
+    Start3["Mulai: Pengembangan Feed & Interaksi"] --> RepoSetup["Setup TicketRepository & Query DAO"]
+    RepoSetup --> FeedUI["Bangun FeedScreen (LazyColumn + Search + Filter)"]
+    FeedUI --> MostLiked["Integrasikan Fitur Toggle 'Saya Juga Mengalami'"]
+    MostLiked --> RuleSelesai["Implementasikan Aturan: Tiket Selesai di Posisi Bawah"]
+    RuleSelesai --> DetailUI["Bangun TicketDetailScreen & Preview Foto"]
+    DetailUI --> CommentThread["Buat Thread Komentar & Input Pesan"]
+    CommentThread --> Polling["Pasang Polling Engine Coroutines (delay 5s)"]
+    Polling --> StatusChange["Pasang Fitur Update Status Agen (Baru->Diproses->Selesai)"]
+    StatusChange --> Done3["Selesai: Feed, Detail & Polling Berfungsi Penuh"]
+```
+
+---
+
+```
+================================================================================
+ANGGOTA 4: ANGGOTA 4 (Feature Engineer — Auth, Form, Profile & Admin)
+================================================================================
+```
+
+### 1. Job Description — Anggota 4
+
+| No | Fokus Kerja | Rincian Tugas | Deliverable & Output | Target Waktu |
+|---|---|---|---|---|
+| **4.1** | **Autentikasi Multi-Role & DataStore** | Membangun `AuthRepository` menggunakan `DataStore Preferences`: simpan token sesi lokal, simpan data user aktif, dan logika login 3 role (Pelapor, Agen, Admin). | Sesi login tersimpan permanen saat aplikasi ditutup/dibuka. | Minggu 1 (Hari 3-7) |
+| **4.2** | **Login & Register Screen** | Membuat `LoginScreen` dan `RegisterScreen`: validasi field formulir (NIM/NIP, email, password), toggle password visibility, dan error state. | Autentikasi lokal multi-role berfungsi mulus. | Minggu 2 (Hari 8-11) |
+| **4.3** | **Form Buat Aduan + 1 Foto** | Membuat `CreateTicketScreen`: input judul, deskripsi, pemilihan kategori (dropdown), input lokasi (gedung, lantai, ruang), dan image picker 1 foto (JPG/PNG <= 5MB). | Formulir pelaporan publik yang terintegrasi dengan penyimpanan foto internal. | Minggu 2 (Hari 12-14) |
+| **4.4** | **Penyimpanan Foto Lokal (`filesDir`)** | Menangani kompresi dan penyimpanan file gambar yang dipilih ke direktori privat aplikasi (`filesDir/ticket_photos/{id}.jpg`), serta mencatat path-nya ke Room DB. | Lampiran foto tersimpan aman tanpa dependensi storage eksternal. | Minggu 3 (Hari 15-17) |
+| **4.5** | **Profile Screen & Layar "Aduan Saya"** | Membangun `ProfileScreen`: kartu info pengguna, tombol Logout aman (clear DataStore), dan akses navigasi menuju daftar "Aduan Saya" (filter tiket milik user login). | Halaman profil dan riwayat laporan pribadi. | Minggu 3 (Hari 18-19) |
+| **4.6** | **Linear Auto-Claim Agen** | Membuat tombol dan dialog konfirmasi "Klaim Tugas" untuk akun Agen pada tiket berstatus `Baru` (mengubah `agent_id` dan status ke `Diproses`). | Agen dapat mengambil tugas secara mandiri dari feed/detail. | Minggu 3 (Hari 20-21) |
+| **4.7** | **Pure Monitoring Dashboard Admin** | Membangun layar `MonitoringScreen` khusus Admin: visualisasi kartu ringkasan (Total Baru, Diproses, Selesai), sebaran per kategori, dan User Management. | Dashboard monitoring eksekutif tanpa penugasan manual. | Minggu 4 (Hari 22-25) |
+| **4.8** | **Final Testing & Integrasi Handoff** | Uji coba end-to-end skenario 3 role, verifikasi soft-delete tiket oleh Admin, dan memastikan semua feedback menggunakan Snackbar/Toast. | Seluruh modul auth, form, profil, dan admin terverifikasi 100%. | Minggu 4 (Hari 26-28) |
+
+### 2. Flowchart Kerja — Anggota 4
+
+```mermaid
+flowchart TD
+    Start4["Mulai: Auth, Form & Admin Monitoring"] --> AuthSetup["Setup DataStore Preferences (Session & Role)"]
+    AuthSetup --> AuthScreens["Bangun LoginScreen & RegisterScreen (Validasi Form)"]
+    AuthScreens --> CreateTicket["Bangun CreateTicketScreen (Input Lokasi & Kategori)"]
+    CreateTicket --> PhotoPicker["Integrasi ImagePicker & Simpan Foto ke filesDir"]
+    PhotoPicker --> ProfileUI["Bangun ProfileScreen & Sub-layar 'Aduan Saya'"]
+    ProfileUI --> ClaimFeature["Tambahkan Aksi 'Klaim Tugas' untuk Role Agen"]
+    ClaimFeature --> AdminDashboard["Bangun Pure Monitoring Dashboard (Statistik Agregat)"]
+    AdminDashboard --> UserManage["Bangun Pengelolaan Akun & Soft Delete (Admin)"]
+    UserManage --> Done4["Selesai: Auth, Form, Profil & Admin Siap Digunakan"]
+```
+
+---
+
+## 🔄 Matriks Ketergantungan Antar Anggota (Dependency Matrix)
+
+```mermaid
+flowchart LR
+    A1["Anggota 1 (Pancar)<br>Architecture & Room DB"] -->|Menyediakan DAO & Entities| A3["Anggota 3 (Satria)<br>Feed & Detail Feature"]
+    A1 -->|Menyediakan DataStore & NavGraph| A4["Anggota 4<br>Auth, Form & Admin"]
+    A2["Anggota 2<br>Theme & UI Components"] -->|Menyediakan TicketCard & Badges| A3
+    A2 -->|Menyediakan TextFields & AppButton| A4
+    A4 -->|Menyimpan Tiket & Foto Baru| A3
+    A3 -->|Feed Mengonsumsi Data Baru| A1
+```
+
+1. **Anggota 1 & Anggota 2** bekerja secara paralel di Minggu 1 untuk menyediakan fondasi backend lokal (Room DB) dan fondasi visual (Theme M3 & Components).
+2. **Anggota 3 & Anggota 4** mengonsumsi komponen dari Anggota 2 dan Entity/DAO dari Anggota 1 untuk membangun fitur utama pada Minggu 2 & 3.
+3. Seluruh anggota bergabung pada Minggu 4 untuk melakukan integrasi akhir, pengujian skenario 3 role, penyesuaian tata letak adaptif, dan finalisasi dokumentasi.

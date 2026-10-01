@@ -6,8 +6,8 @@ Dokumen ini berisi daftar lengkap fitur aplikasi **TiketBantu** (Sistem Helpdesk
 
 > **📝 Catatan Revisi (Sinkronisasi dengan ARCHITRCTURE.md)**
 > Dokumen ini telah direvisi untuk menyelaraskan 2 hal berikut dengan `ARCHITRCTURE.md`:
-> 1. Referensi teknologi backend diubah dari **Laravel Auth / MySQL / Livewire** menjadi **Ktor JWT Auth / PostgreSQL (Exposed ORM) / polling Kotlin Coroutines**.
-> 2. Fitur lampiran diubah dari **multi-format, multi-file** menjadi **1 foto per tiket, format JPG/PNG saja** — mengikuti skema `image_url` tunggal pada tabel `Ticket` di `ARCHITRCTURE.md`.
+> 1. Referensi backend dihapus; aplikasi kini **Android native tanpa backend** menggunakan **Room** untuk penyimpanan lokal dan **DataStore** untuk sesi.
+> 2. Fitur lampiran tetap 1 foto per tiket, format JPG/PNG.
 
 ### Legenda Prioritas
 | Label | Arti                              |
@@ -26,11 +26,12 @@ Dokumen ini berisi daftar lengkap fitur aplikasi **TiketBantu** (Sistem Helpdesk
 ### Data Source
 | Data          | Sumber                                                            |
 | ------------- | -------------------------------------------------------------------- |
-| User & Auth   | Database PostgreSQL (`users` table, Exposed ORM) / Ktor JWT Auth      |
-| Tiket & Stat  | Database PostgreSQL (`tickets`, `categories`, Exposed ORM)            |
-| Dukungan      | Database PostgreSQL (`ticket_supports` - Most Liked, Exposed ORM)     |
-| Komentar      | Database PostgreSQL (`comments` table, Exposed ORM)                   |
-| Lampiran Foto | Storage Lokal Server (kolom `image_url` pada tabel `tickets`, maks. 1 foto) |
+| User & Auth   | Local storage via Room `users` table; session stored in DataStore (no external auth) |
+| Tiket & Stat  | Local Room tables `tickets`, `categories` |
+| Dukungan      | Local Room table `ticket_supports` |
+| Komentar      | Local Room table `comments` |
+| Lampiran Foto | Local file storage in app internal directory (`filesDir/ticket_photos/{ticketId}.jpg`) |
+
 
 ---
 
@@ -107,9 +108,9 @@ Dokumen ini berisi daftar lengkap fitur aplikasi **TiketBantu** (Sistem Helpdesk
 | #     | Fitur                                 | Prioritas | Role  | Deskripsi |
 | ----- | -------------------------------------- | --------- | ----- | --------- |
 | 3.5.1 | Upload Foto Bukti (1 Foto)            | 🔴 P0     | U/A   | Unggah 1 foto kerusakan/bukti pendukung, format JPG atau PNG saja |
-| 3.5.2 | Batasan Ukuran Maksimal 5MB           | 🔴 P0     | -     | Validasi server maksimal 5MB untuk foto yang diunggah |
+| 3.5.2 | Batasan Ukuran Maksimal 5MB           | 🔴 P0     | -     | Validasi lokal maksimal 5MB untuk foto yang dipilih/diambil |
 | 3.5.3 | Preview Foto Lampiran                 | 🔴 P0     | A/G/U | Menampilkan foto (jika ada) pada halaman detail aduan |
-| 3.5.4 | Image Compression & Storage           | 🟡 P1     | -     | Penyimpanan foto pada direktori lokal server backend (`/uploads/tickets/{id}/`) |
+| 3.5.4 | Image Compression & Storage           | 🟡 P1     | -     | Kompresi gambar dan penyimpanan pada direktori internal aplikasi (`filesDir/ticket_photos/{id}.jpg`) |
 
 ---
 
@@ -142,12 +143,12 @@ Dokumen ini berisi daftar lengkap fitur aplikasi **TiketBantu** (Sistem Helpdesk
 
 | #    | Fitur                                  | Prioritas | Deskripsi |
 | ---- | --------------------------------------- | --------- | --------- |
-| 6.1  | Database Migrations & Seeders          | 🔴 P0     | Skema tabel terstruktur PostgreSQL / Exposed ORM (`users`, `tickets`, `categories`, `comments`, `ticket_supports`) |
-| 6.2  | Middleware Auth & Role Authorization   | 🔴 P0     | Keamanan rute berbasis peran via JWT middleware Ktor (Pelapor `PELAPOR`, Agen `PETUGAS`, Admin `ADMIN`) |
+| 6.1  | Database Migrations & Seeders          | 🔴 P0     | Room schema migrations and initial seed data (prepopulate tables) |
+| 6.2  | Local Auth & Role Guard                | 🔴 P0     | Session & role management via DataStore token and ViewModel checks (no backend) |
 | 6.3  | File Upload Security & Mimes Check     | 🔴 P0     | Validasi mime types foto lampiran (JPG, JPEG, PNG saja), maksimal 1 foto per tiket |
 | 6.4  | Dynamic Badge UI Helpers               | 🔴 P0     | Helper rendering badge status dinamis (Termasuk Badge Centang Hijau untuk `Selesai`) |
-| 6.5  | Realtime Polling Engine (Kotlin Coroutines) | 🟡 P1 | Polling komentar dan counter dukungan "Saya Juga Mengalami" secara berkala dari Android app ke REST API Ktor |
-| 6.6  | Database Backup Script                 | 🟡 P1     | Otomatisasi backup berkala database PostgreSQL |
+| 6.5  | Realtime Polling Engine (Kotlin Coroutines) | 🟡 P1 | Local polling for comment & support counts within app (no external API) |
+| 6.6  | Database Export / Backup                | 🟡 P1     | Export Room database to external storage for safety (optional) |
 
 ---
 
@@ -155,30 +156,31 @@ Dokumen ini berisi daftar lengkap fitur aplikasi **TiketBantu** (Sistem Helpdesk
 
 | Prioritas | Jumlah Fitur | Fokus                          |
 | --------- | ------------- | -------------------------------- |
-| 🔴 P0     | ~33 fitur     | MVP — Core Helpdesk Functionality |
-| 🟡 P1     | ~9 fitur      | Post-MVP — Enhancements & Analytics |
+| 🔴 P0     | ~26 fitur     | MVP — Core Helpdesk Functionality (Local Room & Compose) |
+| 🟡 P1     | ~7 fitur      | Post-MVP — Enhancements & Local Analytics |
 
 ---
 
-## 🗓️ Roadmap Pengembangan
+## 🗓️ Roadmap Pengembangan (Android Native — Jetpack Compose)
 
-### Phase 1 — Web Helpdesk Core MVP (Selesai)
-- Authentication & Multi-Role Guard (User, Agen, Admin)
-- 2-Column Dashboard Layout (Feed Utama + Sidebar Search/Filter)
-- Form Aduan Publik + Upload Foto (1 foto, max 5MB, JPG/PNG)
-- Fitur Dukungan "Saya Juga Mengalami" (*Most Liked Aggregation*)
-- Linear Claim Ticket oleh Agen dari Dashboard
-- Infinite Scroll Feed + Green Checkmark Badge untuk Aduan Selesai
-- Search Bar, Filter Status & Filter Kategori (Filter Most Liked)
-- Pure Monitoring Dashboard untuk Admin (Tanpa SLA & Notifikasi)
+### Phase 1 — Core MVP (Android Local Standalone)
+- Local Authentication & Multi-Role Guard (User, Agen, Admin via DataStore)
+- Room Database Setup (Entities, DAOs, Database Pre-population / Seeder)
+- 2-Column Responsive Dashboard Layout (Feed Utama + Sidebar / Drawer Search & Filter)
+- Form Aduan Publik + Lampiran 1 Foto (Camera/Gallery picker, internal storage)
+- Fitur Dukungan "Saya Juga Mengalami" (*Most Liked Sorting*)
+- Linear Claim Ticket secara mandiri oleh Agen dari Feed
+- Infinite Scroll Feed (`LazyColumn`) + Badge Centang Hijau (`✓ Selesai`) di posisi terbawah
+- Monitoring Dashboard untuk Admin (Statistik agregat dari Room DB lokal)
+- In-App Feedback (Snackbar & Toast)
 
-### Phase 2 — Mobile Application Integration (Roadmap)
-- REST API Adapter untuk Mobile Client
-- Mobile Authentication & Public Complaint Feed
-- Camera & Location (GPS Gedung/Lantai/Ruangan) Integration
-- Mobile Support ("Saya Juga Mengalami") & Tracking Status
+### Phase 2 — UX Refinements & Advanced Local Features
+- Image Compression sebelum disimpan ke direktori internal aplikasi
+- Filter Kategori & Status interaktif dengan dynamic chips
+- Export & Backup data Room ke JSON / SQLite file
+- Animasi transisi antar-halaman menggunakan Jetpack Compose Animation
 
-### Phase 3 — Advanced Analytics & Optimization
-- Map-based Complaint Discovery
-- Advanced Analytics Dashboard
-- Image Compression & Deep Linking
+### Phase 3 — Future Enhancements (Jika Menghubungkan Backend di Masa Depan)
+- Sinkronisasi Cloud / REST API Adapter
+- Multi-device sync & Push Notifications
+

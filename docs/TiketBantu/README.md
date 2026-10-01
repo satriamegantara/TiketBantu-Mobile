@@ -1,6 +1,6 @@
 # 🎫 TiketBantu Mobile App
 
-**TiketBantu** adalah Sistem Helpdesk & Pengaduan Fasilitas Kampus berbasis **Android Native (Jetpack Compose)** dengan backend **Kotlin/Ktor**. Aplikasi ini dirancang untuk mendigitalisasi dan menyederhanakan proses pelaporan kerusakan fasilitas, penugasan teknisi, hingga pemantauan penyelesaian masalah secara *real-time* dan transparan.
+**TiketBantu** adalah Sistem Helpdesk & Pengaduan Fasilitas Kampus berbasis **Android Native (Jetpack Compose)** yang menyimpan data secara lokal menggunakan **Room**. Aplikasi ini mendemonstrasikan arsitektur MVVM, unidirectional data flow, dan penyimpanan permanen di perangkat, cocok untuk tugas akhir atau showcase Jetpack Compose.
 
 Proyek ini dibangun sebagai Tugas Akhir/Proyek Pemrograman Mobile dengan pendekatan *Mobile-First Adaptive Design* dan berpedoman pada arsitektur MVVM (Model-View-ViewModel).
 
@@ -29,24 +29,15 @@ Sistem ini mendukung 3 peran pengguna utama yang diatur melalui *JSON Web Token*
 
 ## 🛠️ Tech Stack & Arsitektur
 
-Proyek ini dipisah menjadi dua repositori/modul utama: **Frontend (Android)** dan **Backend (REST API)**.
-
 ### Android App (Frontend)
 - **Bahasa:** Kotlin
-- **UI Toolkit:** Jetpack Compose (Material Design 3)
-- **Arsitektur:** MVVM (Model-View-ViewModel) + Unidirectional Data Flow (UDF)
-- **Networking:** Retrofit2, OkHttp3 (Interceptor untuk Bearer Token)
+- **UI Toolkit:** Jetpack Compose (Material Design 3)
+- **Arsitektur:** MVVM + Unidirectional Data Flow (UDF)
+- **Networking:** *Tidak ada* (semua data disimpan secara lokal)
+- **Persistensi Lokal:** Room + DataStore (Preferences) untuk sesi & token lokal
 - **Asynchronous:** Kotlin Coroutines & StateFlow
-- **Navigation:** Compose Type-Safe Navigation, Scaffold, BottomNavigation
-- **Local Storage:** DataStore (Preferences) untuk sesi/JWT
+- **Navigation:** Compose Type‑Safe Navigation, Scaffold, BottomNavigation
 - **Image Loader:** Coil
-
-### Backend Server
-- **Framework:** Ktor (Kotlin)
-- **Database:** PostgreSQL
-- **ORM:** JetBrains Exposed
-- **Autentikasi:** Custom JWT (JSON Web Token)
-- **Storage:** Local File System (untuk file *upload* gambar)
 
 ---
 
@@ -60,24 +51,27 @@ Aplikasi ini menerapkan **Material Design 3 (M3)** dengan skema *Fresh & Clean U
 
 ---
 
-## 🚀 Cara Menjalankan Proyek (Development)
+## 🚀 Cara Menjalankan Proyek (Android‑only)
 
 ### Prasyarat
-- Android Studio (versi terbaru yang mendukung Compose)
-- IntelliJ IDEA (untuk menjalankan Backend Ktor)
-- PostgreSQL Server terinstal dan berjalan lokal
+- Android Studio (versi terbaru dengan dukungan Compose)
+- JDK 11 atau lebih tinggi
 
-### 1. Setup Backend (Ktor)
-1. Buka folder/repositori Backend.
-2. Salin `.env.example` menjadi `.env` dan konfigurasikan kredensial PostgreSQL Anda.
-3. Jalankan aplikasi (secara default akan berjalan di `http://localhost:8080`).
-4. Eksekusi script *migration/seeder* yang tersedia untuk mengisi data kategori dan admin awal.
+### Langkah Menjalankan Aplikasi
 
-### 2. Setup Android (Frontend)
-1. Buka folder proyek Android menggunakan Android Studio.
-2. Buka file `gradle.properties` atau modul konfigurasi `Retrofit` dan ubah `BASE_URL` mengarah ke IP lokal komputer Anda (contoh: `http://192.168.1.x:8080`).
-3. Lakukan *Sync Project with Gradle Files*.
-4. *Build & Run* aplikasi pada Emulator atau perangkat Android fisik Anda.
+1. **Clone Repository**
+   ```bash
+   git clone <repo-url>
+   cd TiketBantu-Mobile
+   ```
+2. **Buka Proyek di Android Studio**
+   - Pilih *Open an existing project* dan arahkan ke folder root.
+3. **Sinkronisasi Gradle**
+   - Klik *Sync Project with Gradle Files*.
+4. **Jalankan Aplikasi**
+   - Pilih emulator atau perangkat Android fisik, lalu klik *Run*.
+
+---
 
 ---
 
