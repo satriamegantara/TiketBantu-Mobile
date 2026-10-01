@@ -11,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.tiketbantu.ui.screens.feed.FeedViewModel
+
 
 /**
  * Root Navigation Graph for TiketBantu Mobile.
@@ -34,6 +36,11 @@ fun NavGraph(
         composable<Screen.Dashboard> {
             PlaceholderScreen(title = "Feed Aduan Publik (Dashboard)")
         }
+
+//        composable<Screen.Dashboard> {
+//            FeedScreen(onTicketClick = { navController.navigate(Screen.TicketDetail(it)) })
+//        }
+
         composable<Screen.CreateTicket> {
             PlaceholderScreen(title = "Form Buat Aduan Baru")
         }
