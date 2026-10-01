@@ -14,13 +14,17 @@ class GetFeedUseCase(
         query: String = "",
         categoryId: Long? = null,
         status: String? = null,
-        sortByMostLiked: Boolean = false
+        sortByMostLiked: Boolean = false,
+        currentUserId: Long = 0L,
+        limit: Int = Int.MAX_VALUE
     ): Flow<List<Ticket>> {
         return repository.getAllTickets(
             query = query,
             categoryId = categoryId,
             status = status,
-            sortByMostLiked = sortByMostLiked
+            sortByMostLiked = sortByMostLiked,
+            currentUserId = currentUserId,
+            limit = limit
         )
     }
 }
