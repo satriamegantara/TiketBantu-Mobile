@@ -11,7 +11,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.tiketbantu.ui.screens.feed.FeedViewModel
 
 
 /**
@@ -33,21 +32,19 @@ fun NavGraph(
         composable<Screen.Register> {
             PlaceholderScreen(title = "Halaman Registrasi")
         }
-        composable<Screen.Dashboard> {
-            PlaceholderScreen(title = "Feed Aduan Publik (Dashboard)")
-        }
 
-//        composable<Screen.Dashboard> {
-//            FeedScreen(onTicketClick = { navController.navigate(Screen.TicketDetail(it)) })
-//        }
+        composable<Screen.Dashboard> {
+            FeedScreen(onTicketClick = { navController.navigate(Screen.TicketDetail(it)) })
+        }
 
         composable<Screen.CreateTicket> {
             PlaceholderScreen(title = "Form Buat Aduan Baru")
         }
-        composable<Screen.TicketDetail> { backStackEntry ->
-            val route = backStackEntry.toRoute<Screen.TicketDetail>()
-            PlaceholderScreen(title = "Detail Aduan #${route.ticketId}")
+        composable<Screen.TicketDetail> { entry ->
+            val route = entry.toRoute<Screen.TicketDetail>()
+            TicketDetailScreen(ticketId = route.ticketId, onBack = { navController.popBackStack() })
         }
+
         composable<Screen.MyTickets> {
             PlaceholderScreen(title = "Aduan Saya")
         }
