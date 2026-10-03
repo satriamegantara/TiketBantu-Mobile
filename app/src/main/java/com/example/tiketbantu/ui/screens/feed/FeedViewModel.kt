@@ -178,6 +178,12 @@ class FeedViewModel(
         resetPaging()
     }
 
+    /** Category filter (feature 4.4). null = semua kategori. */
+    fun onCategorySelected(categoryId: Long?) {
+        _filter.update { it.copy(categoryId = categoryId) }
+        resetPaging()
+    }
+
     /** Pull-to-refresh. Room is already live; this re-runs the query from the first page. */
     fun refresh() {
         _isRefreshing.value = true
