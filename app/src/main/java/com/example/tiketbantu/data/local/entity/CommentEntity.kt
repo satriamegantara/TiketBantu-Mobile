@@ -5,7 +5,9 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Table "comments". */
+/**
+ * Room Entity for Ticket Discussion Thread Comments.
+ */
 @Entity(
     tableName = "comments",
     foreignKeys = [
@@ -28,9 +30,10 @@ import androidx.room.PrimaryKey
     ]
 )
 data class CommentEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
     val ticketId: Long,
     val userId: Long,
     val content: String,
-    val createdAt: Long
+    val createdAt: Long = System.currentTimeMillis()
 )

@@ -86,12 +86,26 @@ abstract class TicketDao {
         "UPDATE tickets SET status = :status, agentId = COALESCE(:agentId, agentId), " +
             "updatedAt = :updatedAt WHERE id = :ticketId"
     )
-    abstract suspend fun updateStatus(ticketId: Long, status: String, agentId: Long?, updatedAt: Long)
+    abstract suspend fun updateStatus(
+        ticketId: Long,
+        status: String,
+        agentId: Long?,
+        updatedAt: Long = System.currentTimeMillis()
+    )
 
     @Query("UPDATE tickets SET deletedAt = :deletedAt WHERE id = :ticketId")
-    abstract suspend fun softDelete(ticketId: Long, deletedAt: Long)
+    abstract suspend fun softDelete(ticketId: Long, deletedAt: Long = System.currentTimeMillis())
 
-    // ---- "Saya Juga Mengalami" ----
+    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL AND status = :status")
+    abstract fun countByStatus(status: String): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL")
+    abstract fun countTotalActive(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM tickets")
+    abstract suspend fun countAll(): Int
+
+    // ── "Saya Juga Mengalami" ────────────────────────────────────────────────
 
     /** Returns the new row id, or -1 when (ticketId, userId) already exists (UNIQUE index). */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
