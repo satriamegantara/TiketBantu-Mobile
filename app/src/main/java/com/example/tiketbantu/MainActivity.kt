@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.tiketbantu.navigation.NavGraph
@@ -72,30 +73,22 @@ fun MainScreen() {
             BottomNavigationBar(
                 currentRoute = selectedNavRoute,
                 onNavigate = { route ->
-                    when (route) {
-                        NavRoutes.HOME -> navController.navigate(Screen.Dashboard) {
-                            popUpTo(Screen.Dashboard) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                    val targetScreen: Screen = when (route) {
+                        NavRoutes.HOME -> Screen.Dashboard
+                        NavRoutes.MY_TICKETS -> Screen.MyTickets
+                        NavRoutes.CREATE -> Screen.CreateTicket
+                        NavRoutes.SUPPORTED -> Screen.SupportedTickets
+                        NavRoutes.MONITORING -> Screen.Monitoring
+                        NavRoutes.MANAGE -> Screen.UserManagement
+                        NavRoutes.PROFILE -> Screen.Profile
+                        else -> Screen.Dashboard
+                    }
+                    navController.navigate(targetScreen) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
-                        NavRoutes.MY_TICKETS -> navController.navigate(Screen.MyTickets) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.CREATE -> navController.navigate(Screen.CreateTicket) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.SUPPORTED -> navController.navigate(Screen.SupportedTickets) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.MONITORING -> navController.navigate(Screen.Monitoring) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.MANAGE -> navController.navigate(Screen.UserManagement) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.PROFILE -> navController.navigate(Screen.Profile) {
-                            launchSingleTop = true
-                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 role = DemoSession.role,
