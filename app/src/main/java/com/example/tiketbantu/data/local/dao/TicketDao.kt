@@ -79,26 +79,8 @@ abstract class TicketDao {
     )
     abstract fun observeMine(currentUserId: Long): Flow<List<TicketWithMeta>>
 
-    @Query(
-        "SELECT * FROM (" + TICKET_META_BASE + ") AS m " +
-            "WHERE m.isSupportedByMe = 1 ORDER BY m.createdAt DESC"
-    )
-    abstract fun observeSupported(currentUserId: Long): Flow<List<TicketWithMeta>>
-
     @Insert
     abstract suspend fun insertTicket(ticket: TicketEntity): Long
-
-    @Query(
-        "UPDATE tickets SET title = :title, description = :description, " +
-            "categoryId = :categoryId, updatedAt = :updatedAt WHERE id = :ticketId"
-    )
-    abstract suspend fun updateTicketContent(
-        ticketId: Long,
-        title: String,
-        description: String,
-        categoryId: Long,
-        updatedAt: Long = System.currentTimeMillis()
-    )
 
     @Query(
         "UPDATE tickets SET status = :status, agentId = COALESCE(:agentId, agentId), " +

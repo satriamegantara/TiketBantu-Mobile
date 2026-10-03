@@ -70,14 +70,5 @@ class AuthRepositoryImpl(
         sessionManager.clearSession()
     }
 
-    override suspend fun isLoggedIn(): Boolean = sessionManager.isLoggedIn()
 
-    private fun UserEntity.toDomain(): User = User(
-        id = id,
-        name = name,
-        email = email,
-        nimNip = nimNip,
-        role = role,
-        isActive = isActive
-    )
 }

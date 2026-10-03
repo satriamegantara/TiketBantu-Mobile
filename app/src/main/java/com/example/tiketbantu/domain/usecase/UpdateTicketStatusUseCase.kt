@@ -19,8 +19,7 @@ class UpdateTicketStatusUseCase(
         val error = TicketStatusRules.validate(user, ticket, newStatus)
         if (error != null) return Result.failure(IllegalStateException(error))
 
-        val agentId = if (newStatus == com.example.tiketbantu.domain.model.TicketStatus.DIPROSES) user.id else ticket.agentId
-        repository.updateTicketStatus(ticketId, newStatus, agentId)
+        repository.updateTicketStatus(ticketId, newStatus)
         return Result.success(Unit)
     }
 }

@@ -26,10 +26,8 @@ interface TicketRepository {
 
     fun getTicketById(id: Long, currentUserId: Long = 0L): Flow<Ticket?>
     fun getMyTickets(userId: Long): Flow<List<Ticket>>
-    fun getSupportedTickets(userId: Long): Flow<List<Ticket>>
     suspend fun createTicket(ticket: Ticket): Long
     suspend fun updateTicketStatus(ticketId: Long, status: String, agentId: Long? = null)
-    suspend fun updateTicketContent(ticketId: Long, title: String, description: String, categoryId: Long)
 
     /** @return true if the user now supports the ticket, false if the support was removed. */
     suspend fun toggleSupport(ticketId: Long, userId: Long): Boolean
