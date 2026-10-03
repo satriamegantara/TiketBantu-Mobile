@@ -16,6 +16,8 @@ import com.example.tiketbantu.ui.screens.feed.FeedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import com.example.tiketbantu.data.repository.AuthRepositoryImpl
+import com.example.tiketbantu.ui.screens.auth.AuthViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -52,7 +54,7 @@ val appModule = module {
     // ── Repository Layer (Backed by Room Database) ───────────────────────────
     single<TicketRepository> { TicketRepositoryImpl(ticketDao = get()) }
     single<CommentRepository> { CommentRepositoryImpl(commentDao = get()) }
-    single<AuthRepository> { FakeAuthRepository() }
+    single<AuthRepository> { AuthRepositoryImpl(userDao = get(), sessionManager = get()) }
 
     // ── UseCase Layer ────────────────────────────────────────────────────────
     factory { GetFeedUseCase(get()) }
@@ -60,6 +62,7 @@ val appModule = module {
     factory { UpdateTicketStatusUseCase(get()) }
 
     // ── ViewModel Layer ──────────────────────────────────────────────────────
+    viewModel { AuthViewModel(authRepository = get()) }
     viewModel { FeedViewModel(get(), get(), get()) }
     viewModel { (ticketId: Long) ->
         TicketDetailViewModel(

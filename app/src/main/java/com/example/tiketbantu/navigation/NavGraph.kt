@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -28,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,8 +44,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.tiketbantu.data.preferences.SessionManager
+import com.example.tiketbantu.ui.screens.auth.LoginScreen
+import com.example.tiketbantu.ui.screens.auth.RegisterScreen
 import com.example.tiketbantu.ui.screens.dashboard.DashboardScreen
 import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 /**
  * Root Type-Safe Navigation Graph for TiketBantu Mobile.
@@ -57,13 +67,28 @@ import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: Screen = Screen.Dashboard,
+    sessionManager: SessionManager = koinInject(),
+    startDestination: Screen? = null,
     modifier: Modifier = Modifier
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
+    val sessionState by sessionManager.sessionState.collectAsState()
+
+    if (sessionState.isLoading && startDestination == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        val resolvedStart = remember {
+            startDestination ?: if (sessionState.isLoggedIn) Screen.Dashboard else Screen.Login
+        }
+
+        NavHost(
+            navController = navController,
+            startDestination = resolvedStart,
+            modifier = modifier,
         enterTransition = {
             fadeIn(animationSpec = tween(250)) + slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Start,
@@ -91,40 +116,29 @@ fun NavGraph(
     ) {
         // ── 1. Login Screen ──────────────────────────────────────────────────
         composable<Screen.Login> {
-            NavDestinationScreen(
-                title = "Halaman Login",
-                subtitle = "Autentikasi multi-role lokal untuk Pelapor, Agen, dan Admin",
-                badge = "Auth Graph",
-                badgeColor = MaterialTheme.colorScheme.primary,
-                actions = listOf(
-                    NavAction("Masuk ke Dashboard (Login)") {
-                        navController.navigateToDashboardFromAuth()
-                    },
-                    NavAction("Daftar Akun Baru (Register)", isOutlined = true) {
-                        navController.safeNavigate(Screen.Register)
-                    }
-                )
+            LoginScreen(
+                viewModel = koinViewModel(),
+                onLoginSuccess = {
+                    navController.navigateToDashboardFromAuth()
+                },
+                onNavigateToRegister = {
+                    navController.safeNavigate(Screen.Register)
+                }
             )
         }
 
         // ── 2. Register Screen ───────────────────────────────────────────────
         composable<Screen.Register> {
-            NavDestinationScreen(
-                title = "Halaman Registrasi",
-                subtitle = "Pendaftaran akun pelapor lokal (NIM/NIP, email, password)",
-                badge = "Auth Graph",
-                badgeColor = MaterialTheme.colorScheme.primary,
-                onBack = { navController.safePopBackStack() },
-                actions = listOf(
-                    NavAction("Daftar & Kembali ke Login") {
-                        navController.safeNavigate(Screen.Login) {
-                            popUpTo<Screen.Register> { inclusive = true }
-                        }
-                    },
-                    NavAction("Sudah Punya Akun? Login", isOutlined = true) {
-                        navController.safePopBackStack()
+            RegisterScreen(
+                viewModel = koinViewModel(),
+                onRegisterSuccess = {
+                    navController.safeNavigate(Screen.Login) {
+                        popUpTo<Screen.Register> { inclusive = true }
                     }
-                )
+                },
+                onNavigateToLogin = {
+                    navController.safePopBackStack()
+                }
             )
         }
 
@@ -245,6 +259,7 @@ fun NavGraph(
                 )
             )
         }
+    }
     }
 }
 
