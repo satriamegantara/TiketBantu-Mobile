@@ -32,13 +32,23 @@ class AuthRepositoryImpl(
             return Result.failure(IllegalStateException("Akun ini telah dinonaktifkan"))
         }
 
-        if (userEntity.passwordHash != passwordHash) {
+        val stored = userEntity.passwordHash
+        val isHashed = stored.length == 64 && stored.all { it in '0'..'9' || it in 'a'..'f' }
+        val isPasswordMatch = if (isHashed) stored == passwordHash else hashSha256(stored) == passwordHash
+
+        if (!isPasswordMatch) {
             return Result.failure(IllegalArgumentException("Kata sandi salah"))
         }
 
         val user = userEntity.toDomain()
         sessionManager.saveSession(user)
         return Result.success(user)
+    }
+
+    private fun hashSha256(input: String): String {
+        val bytes = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     override suspend fun register(
