@@ -1,88 +1,141 @@
 package com.example.tiketbantu.ui.screens.detail
 
-import android.text.format.DateUtils
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Engineering
+import androidx.compose.material.icons.outlined.HighlightOff
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.tiketbantu.base.UiState
 import com.example.tiketbantu.domain.model.Comment
 import com.example.tiketbantu.domain.model.Ticket
 import com.example.tiketbantu.domain.model.TicketStatus
-import com.example.tiketbantu.ui.screens.feed.StatusBadge
-import com.example.tiketbantu.ui.screens.feed.SupportButton
-import com.example.tiketbantu.ui.theme.StatusBadgeBaru
-import com.example.tiketbantu.ui.theme.StatusBadgeDiproses
-import com.example.tiketbantu.ui.theme.StatusBadgeDitutup
-import com.example.tiketbantu.ui.theme.StatusBadgeSelesai
+import com.example.tiketbantu.domain.repository.TicketRepository
+import com.example.tiketbantu.ui.components.AppBackground
+import com.example.tiketbantu.ui.components.AvatarStack
+import com.example.tiketbantu.ui.components.CircleIconButton
+import com.example.tiketbantu.ui.components.GlassCard
+import com.example.tiketbantu.ui.components.GradientButton
+import com.example.tiketbantu.ui.components.InitialsAvatar
+import com.example.tiketbantu.ui.components.StatusPill
+import com.example.tiketbantu.ui.components.SupportPill
+import com.example.tiketbantu.ui.components.TagChip
+import com.example.tiketbantu.ui.components.locationText
+import com.example.tiketbantu.ui.components.relativeTime
+import com.example.tiketbantu.ui.components.ticketCode
+import com.example.tiketbantu.ui.components.urgencyLabel
+import com.example.tiketbantu.ui.session.AppRole
+import com.example.tiketbantu.ui.session.DemoSession
+import com.example.tiketbantu.ui.theme.BrandCyan
+import com.example.tiketbantu.ui.theme.BrandIndigo
+import com.example.tiketbantu.ui.theme.BrandIndigoSoft
+import com.example.tiketbantu.ui.theme.DangerRed
+import com.example.tiketbantu.ui.theme.FieldBg
+import com.example.tiketbantu.ui.theme.Hairline
+import com.example.tiketbantu.ui.theme.Ink
+import com.example.tiketbantu.ui.theme.InkMuted
+import com.example.tiketbantu.ui.theme.InkSoft
+import com.example.tiketbantu.ui.theme.SuccessSoftBg
+import com.example.tiketbantu.ui.theme.SuccessText
+import com.example.tiketbantu.ui.theme.SupportOrange
+import com.example.tiketbantu.ui.theme.SupportOrangeSoft
+import com.example.tiketbantu.ui.theme.SupportOrangeText
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Comment thread refresh interval (APP_FLOW alur 7: poll every ~5 seconds). */
 private const val COMMENT_POLL_INTERVAL_MS = 5_000L
 
+private val supporterNames = listOf("Rina Kartika", "Dimas Putra", "Ayu Lestari", "Bagas Wira", "Nadia Safitri")
+
+internal fun imageModelOf(path: String): Any =
+    if (path.startsWith("content:") || path.startsWith("file:") || path.startsWith("http")) path else File(path)
+
 /**
- * Ticket detail screen (stateful wrapper). Hook it into the NavGraph, e.g.
- *
- *   composable<Screen.TicketDetail> { entry ->
- *       val route = entry.toRoute<Screen.TicketDetail>()
- *       TicketDetailScreen(ticketId = route.ticketId, onBack = { navController.popBackStack() })
- *   }
+ * Ticket detail screen (stateful wrapper). Hook it into the NavGraph.
  */
 @Composable
 fun TicketDetailScreen(
@@ -97,11 +150,17 @@ fun TicketDetailScreen(
     val isSending by viewModel.isSending.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val canUpdateStatus by viewModel.canUpdateStatus.collectAsState()
+    val repository: TicketRepository = koinInject()
+    val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     var pendingScrollToEnd by remember { mutableStateOf(false) }
     var pendingStatus by rememberSaveable { mutableStateOf<String?>(null) }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+
+    val role = DemoSession.role
+    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {
@@ -132,394 +191,573 @@ fun TicketDetailScreen(
         }
     }
 
-    TicketDetailContent(
-        ticketState = ticketState,
-        comments = comments,
-        commentInput = commentInput,
-        isSending = isSending,
-        currentUserId = currentUser?.id,
-        canUpdateStatus = canUpdateStatus,
-        snackbarHostState = snackbarHostState,
-        listState = listState,
-        onBack = onBack,
-        onRetry = viewModel::retry,
-        onCommentInputChange = viewModel::onCommentInputChange,
-        onSendComment = viewModel::sendComment,
-        onToggleSupport = viewModel::onToggleSupport,
-        onRequestStatusChange = { status -> pendingStatus = status },
-        modifier = modifier
-    )
+    fun toast(msg: String) = scope.launch {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(msg)
+    }
+
+    AppBackground(modifier = modifier) {
+        Column(Modifier.fillMaxSize()) {
+            val ticket = (ticketState as? UiState.Success)?.data
+            DetailTopBar(
+                ticket = ticket,
+                role = role,
+                onBack = onBack,
+                onShare = { toast("Tautan tiket disalin ke clipboard") },
+                onEdit = { toast("Mode edit aduan (hanya saat status Baru)") },
+                onDelete = { confirmDelete = true }
+            )
+
+            Box(Modifier.weight(1f)) {
+                when (val state = ticketState) {
+                    UiState.Idle, UiState.Loading -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        CircularProgressIndicator(color = BrandIndigo)
+                    }
+
+                    is UiState.Error -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Text(state.message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = InkSoft)
+                            GradientButton(text = "Coba Lagi", onClick = viewModel::retry, height = 46.dp, modifier = Modifier.width(180.dp))
+                        }
+                    }
+
+                    is UiState.Success -> DetailList(
+                        ticket = state.data,
+                        comments = comments,
+                        currentUserId = currentUser?.id,
+                        canAct = canAct,
+                        listState = listState,
+                        onToggleSupport = viewModel::onToggleSupport,
+                        onRequestStatusChange = { pendingStatus = it },
+                        onCall = { toast("Menghubungi teknisi…") }
+                    )
+                }
+            }
+
+            if (ticketState is UiState.Success) {
+                CommentInputBar(
+                    value = commentInput,
+                    isSending = isSending,
+                    onValueChange = viewModel::onCommentInputChange,
+                    onSend = viewModel::sendComment,
+                    onAttach = { toast("Lampiran foto pada komentar segera hadir") }
+                )
+            }
+        }
+
+        SnackbarHost(
+            snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp)
+        )
+    }
 
     pendingStatus?.let { status ->
         val label = if (status == TicketStatus.SELESAI) "Selesai" else "Ditutup"
         AlertDialog(
             onDismissRequest = { pendingStatus = null },
-            title = { Text("Ubah status aduan?") },
+            containerColor = Color.White,
+            title = { Text("Ubah status aduan?", fontWeight = FontWeight.Bold) },
             text = { Text("Status akan menjadi \"$label\". Setelah itu aduan terkunci dan tidak dapat diubah lagi.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.updateStatus(status)
                     pendingStatus = null
-                }) { Text("Ya, ubah") }
+                }) { Text("Ya, ubah", color = BrandIndigo, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingStatus = null }) { Text("Batal") }
+                TextButton(onClick = { pendingStatus = null }) { Text("Batal", color = InkSoft) }
+            }
+        )
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            containerColor = Color.White,
+            title = { Text("Hapus aduan?", fontWeight = FontWeight.Bold) },
+            text = { Text("Aduan akan disembunyikan dari feed publik (soft delete). Data tetap tersimpan untuk audit.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    scope.launch {
+                        runCatching { repository.softDeleteTicket(ticketId) }
+                        onBack()
+                    }
+                }) { Text("Hapus", color = DangerRed, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Batal", color = InkSoft) }
             }
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ─────────────────────────────────────────────────────────────
+// Top bar
+// ─────────────────────────────────────────────────────────────
+
 @Composable
-fun TicketDetailContent(
-    ticketState: UiState<Ticket>,
-    comments: List<Comment>,
-    commentInput: String,
-    isSending: Boolean,
-    currentUserId: Long?,
-    canUpdateStatus: Boolean,
-    snackbarHostState: SnackbarHostState,
-    listState: LazyListState,
+private fun DetailTopBar(
+    ticket: Ticket?,
+    role: AppRole,
     onBack: () -> Unit,
-    onRetry: () -> Unit,
-    onCommentInputChange: (String) -> Unit,
-    onSendComment: () -> Unit,
-    onToggleSupport: () -> Unit,
-    onRequestStatusChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onShare: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Detail Aduan") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
-                    }
-                }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            if (ticketState is UiState.Success) {
-                CommentInputBar(
-                    value = commentInput,
-                    isSending = isSending,
-                    onValueChange = onCommentInputChange,
-                    onSend = onSendComment
+    var menuOpen by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", onBack, bordered = false, container = Color.Transparent)
+        Spacer(Modifier.width(6.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = ticket?.let { ticketCode(it.id) } ?: "Memuat…",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 21.sp),
+                    color = Ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
+                if (ticket != null) {
+                    Spacer(Modifier.width(8.dp))
+                    TagChip(ticket.categoryName.ifBlank { "Umum" }, container = Color(0xFFDDF4FF), content = Color(0xFF0369A1))
+                }
             }
+            Text("Tiket Penanganan Fasilitas", style = MaterialTheme.typography.bodySmall, color = InkMuted)
         }
-    ) { padding ->
-        Box(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()) {
-            when (ticketState) {
-                UiState.Idle, UiState.Loading -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-
-                is UiState.Error -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Text(
-                            text = ticketState.message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(onClick = onRetry) { Text("Coba Lagi") }
-                    }
-                }
-
-                is UiState.Success -> DetailList(
-                    ticket = ticketState.data,
-                    comments = comments,
-                    currentUserId = currentUserId,
-                    canUpdateStatus = canUpdateStatus,
-                    listState = listState,
-                    onToggleSupport = onToggleSupport,
-                    onRequestStatusChange = onRequestStatusChange
+        CircleIconButton(Icons.Outlined.Share, "Bagikan", onShare, bordered = false, container = Color.Transparent)
+        Box {
+            CircleIconButton(Icons.Filled.MoreVert, "Lainnya", { menuOpen = true }, bordered = false, container = Color.Transparent)
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Color.White) {
+                val canEdit = ticket?.status == TicketStatus.BARU && role == AppRole.PELAPOR
+                DropdownMenuItem(
+                    text = { Text("Edit Aduan") },
+                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                    enabled = canEdit,
+                    onClick = { menuOpen = false; onEdit() }
                 )
+                if (role == AppRole.ADMIN) {
+                    DropdownMenuItem(
+                        text = { Text("Hapus Aduan", color = DangerRed) },
+                        leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = DangerRed) },
+                        onClick = { menuOpen = false; onDelete() }
+                    )
+                }
             }
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────
+// Body
+// ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun DetailList(
     ticket: Ticket,
     comments: List<Comment>,
     currentUserId: Long?,
-    canUpdateStatus: Boolean,
+    canAct: Boolean,
     listState: LazyListState,
     onToggleSupport: () -> Unit,
-    onRequestStatusChange: (String) -> Unit
+    onRequestStatusChange: (String) -> Unit,
+    onCall: () -> Unit
 ) {
     val finished = TicketStatus.isFinished(ticket.status)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item(key = "header") { TicketHeader(ticket) }
-        item(key = "info") { TicketInfoCard(ticket) }
-
-        ticket.imageUrl?.takeIf { it.isNotBlank() }?.let { path ->
-            item(key = "photo") {
-                AsyncImage(
-                    model = File(path),
-                    contentDescription = "Foto bukti aduan",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                )
-            }
-        }
-
-        item(key = "support") {
-            SupportButton(
-                supported = ticket.isSupportedByMe,
-                count = ticket.supportCount,
-                onClick = onToggleSupport
-            )
-        }
+        item(key = "status") { StatusCard(ticket, onCall) }
+        item(key = "main") { MainInfoCard(ticket) }
+        item(key = "support") { SupportCard(ticket, onToggleSupport) }
 
         if (finished) {
             item(key = "locked") {
-                Text(
-                    text = "Aduan ini sudah ${if (ticket.status == TicketStatus.SELESAI) "selesai" else "ditutup"} dan terkunci.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                GlassCard(containerColor = SuccessSoftBg, borderColor = SuccessSoftBg) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (ticket.status == TicketStatus.SELESAI) Icons.Outlined.CheckCircle else Icons.Outlined.Lock,
+                            null, tint = SuccessText, modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Aduan ini sudah ${if (ticket.status == TicketStatus.SELESAI) "dituntaskan" else "ditutup"} dan terkunci.",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = SuccessText
+                        )
+                    }
+                }
             }
-        } else if (canUpdateStatus) {
-            item(key = "status-actions") { StatusActionsCard(onRequestStatusChange) }
+        } else if (canAct) {
+            item(key = "actions") { ActionPanel(onRequestStatusChange) }
         }
 
-        item(key = "history") { StatusHistory(ticket) }
-
-        item(key = "comments-header") {
-            Text(
-                text = "Komentar (${comments.size})",
-                style = MaterialTheme.typography.titleMedium
-            )
+        item(key = "thread-header") {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Text("Thread Penanganan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = Ink)
+                Spacer(Modifier.width(8.dp))
+                TagChip("${comments.size} Komentar", container = BrandIndigoSoft, content = BrandIndigo)
+                Spacer(Modifier.weight(1f))
+                TagChip("● Live Stream", container = SuccessSoftBg, content = SuccessText)
+            }
         }
+
         if (comments.isEmpty()) {
-            item(key = "comments-empty") {
-                Text(
-                    text = "Belum ada komentar. Jadilah yang pertama menanggapi.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            item(key = "empty") {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Belum ada tanggapan. Jadilah yang pertama menanggapi.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = InkMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         } else {
-            items(comments, key = { "comment-${it.id}" }) { comment ->
-                CommentBubble(comment = comment, isMine = comment.userId == currentUserId)
+            items(comments, key = { "c-${it.id}" }) { comment ->
+                CommentCard(comment, isMine = comment.userId == currentUserId)
             }
         }
     }
 }
 
 @Composable
-private fun TicketHeader(ticket: Ticket) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusBadge(status = ticket.status)
-        Text(text = ticket.title, style = MaterialTheme.typography.headlineSmall)
-        Text(
-            text = ticket.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun TicketInfoCard(ticket: Ticket) {
-    val location = listOf(ticket.locationBuilding, ticket.locationFloor, ticket.locationRoom)
-        .filter { it.isNotBlank() }
-        .joinToString(", ")
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            InfoRow("Pelapor", ticket.reporterName.ifBlank { "-" })
-            InfoRow("Kategori", ticket.categoryName.ifBlank { "-" })
-            InfoRow("Lokasi", location.ifBlank { "-" })
-            InfoRow("Dibuat", rememberDateTime(ticket.createdAt))
-            InfoRow("Penanggung jawab", ticket.agentName ?: "Belum diambil Agen")
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.4f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.6f)
-        )
-    }
-}
-
-@Composable
-private fun StatusActionsCard(onRequestStatusChange: (String) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Perbarui status", style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = "Setelah Selesai atau Ditutup, aduan terkunci dan tidak dapat diubah lagi.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    onClick = { onRequestStatusChange(TicketStatus.SELESAI) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                ) { Text("Tandai Selesai") }
-                OutlinedButton(
-                    onClick = { onRequestStatusChange(TicketStatus.DITUTUP) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                ) { Text("Tutup Aduan") }
+private fun StatusCard(ticket: Ticket, onCall: () -> Unit) {
+    val (urgency, urgencyColor) = urgencyLabel(ticket.supportCount)
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "STATUS TIKET",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = InkMuted
+                )
+                Spacer(Modifier.height(6.dp))
+                StatusPill(ticket.status)
             }
-        }
-    }
-}
-
-private data class HistoryStep(val label: String, val timeMillis: Long?, val color: Color)
-
-/**
- * Status history derived from the ticket itself (there is no history table in the schema):
- * created -> processed by agent -> finished/closed. The time of the "Diproses" step is only known
- * while the ticket is still DIPROSES (updatedAt); afterwards it is shown without a time.
- */
-@Composable
-private fun StatusHistory(ticket: Ticket) {
-    val steps = buildList {
-        add(HistoryStep("Aduan dibuat oleh ${ticket.reporterName.ifBlank { "pelapor" }}", ticket.createdAt, StatusBadgeBaru))
-        if (ticket.agentId != null) {
-            add(
-                HistoryStep(
-                    "Diproses oleh ${ticket.agentName ?: "Agen"}",
-                    if (ticket.status == TicketStatus.DIPROSES) ticket.updatedAt else null,
-                    StatusBadgeDiproses
-                )
-            )
-        }
-        when (ticket.status) {
-            TicketStatus.SELESAI -> add(HistoryStep("Aduan selesai", ticket.updatedAt, StatusBadgeSelesai))
-            TicketStatus.DITUTUP -> add(HistoryStep("Aduan ditutup", ticket.updatedAt, StatusBadgeDitutup))
-            else -> Unit
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Riwayat status", style = MaterialTheme.typography.titleMedium)
-        steps.forEach { step ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .size(10.dp)
-                        .background(step.color, CircleShape)
-                )
-                Column {
-                    Text(step.label, style = MaterialTheme.typography.bodyMedium)
-                    step.timeMillis?.let { millis ->
-                        Text(
-                            text = rememberDateTime(millis),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.AccessTime, null, tint = InkMuted, modifier = Modifier.size(13.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Diperbarui ${relativeTime(ticket.updatedAt)}", style = MaterialTheme.typography.labelSmall, color = InkSoft)
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Bolt, null, tint = urgencyColor, modifier = Modifier.size(14.dp))
+                    Text(urgency, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = urgencyColor)
                 }
             }
         }
-    }
-}
+        Spacer(Modifier.height(14.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+        Spacer(Modifier.height(14.dp))
 
-@Composable
-private fun CommentBubble(comment: Comment, isMine: Boolean) {
-    val roleLabel = when (comment.userRole) {
-        "AGEN" -> "Agen"
-        "ADMIN" -> "Admin"
-        else -> null
-    }
-    val timeAgo = remember(comment.createdAt) {
-        DateUtils.getRelativeTimeSpanString(
-            comment.createdAt,
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS
-        ).toString()
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = if (isMine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.widthIn(max = 300.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = comment.userName.ifBlank { "Pengguna" },
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
+        val assignee = ticket.agentName
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (assignee != null) {
+                Box {
+                    InitialsAvatar(assignee, size = 44.dp, soft = false)
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF22C55E))
                     )
-                    if (roleLabel != null) {
-                        Text(
-                            text = roleLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
                 }
-                Text(text = comment.content, style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Box(
+                    Modifier.size(44.dp).clip(CircleShape).background(FieldBg),
+                    contentAlignment = Alignment.Center
+                ) { Icon(Icons.Outlined.Engineering, null, tint = InkMuted) }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Ditugaskan Kepada:", style = MaterialTheme.typography.labelSmall, color = InkMuted)
+                Text(
+                    assignee ?: "Menunggu diklaim teknisi",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Ink
+                )
+                Text("Divisi Teknisi Sarana & Prasarana", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+            }
+            if (assignee != null) {
+                CircleIconButton(Icons.Outlined.Phone, "Hubungi", onCall, container = BrandIndigoSoft, tint = BrandIndigo, bordered = false)
             }
         }
+    }
+}
+
+@Composable
+private fun MainInfoCard(ticket: Ticket) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = timeAgo,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            ticket.title,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp),
+            color = Ink
         )
+        Spacer(Modifier.height(8.dp))
+        Text(ticket.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp), color = InkSoft)
+        Spacer(Modifier.height(14.dp))
+
+        InfoTile(Icons.Outlined.Place, "Lokasi Spesifik", ticket.locationText().ifBlank { "-" })
+        Spacer(Modifier.height(10.dp))
+        InfoTile(
+            Icons.Outlined.Person,
+            "Pelapor Pertama",
+            ticket.reporterName.ifBlank { "Civitas Kampus" },
+            caption = "Dilaporkan: ${formatDate(ticket.createdAt)}"
+        )
+
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.PhotoCamera, null, tint = Ink, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            val hasPhoto = !ticket.imageUrl.isNullOrBlank()
+            Text(
+                "Bukti Lampiran Lapangan (${if (hasPhoto) 1 else 0})",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = Ink,
+                modifier = Modifier.weight(1f)
+            )
+            Text("Format Terverifikasi", style = MaterialTheme.typography.labelSmall, color = InkMuted)
+        }
+        Spacer(Modifier.height(10.dp))
+
+        val path = ticket.imageUrl
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(FieldBg)
+        ) {
+            if (!path.isNullOrBlank()) {
+                AsyncImage(
+                    model = imageModelOf(path),
+                    contentDescription = "Foto bukti aduan",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))))
+                )
+                Text(
+                    "Kondisi Lapangan Terkini",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(14.dp)
+                )
+                CircleIconButton(
+                    Icons.Outlined.ZoomIn, "Perbesar", {},
+                    container = Color.White.copy(alpha = 0.9f), bordered = false, size = 36.dp,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp)
+                )
+            } else {
+                Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Outlined.Image, null, tint = InkMuted, modifier = Modifier.size(36.dp))
+                    Spacer(Modifier.height(6.dp))
+                    Text("Tidak ada foto bukti", style = MaterialTheme.typography.bodySmall, color = InkMuted)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoTile(icon: ImageVector, label: String, value: String, caption: String? = null) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Hairline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = InkMuted)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (caption != null) Text(caption, style = MaterialTheme.typography.labelSmall, color = InkMuted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SupportCard(ticket: Ticket, onToggleSupport: () -> Unit) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.LocalFireDepartment, null, tint = SupportOrange, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Dukungan Civitas Kampus", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold), color = Ink)
+                }
+                Text(
+                    "Validasi bersama mempercepat antrean penanganan sarpras",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkSoft
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Surface(shape = RoundedCornerShape(12.dp), color = SupportOrangeSoft) {
+                Text(
+                    "${ticket.supportCount}\nSuara",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold, lineHeight = 14.sp),
+                    color = SupportOrangeText,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = SupportOrangeSoft.copy(alpha = 0.6f),
+            border = BorderStroke(1.dp, SupportOrange.copy(alpha = 0.15f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                val shown = supporterNames.take(ticket.supportCount.coerceAtMost(3))
+                AvatarStack(shown, extra = (ticket.supportCount - shown.size).coerceAtLeast(0), size = 26.dp)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Terdampak di ${ticket.locationRoom.ifBlank { ticket.locationBuilding }}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = SupportOrangeText,
+                        maxLines = 2
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
+                SupportPill(
+                    count = ticket.supportCount,
+                    supported = ticket.isSupportedByMe,
+                    onClick = onToggleSupport,
+                    label = if (ticket.isSupportedByMe) "Didukung" else "Dukung",
+                    enabled = !TicketStatus.isFinished(ticket.status)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionPanel(onRequestStatusChange: (String) -> Unit) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Engineering, null, tint = BrandIndigo, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "PANEL TINDAKAN TEKNISI SARPRAS",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp),
+                color = Ink,
+                modifier = Modifier.weight(1f)
+            )
+            Text("Akses Petugas", style = MaterialTheme.typography.labelSmall, color = InkMuted)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Surface(
+                onClick = { onRequestStatusChange(TicketStatus.SELESAI) },
+                shape = RoundedCornerShape(50),
+                color = BrandIndigo,
+                modifier = Modifier.weight(1f).height(46.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Tandai Selesai", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+            Surface(
+                onClick = { onRequestStatusChange(TicketStatus.DITUTUP) },
+                shape = RoundedCornerShape(50),
+                color = Color.White,
+                border = BorderStroke(1.dp, Hairline),
+                modifier = Modifier.weight(1f).height(46.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.HighlightOff, null, tint = Ink, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Tutup Tiket", color = Ink, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+private fun roleChip(role: String): Triple<String, Color, Color> = when (role.uppercase()) {
+    "AGEN" -> Triple("Teknisi Resmi", BrandIndigoSoft, BrandIndigo)
+    "ADMIN" -> Triple("Admin", Color(0xFFF3E8FF), Color(0xFF7E22CE))
+    "PELAPOR_UTAMA" -> Triple("Pelapor", Color(0xFFDDF4FF), Color(0xFF0369A1))
+    else -> Triple("Mahasiswa", FieldBg, InkSoft)
+}
+
+@Composable
+private fun CommentCard(comment: Comment, isMine: Boolean) {
+    val isAgent = comment.userRole.equals("AGEN", ignoreCase = true)
+    val (label, chipBg, chipFg) = roleChip(comment.userRole)
+    val name = comment.userName.ifBlank { "Pengguna" }
+
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (isAgent) Color(0xFFF7F8FF) else Color.White,
+        border = BorderStroke(1.dp, if (isAgent) BrandIndigo.copy(alpha = 0.18f) else Hairline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            if (isAgent) {
+                Box(Modifier.width(4.dp).fillMaxHeight().background(BrandIndigo))
+            }
+            Column(Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    InitialsAvatar(name, size = 30.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        name + if (isMine) " (Anda)" else "",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    TagChip(label, container = chipBg, content = chipFg, fontSize = 10.sp)
+                    Spacer(Modifier.weight(1f))
+                    Text(formatTime(comment.createdAt), style = MaterialTheme.typography.labelSmall, color = InkMuted)
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(comment.content, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp), color = Ink)
+            }
+        }
     }
 }
 
@@ -528,42 +766,76 @@ private fun CommentInputBar(
     value: String,
     isSending: Boolean,
     onValueChange: (String) -> Unit,
-    onSend: () -> Unit
+    onSend: () -> Unit,
+    onAttach: () -> Unit
 ) {
-    Surface(tonalElevation = 3.dp, modifier = Modifier.imePadding()) {
+    Surface(
+        color = Color.White.copy(alpha = 0.96f),
+        shadowElevation = 16.dp,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .imePadding()
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .navigationBarsPadding()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
+            CircleIconButton(Icons.Outlined.AddAPhoto, "Lampirkan", onAttach, tint = InkSoft, size = 42.dp)
+            Spacer(Modifier.width(8.dp))
+            TextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Tulis komentar") },
+                placeholder = { Text("Tulis tanggapan atau pembaruan…", color = InkMuted, style = MaterialTheme.typography.bodyMedium) },
                 maxLines = 4,
-                shape = MaterialTheme.shapes.large
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Ink),
+                shape = RoundedCornerShape(50),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = FieldBg,
+                    unfocusedContainerColor = FieldBg,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = BrandIndigo
+                )
             )
-            Button(
+            Spacer(Modifier.width(8.dp))
+            val enabled = value.isNotBlank() && !isSending
+            Surface(
                 onClick = onSend,
-                enabled = value.isNotBlank() && !isSending,
-                modifier = Modifier.heightIn(min = 48.dp)
-            ) { Text("Kirim") }
+                enabled = enabled,
+                shape = CircleShape,
+                color = Color.Transparent,
+                modifier = Modifier.size(46.dp)
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            if (enabled) Brush.linearGradient(listOf(BrandIndigo, BrandCyan))
+                            else Brush.linearGradient(listOf(Color(0xFFCBD5E1), Color(0xFFCBD5E1)))
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSending) {
+                        CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.AutoMirrored.Filled.Send, "Kirim", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
         }
     }
 }
 
-@Composable
-private fun rememberDateTime(millis: Long): String {
-    val context = LocalContext.current
-    return remember(millis) {
-        DateUtils.formatDateTime(
-            context,
-            millis,
-            DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or
-                DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_ABBREV_MONTH
-        )
-    }
-}
+private fun formatDate(millis: Long): String =
+    SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("id-ID")).format(Date(millis)) + " WIB"
+
+private fun formatTime(millis: Long): String =
+    SimpleDateFormat("HH:mm", Locale.forLanguageTag("id-ID")).format(Date(millis)) + " WIB"
+
+@Suppress("unused")
+private val unusedIcons = listOf(Icons.Filled.Check)

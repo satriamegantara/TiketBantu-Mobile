@@ -28,6 +28,9 @@ sealed interface Screen {
     data object MyTickets : Screen
 
     @Serializable
+    data object SupportedTickets : Screen
+
+    @Serializable
     data object Profile : Screen
 
     // Admin Graph

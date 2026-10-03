@@ -1,50 +1,86 @@
 package com.example.tiketbantu.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.tiketbantu.ui.screens.admin.UserManagementScreen
+import com.example.tiketbantu.ui.screens.auth.LoginScreen
+import com.example.tiketbantu.ui.screens.auth.RegisterScreen
+import com.example.tiketbantu.ui.screens.create.CreateTicketScreen
 import com.example.tiketbantu.ui.screens.dashboard.DashboardScreen
 import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
+import com.example.tiketbantu.ui.screens.monitoring.MonitoringScreen
+import com.example.tiketbantu.ui.screens.mytickets.MyTicketsScreen
+import com.example.tiketbantu.ui.screens.profile.ProfileScreen
+import com.example.tiketbantu.ui.screens.supported.SupportedTicketsScreen
 
 /**
  * Root Navigation Graph for TiketBantu Mobile.
- * Connects all screens according to APP_FLOW_TiketBantu.md.
- *
- * Wired so far: Dashboard (feed) and TicketDetail. The other routes are still placeholders.
+ * Connects all screens according to APP_FLOW_TiketBantu.md and features_tiketbantu.md.
  */
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: Screen = Screen.Dashboard
+    startDestination: Screen = Screen.Dashboard,
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        modifier = modifier
     ) {
         composable<Screen.Login> {
-            PlaceholderScreen(title = "Halaman Login")
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Dashboard) {
+                        popUpTo(Screen.Login) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register)
+                }
+            )
         }
+
         composable<Screen.Register> {
-            PlaceholderScreen(title = "Halaman Registrasi")
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Dashboard) {
+                        popUpTo(Screen.Login) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
         }
+
         composable<Screen.Dashboard> {
             DashboardScreen(
                 onTicketClick = { ticketId ->
                     navController.navigate(Screen.TicketDetail(ticketId))
+                },
+                onProfileClick = {
+                    navController.navigate(Screen.Profile)
                 }
             )
         }
+
         composable<Screen.CreateTicket> {
-            PlaceholderScreen(title = "Form Buat Aduan Baru")
+            CreateTicketScreen(
+                onCancel = { navController.popBackStack() },
+                onCreated = { ticketId ->
+                    navController.navigate(Screen.TicketDetail(ticketId)) {
+                        popUpTo(Screen.Dashboard)
+                    }
+                }
+            )
         }
+
         composable<Screen.TicketDetail> { backStackEntry ->
             val route = backStackEntry.toRoute<Screen.TicketDetail>()
             TicketDetailScreen(
@@ -52,27 +88,51 @@ fun NavGraph(
                 onBack = { navController.popBackStack() }
             )
         }
-        composable<Screen.MyTickets> {
-            PlaceholderScreen(title = "Aduan Saya")
-        }
-        composable<Screen.Profile> {
-            PlaceholderScreen(title = "Profil Pengguna")
-        }
-        composable<Screen.Monitoring> {
-            PlaceholderScreen(title = "Pure Monitoring Dashboard (Admin)")
-        }
-        composable<Screen.UserManagement> {
-            PlaceholderScreen(title = "Manajemen Pengguna & Kategori (Admin)")
-        }
-    }
-}
 
-@Composable
-private fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = title)
+        composable<Screen.MyTickets> {
+            MyTicketsScreen(
+                onTicketClick = { ticketId ->
+                    navController.navigate(Screen.TicketDetail(ticketId))
+                }
+            )
+        }
+
+        composable<Screen.SupportedTickets> {
+            SupportedTicketsScreen(
+                onTicketClick = { ticketId ->
+                    navController.navigate(Screen.TicketDetail(ticketId))
+                }
+            )
+        }
+
+        composable<Screen.Profile> {
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate(Screen.Login) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable<Screen.Monitoring> {
+            MonitoringScreen(
+                onTicketClick = { ticketId ->
+                    navController.navigate(Screen.TicketDetail(ticketId))
+                },
+                onManageUsersClick = {
+                    navController.navigate(Screen.UserManagement)
+                },
+                onManageCategoriesClick = {
+                    navController.navigate(Screen.UserManagement)
+                }
+            )
+        }
+
+        composable<Screen.UserManagement> {
+            UserManagementScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
