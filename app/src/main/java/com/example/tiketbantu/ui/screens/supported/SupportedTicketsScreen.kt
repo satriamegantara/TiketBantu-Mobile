@@ -60,26 +60,18 @@ fun SupportedTicketsScreen(
     val repository: TicketRepository = koinInject()
     val scope = rememberCoroutineScope()
 
-    val ticketsFlow = remember(repository) {
-        repository.getAllTickets(
-            query = "",
-            categoryId = null,
-            status = null,
-            sortByMostLiked = false,
-            currentUserId = 1L,
-            limit = 100
-        )
+    val currentUserId = DemoSession.userId
+    val ticketsFlow = remember(repository, currentUserId) {
+        repository.getSupportedTickets(currentUserId)
     }
-    val allTickets by ticketsFlow.collectAsState(initial = emptyList())
+    val allSupportedTickets by ticketsFlow.collectAsState(initial = emptyList())
 
     val statusFilters = listOf("Semua", TicketStatus.DIPROSES, TicketStatus.BARU, TicketStatus.SELESAI)
     var selectedStatus by remember { mutableStateOf("Semua") }
 
-    val supportedTickets = remember(allTickets, selectedStatus) {
-        // Only tickets marked as supported by the current user
-        val userSupported = allTickets.filter { it.isSupportedByMe }
-        if (selectedStatus == "Semua") userSupported
-        else userSupported.filter { it.status.equals(selectedStatus, ignoreCase = true) }
+    val supportedTickets = remember(allSupportedTickets, selectedStatus) {
+        if (selectedStatus == "Semua") allSupportedTickets
+        else allSupportedTickets.filter { it.status.equals(selectedStatus, ignoreCase = true) }
     }
 
     AppBackground(modifier = modifier) {
@@ -162,7 +154,7 @@ fun SupportedTicketsScreen(
                             onClick = { onTicketClick(ticket.id) },
                             onToggleSupport = {
                                 scope.launch {
-                                    repository.toggleSupport(ticket.id, 1L)
+                                    repository.toggleSupport(ticket.id, currentUserId)
                                 }
                             },
                             role = DemoSession.role

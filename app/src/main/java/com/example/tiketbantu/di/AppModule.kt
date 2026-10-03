@@ -2,6 +2,7 @@ package com.example.tiketbantu.di
 
 import com.example.tiketbantu.data.local.AppDatabase
 import com.example.tiketbantu.data.preferences.SessionManager
+import com.example.tiketbantu.data.repository.AuthRepositoryImpl
 import com.example.tiketbantu.data.repository.CommentRepositoryImpl
 import com.example.tiketbantu.data.repository.FakeAuthRepository
 import com.example.tiketbantu.data.repository.TicketRepositoryImpl
@@ -52,7 +53,7 @@ val appModule = module {
     // ── Repository Layer (Backed by Room Database) ───────────────────────────
     single<TicketRepository> { TicketRepositoryImpl(ticketDao = get()) }
     single<CommentRepository> { CommentRepositoryImpl(commentDao = get()) }
-    single<AuthRepository> { FakeAuthRepository() }
+    single<AuthRepository> { AuthRepositoryImpl(userDao = get(), sessionManager = get()) }
 
     // ── UseCase Layer ────────────────────────────────────────────────────────
     factory { GetFeedUseCase(get()) }

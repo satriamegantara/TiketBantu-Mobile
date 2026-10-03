@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.BrandEmblem
@@ -52,10 +53,14 @@ import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.BrandIndigo
+import com.example.tiketbantu.ui.theme.DangerRed
 import com.example.tiketbantu.ui.theme.FieldBg
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 /**
  * Modern Glass Login Screen with Instant Demo Role login selectors
@@ -66,9 +71,14 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var email by remember { mutableStateOf("emily.j@kampus.ac.id") }
+    val authRepository: AuthRepository = koinInject()
+    val scope = rememberCoroutineScope()
+
+    var email by remember { mutableStateOf("emily.johnson@kampus.ac.id") }
     var password by remember { mutableStateOf("password123") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
     AppBackground(modifier = modifier) {
         Column(
@@ -130,13 +140,32 @@ fun LoginScreen(
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
                 )
 
-                Spacer(Modifier.height(24.dp))
+                if (errorMessage != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = errorMessage ?: "",
+                        color = DangerRed,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
 
                 GradientButton(
-                    text = "Masuk ke Akun",
+                    text = if (isLoading) "Memproses..." else "Masuk ke Akun",
+                    enabled = !isLoading && email.isNotBlank(),
                     onClick = {
-                        DemoSession.isLoggedIn = true
-                        onLoginSuccess()
+                        errorMessage = null
+                        isLoading = true
+                        scope.launch {
+                            val result = authRepository.login(email, password)
+                            isLoading = false
+                            result.onSuccess {
+                                onLoginSuccess()
+                            }.onFailure { error ->
+                                errorMessage = error.localizedMessage ?: "Gagal masuk. Periksa email dan password."
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -156,17 +185,23 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DemoRoleButton("Pelapor", "Mahasiswa", modifier = Modifier.weight(1f)) {
-                        DemoSession.loginAs(AppRole.PELAPOR)
-                        onLoginSuccess()
+                    DemoRoleButton("Pelapor", "Emily", modifier = Modifier.weight(1f)) {
+                        scope.launch {
+                            authRepository.login("emily.johnson@kampus.ac.id", "password123")
+                            onLoginSuccess()
+                        }
                     }
                     DemoRoleButton("Teknisi", "Pak Joko", modifier = Modifier.weight(1f)) {
-                        DemoSession.loginAs(AppRole.AGEN)
-                        onLoginSuccess()
+                        scope.launch {
+                            authRepository.login("joko.santoso@kampus.ac.id", "password123")
+                            onLoginSuccess()
+                        }
                     }
                     DemoRoleButton("Admin", "Sarpras", modifier = Modifier.weight(1f)) {
-                        DemoSession.loginAs(AppRole.ADMIN)
-                        onLoginSuccess()
+                        scope.launch {
+                            authRepository.login("admin.sarpras@kampus.ac.id", "password123")
+                            onLoginSuccess()
+                        }
                     }
                 }
             }

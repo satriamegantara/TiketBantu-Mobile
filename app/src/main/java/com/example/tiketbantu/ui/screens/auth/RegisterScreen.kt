@@ -37,6 +37,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.BrandEmblem
@@ -46,9 +48,12 @@ import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.BrandIndigo
+import com.example.tiketbantu.ui.theme.DangerRed
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 /**
  * Modern Campus Glass Register Screen
@@ -59,10 +64,15 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val authRepository: AuthRepository = koinInject()
+    val scope = rememberCoroutineScope()
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var nim by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
     AppBackground(modifier = modifier) {
         Column(
@@ -138,16 +148,50 @@ fun RegisterScreen(
                     visualTransformation = PasswordVisualTransformation()
                 )
 
-                Spacer(Modifier.height(24.dp))
+                if (errorMessage != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = errorMessage ?: "",
+                        color = DangerRed,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
 
                 GradientButton(
-                    text = "Daftar Akun",
+                    text = if (isLoading) "Mendaftarkan Akun..." else "Daftar Akun",
+                    enabled = !isLoading && name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                     onClick = {
-                        DemoSession.loginAs(AppRole.PELAPOR)
-                        if (name.isNotBlank()) DemoSession.name = name
-                        if (email.isNotBlank()) DemoSession.email = email
-                        if (nim.isNotBlank()) DemoSession.nimNip = nim
-                        onRegisterSuccess()
+                        if (name.isBlank() || email.isBlank() || password.isBlank()) {
+                            errorMessage = "Harap lengkapi semua bidang wajib."
+                            return@GradientButton
+                        }
+                        if (!email.contains("@")) {
+                            errorMessage = "Format email kampus tidak valid."
+                            return@GradientButton
+                        }
+                        if (password.length < 6) {
+                            errorMessage = "Kata sandi minimal 6 karakter."
+                            return@GradientButton
+                        }
+
+                        errorMessage = null
+                        isLoading = true
+                        scope.launch {
+                            val result = authRepository.register(
+                                name = name,
+                                email = email,
+                                nimNip = nim.ifBlank { null },
+                                passwordHash = password
+                            )
+                            isLoading = false
+                            result.onSuccess {
+                                onRegisterSuccess()
+                            }.onFailure { error ->
+                                errorMessage = error.localizedMessage ?: "Pendaftaran gagal. Silakan coba lagi."
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 )

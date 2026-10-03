@@ -97,22 +97,23 @@ fun MonitoringScreen(
     modifier: Modifier = Modifier
 ) {
     val repository: TicketRepository = koinInject()
-    val ticketsFlow = remember(repository) {
+    val currentUserId = DemoSession.userId
+    val ticketsFlow = remember(repository, currentUserId) {
         repository.getAllTickets(
             query = "",
             categoryId = null,
             status = null,
             sortByMostLiked = true,
-            currentUserId = 1L,
+            currentUserId = currentUserId,
             limit = 100
         )
     }
     val allTickets by ticketsFlow.collectAsState(initial = emptyList())
 
-    val totalTickets = if (allTickets.isNotEmpty()) allTickets.size else 148
-    val inProcessCount = if (allTickets.isNotEmpty()) allTickets.count { it.status == TicketStatus.DIPROSES } else 36
-    val completedCount = if (allTickets.isNotEmpty()) allTickets.count { it.status == TicketStatus.SELESAI } else 104
-    val totalAffected = if (allTickets.isNotEmpty()) allTickets.sumOf { it.supportCount } * 10 + 120 else 1420
+    val totalTickets = allTickets.size
+    val inProcessCount = allTickets.count { it.status == TicketStatus.DIPROSES }
+    val completedCount = allTickets.count { it.status == TicketStatus.SELESAI }
+    val totalAffected = allTickets.sumOf { it.supportCount }
 
     var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
     val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
@@ -152,7 +153,7 @@ fun MonitoringScreen(
             }
 
             item(key = "category_distribution") {
-                CategoryDistributionCard()
+                CategoryDistributionCard(tickets = allTickets)
             }
 
             item(key = "priority_header") {
@@ -508,7 +509,20 @@ private fun StatCard(
 }
 
 @Composable
-private fun CategoryDistributionCard() {
+private fun CategoryDistributionCard(tickets: List<Ticket> = emptyList()) {
+    val total = tickets.size.coerceAtLeast(1)
+    val itCount = tickets.count { it.categoryId == 1L || it.categoryName.contains("IT", ignoreCase = true) }
+    val ruanganCount = tickets.count { it.categoryId == 2L || it.categoryName.contains("Ruangan", ignoreCase = true) }
+    val umumCount = tickets.count { it.categoryId == 3L || it.categoryName.contains("Umum", ignoreCase = true) }
+
+    val itPct = if (tickets.isEmpty()) 45 else (itCount * 100) / total
+    val ruanganPct = if (tickets.isEmpty()) 35 else (ruanganCount * 100) / total
+    val umumPct = if (tickets.isEmpty()) 20 else (100 - itPct - ruanganPct).coerceAtLeast(0)
+
+    val wIt = if (tickets.isEmpty()) 0.45f else (itCount.toFloat() / total).coerceAtLeast(0.05f)
+    val wRuangan = if (tickets.isEmpty()) 0.35f else (ruanganCount.toFloat() / total).coerceAtLeast(0.05f)
+    val wUmum = if (tickets.isEmpty()) 0.20f else (umumCount.toFloat() / total).coerceAtLeast(0.05f)
+
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -549,18 +563,18 @@ private fun CategoryDistributionCard() {
                 .height(8.dp)
                 .clip(RoundedCornerShape(50))
         ) {
-            Box(Modifier.weight(0.45f).fillMaxSize().background(CatIT))
-            Box(Modifier.weight(0.35f).fillMaxSize().background(CatRuangan))
-            Box(Modifier.weight(0.20f).fillMaxSize().background(CatUmum))
+            Box(Modifier.weight(wIt).fillMaxSize().background(CatIT))
+            Box(Modifier.weight(wRuangan).fillMaxSize().background(CatRuangan))
+            Box(Modifier.weight(wUmum).fillMaxSize().background(CatUmum))
         }
 
         Spacer(Modifier.height(16.dp))
 
-        CategoryRow(color = CatIT, name = "Teknologi & IT (Lab & WiFi)", percent = "45%", count = "67 tiket")
+        CategoryRow(color = CatIT, name = "Teknologi & IT (Lab & WiFi)", percent = "$itPct%", count = "$itCount tiket")
         Spacer(Modifier.height(10.dp))
-        CategoryRow(color = CatRuangan, name = "Fasilitas Ruangan (AC, Kursi, Proyektor)", percent = "35%", count = "52 tiket")
+        CategoryRow(color = CatRuangan, name = "Fasilitas Ruangan (AC, Kursi, Proyektor)", percent = "$ruanganPct%", count = "$ruanganCount tiket")
         Spacer(Modifier.height(10.dp))
-        CategoryRow(color = CatUmum, name = "Infrastruktur Kampus & Sanitasi", percent = "20%", count = "29 tiket")
+        CategoryRow(color = CatUmum, name = "Infrastruktur Kampus & Sanitasi", percent = "$umumPct%", count = "$umumCount tiket")
     }
 }
 

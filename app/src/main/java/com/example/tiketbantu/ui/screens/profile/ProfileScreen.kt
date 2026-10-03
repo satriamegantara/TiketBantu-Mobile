@@ -52,6 +52,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.tiketbantu.data.local.dao.SupportDao
+import com.example.tiketbantu.data.local.dao.TicketDao
+import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.InitialsAvatar
@@ -68,6 +73,8 @@ import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SupportOrange
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 /**
  * Profile Screen: User info, real-time Role Switcher (Pelapor / Agen / Admin),
@@ -78,7 +85,18 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val authRepository: AuthRepository = koinInject()
+    val ticketDao: TicketDao = koinInject()
+    val supportDao: SupportDao = koinInject()
+    val scope = rememberCoroutineScope()
+
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val myTickets by ticketDao.observeMine(DemoSession.userId).collectAsState(initial = emptyList())
+    val mySupports by supportDao.getSupportedTicketIdsByUser(DemoSession.userId).collectAsState(initial = emptyList())
+    val sentCount = myTickets.size
+    val doneCount = myTickets.count { it.status.equals("SELESAI", ignoreCase = true) }
+    val supportCount = mySupports.size
 
     AppBackground(modifier = modifier) {
         LazyColumn(
@@ -111,11 +129,25 @@ fun ProfileScreen(
             }
 
             item(key = "role_switcher") {
-                RoleSwitcherCard()
+                RoleSwitcherCard(
+                    onSwitchRole = { targetRole ->
+                        scope.launch {
+                            when (targetRole) {
+                                AppRole.PELAPOR -> authRepository.login("emily.johnson@kampus.ac.id", "password123")
+                                AppRole.AGEN -> authRepository.login("joko.santoso@kampus.ac.id", "password123")
+                                AppRole.ADMIN -> authRepository.login("admin.sarpras@kampus.ac.id", "password123")
+                            }
+                        }
+                    }
+                )
             }
 
             item(key = "stats") {
-                UserStatsCard()
+                UserStatsCard(
+                    sentCount = sentCount,
+                    supportCount = supportCount,
+                    doneCount = doneCount
+                )
             }
 
             item(key = "menu_section") {
@@ -133,8 +165,10 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
-                    DemoSession.logout()
-                    onLogout()
+                    scope.launch {
+                        authRepository.logout()
+                        onLogout()
+                    }
                 }) {
                     Text("Ya, Keluar", color = DangerRed, fontWeight = FontWeight.Bold)
                 }
@@ -212,7 +246,7 @@ private fun UserProfileCard() {
 }
 
 @Composable
-private fun RoleSwitcherCard() {
+private fun RoleSwitcherCard(onSwitchRole: (AppRole) -> Unit) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,7 +280,7 @@ private fun RoleSwitcherCard() {
                 title = "Pelapor",
                 subtitle = "Mahasiswa",
                 selected = DemoSession.role == AppRole.PELAPOR,
-                onClick = { DemoSession.loginAs(AppRole.PELAPOR) },
+                onClick = { onSwitchRole(AppRole.PELAPOR) },
                 modifier = Modifier.weight(1f)
             )
             RolePillOption(
@@ -254,7 +288,7 @@ private fun RoleSwitcherCard() {
                 title = "Teknisi",
                 subtitle = "Pak Joko",
                 selected = DemoSession.role == AppRole.AGEN,
-                onClick = { DemoSession.loginAs(AppRole.AGEN) },
+                onClick = { onSwitchRole(AppRole.AGEN) },
                 modifier = Modifier.weight(1f)
             )
             RolePillOption(
@@ -262,7 +296,7 @@ private fun RoleSwitcherCard() {
                 title = "Admin",
                 subtitle = "Sarpras",
                 selected = DemoSession.role == AppRole.ADMIN,
-                onClick = { DemoSession.loginAs(AppRole.ADMIN) },
+                onClick = { onSwitchRole(AppRole.ADMIN) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -305,7 +339,11 @@ private fun RolePillOption(
 }
 
 @Composable
-private fun UserStatsCard() {
+private fun UserStatsCard(
+    sentCount: Int = 0,
+    supportCount: Int = 0,
+    doneCount: Int = 0
+) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -321,9 +359,9 @@ private fun UserStatsCard() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            StatItem(icon = Icons.Outlined.ConfirmationNumber, count = "12", label = "Aduan Dikirim", color = BrandIndigo)
-            StatItem(icon = Icons.Outlined.LocalFireDepartment, count = "48", label = "Dukungan Diberi", color = SupportOrange)
-            StatItem(icon = Icons.Outlined.CheckCircle, count = "9", label = "Telah Tuntas", color = Color(0xFF16A34A))
+            StatItem(icon = Icons.Outlined.ConfirmationNumber, count = sentCount.toString(), label = "Aduan Dikirim", color = BrandIndigo)
+            StatItem(icon = Icons.Outlined.LocalFireDepartment, count = supportCount.toString(), label = "Dukungan Diberi", color = SupportOrange)
+            StatItem(icon = Icons.Outlined.CheckCircle, count = doneCount.toString(), label = "Telah Tuntas", color = Color(0xFF16A34A))
         }
     }
 }

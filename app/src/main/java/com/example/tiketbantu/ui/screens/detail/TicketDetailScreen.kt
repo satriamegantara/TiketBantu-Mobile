@@ -2,6 +2,9 @@ package com.example.tiketbantu.ui.screens.detail
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,13 +86,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.tiketbantu.base.UiState
+import com.example.tiketbantu.data.local.dao.CategoryDao
 import com.example.tiketbantu.domain.model.Comment
 import com.example.tiketbantu.domain.model.Ticket
 import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
+import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.AvatarStack
 import com.example.tiketbantu.ui.components.CircleIconButton
+import com.example.tiketbantu.ui.components.FieldLabel
+import com.example.tiketbantu.ui.components.FilterPill
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.components.InitialsAvatar
@@ -151,6 +158,8 @@ fun TicketDetailScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val canUpdateStatus by viewModel.canUpdateStatus.collectAsState()
     val repository: TicketRepository = koinInject()
+    val categoryDao: CategoryDao = koinInject()
+    val categories by categoryDao.getAllCategories().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -158,6 +167,7 @@ fun TicketDetailScreen(
     var pendingScrollToEnd by remember { mutableStateOf(false) }
     var pendingStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
 
     val role = DemoSession.role
     val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
@@ -204,7 +214,7 @@ fun TicketDetailScreen(
                 role = role,
                 onBack = onBack,
                 onShare = { toast("Tautan tiket disalin ke clipboard") },
-                onEdit = { toast("Mode edit aduan (hanya saat status Baru)") },
+                onEdit = { showEditDialog = true },
                 onDelete = { confirmDelete = true }
             )
 
@@ -256,22 +266,53 @@ fun TicketDetailScreen(
     }
 
     pendingStatus?.let { status ->
-        val label = if (status == TicketStatus.SELESAI) "Selesai" else "Ditutup"
+        val (dialogTitle, dialogText, confirmBtnText) = when (status) {
+            TicketStatus.DIPROSES -> Triple(
+                "Klaim & Kerjakan Aduan?",
+                "Tiket ini akan ditugaskan ke Anda dan statusnya berubah menjadi 'Diproses'.",
+                "Ya, Ambil Tiket"
+            )
+            TicketStatus.SELESAI -> Triple(
+                "Tandai Aduan Selesai?",
+                "Penanganan fasilitas telah tuntas. Tiket akan terkunci dan dipindah ke arsip selesai.",
+                "Ya, Selesai"
+            )
+            else -> Triple(
+                "Tutup Tiket Aduan?",
+                "Tiket akan ditutup dan terkunci.",
+                "Ya, Tutup Tiket"
+            )
+        }
         AlertDialog(
             onDismissRequest = { pendingStatus = null },
             containerColor = Color.White,
-            title = { Text("Ubah status aduan?", fontWeight = FontWeight.Bold) },
-            text = { Text("Status akan menjadi \"$label\". Setelah itu aduan terkunci dan tidak dapat diubah lagi.") },
+            title = { Text(dialogTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(dialogText) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.updateStatus(status)
                     pendingStatus = null
-                }) { Text("Ya, ubah", color = BrandIndigo, fontWeight = FontWeight.Bold) }
+                }) { Text(confirmBtnText, color = BrandIndigo, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { pendingStatus = null }) { Text("Batal", color = InkSoft) }
             }
         )
+    }
+
+    if (showEditDialog) {
+        val currentTicket = (ticketState as? UiState.Success)?.data
+        if (currentTicket != null) {
+            EditTicketDialog(
+                ticket = currentTicket,
+                categories = categories,
+                onDismiss = { showEditDialog = false },
+                onSave = { newTitle, newDesc, newCatId ->
+                    viewModel.updateTicketContent(newTitle, newDesc, newCatId)
+                    showEditDialog = false
+                }
+            )
+        }
     }
 
     if (confirmDelete) {
@@ -340,7 +381,8 @@ private fun DetailTopBar(
         Box {
             CircleIconButton(Icons.Filled.MoreVert, "Lainnya", { menuOpen = true }, bordered = false, container = Color.Transparent)
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Color.White) {
-                val canEdit = ticket?.status == TicketStatus.BARU && role == AppRole.PELAPOR
+                val isAuthorOrAdmin = ticket?.reporterId == DemoSession.userId || role == AppRole.ADMIN
+                val canEdit = ticket?.status == TicketStatus.BARU && isAuthorOrAdmin
                 DropdownMenuItem(
                     text = { Text("Edit Aduan") },
                     leadingIcon = { Icon(Icons.Outlined.Edit, null) },
@@ -404,7 +446,7 @@ private fun DetailList(
                 }
             }
         } else if (canAct) {
-            item(key = "actions") { ActionPanel(onRequestStatusChange) }
+            item(key = "actions") { ActionPanel(ticket, onRequestStatusChange) }
         }
 
         item(key = "thread-header") {
@@ -670,7 +712,10 @@ private fun SupportCard(ticket: Ticket, onToggleSupport: () -> Unit) {
 }
 
 @Composable
-private fun ActionPanel(onRequestStatusChange: (String) -> Unit) {
+private fun ActionPanel(
+    ticket: Ticket,
+    onRequestStatusChange: (String) -> Unit
+) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.Engineering, null, tint = BrandIndigo, modifier = Modifier.size(18.dp))
@@ -684,34 +729,131 @@ private fun ActionPanel(onRequestStatusChange: (String) -> Unit) {
             Text("Akses Petugas", style = MaterialTheme.typography.labelSmall, color = InkMuted)
         }
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (ticket.status == TicketStatus.BARU) {
             Surface(
-                onClick = { onRequestStatusChange(TicketStatus.SELESAI) },
+                onClick = { onRequestStatusChange(TicketStatus.DIPROSES) },
                 shape = RoundedCornerShape(50),
                 color = BrandIndigo,
-                modifier = Modifier.weight(1f).height(46.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.CheckCircle, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Tandai Selesai", color = Color.White, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Filled.Bolt, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Ambil & Kerjakan Aduan", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
-            Surface(
-                onClick = { onRequestStatusChange(TicketStatus.DITUTUP) },
-                shape = RoundedCornerShape(50),
-                color = Color.White,
-                border = BorderStroke(1.dp, Hairline),
-                modifier = Modifier.weight(1f).height(46.dp)
-            ) {
-                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.HighlightOff, null, tint = Ink, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Tutup Tiket", color = Ink, fontWeight = FontWeight.Bold)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Surface(
+                    onClick = { onRequestStatusChange(TicketStatus.SELESAI) },
+                    shape = RoundedCornerShape(50),
+                    color = BrandIndigo,
+                    modifier = Modifier.weight(1f).height(46.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.CheckCircle, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Tandai Selesai", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Surface(
+                    onClick = { onRequestStatusChange(TicketStatus.DITUTUP) },
+                    shape = RoundedCornerShape(50),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Hairline),
+                    modifier = Modifier.weight(1f).height(46.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.HighlightOff, null, tint = Ink, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Tutup Tiket", color = Ink, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun EditTicketDialog(
+    ticket: Ticket,
+    categories: List<com.example.tiketbantu.data.local.entity.CategoryEntity>,
+    onDismiss: () -> Unit,
+    onSave: (String, String, Long) -> Unit
+) {
+    var title by rememberSaveable { mutableStateOf(ticket.title) }
+    var description by rememberSaveable { mutableStateOf(ticket.description) }
+    var selectedCategoryId by rememberSaveable { mutableStateOf(ticket.categoryId) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Text("Edit Aduan Kampus", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FieldLabel(text = "Judul Masalah", required = true)
+                AppInput(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = "Ringkasan kerusakan...",
+                    singleLine = true
+                )
+
+                FieldLabel(text = "Kategori Fasilitas", required = true)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categories.forEach { cat ->
+                        FilterPill(
+                            text = cat.name,
+                            selected = selectedCategoryId == cat.id,
+                            onClick = { selectedCategoryId = cat.id }
+                        )
+                    }
+                }
+
+                FieldLabel(text = "Deskripsi Lengkap", required = true)
+                AppInput(
+                    value = description,
+                    onValueChange = { description = it },
+                    placeholder = "Jelaskan permasalahan fasilitas...",
+                    minLines = 3,
+                    singleLine = false
+                )
+
+                if (errorText != null) {
+                    Text(errorText ?: "", color = DangerRed, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (title.isBlank() || description.isBlank()) {
+                    errorText = "Judul dan deskripsi tidak boleh kosong."
+                    return@TextButton
+                }
+                onSave(title.trim(), description.trim(), selectedCategoryId)
+            }) {
+                Text("Simpan", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = InkSoft)
+            }
+        }
+    )
 }
 
 private fun roleChip(role: String): Triple<String, Color, Color> = when (role.uppercase()) {

@@ -52,11 +52,13 @@ fun MyTicketsScreen(
     val scope = rememberCoroutineScope()
     val role = DemoSession.role
 
-    val ticketsFlow = remember(repository, role) {
+    val currentUserId = DemoSession.userId
+
+    val ticketsFlow = remember(repository, role, currentUserId) {
         if (role == AppRole.AGEN) {
-            repository.getAllTickets(query = "", categoryId = null, status = null, sortByMostLiked = false, currentUserId = 20L, limit = 100)
+            repository.getAllTickets(query = "", categoryId = null, status = null, sortByMostLiked = false, currentUserId = currentUserId, limit = 100)
         } else {
-            repository.getMyTickets(userId = 1L)
+            repository.getMyTickets(userId = currentUserId)
         }
     }
     val allTickets by ticketsFlow.collectAsState(initial = emptyList())
@@ -64,9 +66,9 @@ fun MyTicketsScreen(
     val statusFilters = listOf("Semua", TicketStatus.DIPROSES, TicketStatus.BARU, TicketStatus.SELESAI)
     var selectedStatus by remember { mutableStateOf("Semua") }
 
-    val filteredTickets = remember(allTickets, selectedStatus, role) {
+    val filteredTickets = remember(allTickets, selectedStatus, role, currentUserId) {
         val base = if (role == AppRole.AGEN) {
-            allTickets.filter { it.agentId == 20L || it.agentName?.contains("Joko") == true || it.status == TicketStatus.DIPROSES }
+            allTickets.filter { it.agentId == currentUserId || it.agentName?.contains("Joko") == true || it.status == TicketStatus.DIPROSES }
         } else {
             allTickets
         }
@@ -141,7 +143,7 @@ fun MyTicketsScreen(
                             onClick = { onTicketClick(ticket.id) },
                             onToggleSupport = {
                                 scope.launch {
-                                    repository.toggleSupport(ticket.id, 1L)
+                                    repository.toggleSupport(ticket.id, currentUserId)
                                 }
                             },
                             role = role

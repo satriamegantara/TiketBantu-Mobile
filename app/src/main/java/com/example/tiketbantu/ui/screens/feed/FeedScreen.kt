@@ -153,7 +153,7 @@ fun FeedScreen(
             onProfileClick = onProfileClick,
             onClaim = { id ->
                 scope.launch {
-                    ticketRepository.updateTicketStatus(id, TicketStatus.DIPROSES, agentId = 20L)
+                    ticketRepository.updateTicketStatus(id, TicketStatus.DIPROSES, agentId = DemoSession.userId)
                     snackbarHostState.showSnackbar("Tiket ${ticketCode(id)} diklaim — status kini Diproses")
                 }
             },
