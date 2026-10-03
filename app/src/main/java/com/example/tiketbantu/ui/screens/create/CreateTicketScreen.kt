@@ -99,8 +99,11 @@ import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessText
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import java.io.File
 import java.util.Locale
 
 private const val TITLE_MAX = 80
@@ -166,23 +169,29 @@ fun CreateTicketScreen(
         }
         submitting = true
         scope.launch {
-            val category = CATEGORIES.first { it.id == categoryId }
-            val id = repository.createTicket(
-                Ticket(
-                    title = title.trim(),
-                    description = description.trim(),
-                    categoryId = category.id,
-                    categoryName = category.label,
-                    locationBuilding = building.trim(),
-                    locationFloor = floor.trim(),
-                    locationRoom = room.trim(),
-                    imageUrl = photo?.uri?.toString(),
-                    reporterId = 1L,
-                    reporterName = DemoSession.name
+            try {
+                val category = CATEGORIES.first { it.id == categoryId }
+                val savedImagePath = photo?.let { savePhotoToInternal(context, it.uri) }
+                val id = repository.createTicket(
+                    Ticket(
+                        title = title.trim(),
+                        description = description.trim(),
+                        categoryId = category.id,
+                        categoryName = category.label,
+                        locationBuilding = building.trim(),
+                        locationFloor = floor.trim(),
+                        locationRoom = room.trim(),
+                        imageUrl = savedImagePath,
+                        reporterId = DemoSession.userId,
+                        reporterName = DemoSession.name
+                    )
                 )
-            )
-            submitting = false
-            onCreated(id)
+                submitting = false
+                onCreated(id)
+            } catch (e: Exception) {
+                submitting = false
+                snackbar.showSnackbar("Gagal menyimpan aduan: ${e.localizedMessage ?: "Terjadi kesalahan"}")
+            }
         }
     }
 
@@ -560,3 +569,15 @@ private fun readPhoto(context: Context, uri: Uri): PickedPhoto? = runCatching {
     }
     PickedPhoto(uri, name, size, ext)
 }.getOrNull()
+
+private suspend fun savePhotoToInternal(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
+    val dir = File(context.filesDir, "ticket_photos").apply { if (!exists()) mkdirs() }
+    val filename = "ticket_${System.currentTimeMillis()}.jpg"
+    val destFile = File(dir, filename)
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        destFile.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    destFile.absolutePath
+}

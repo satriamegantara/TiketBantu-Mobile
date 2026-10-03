@@ -18,6 +18,7 @@ enum class AppRole(val label: String) {
  */
 object DemoSession {
     var isLoggedIn by mutableStateOf(false)
+    var userId by mutableStateOf(3L)
     var name by mutableStateOf("Emily Johnson")
     var email by mutableStateOf("emily.johnson@kampus.ac.id")
     var nimNip by mutableStateOf("2021110045")
@@ -29,13 +30,13 @@ object DemoSession {
         this.role = role
         when (role) {
             AppRole.PELAPOR -> {
-                name = "Emily Johnson"; email = "emily.johnson@kampus.ac.id"; nimNip = "2021110045"
+                userId = 3L; name = "Emily Johnson"; email = "emily.johnson@kampus.ac.id"; nimNip = "2021110045"
             }
             AppRole.AGEN -> {
-                name = "Joko Santoso"; email = "joko.santoso@kampus.ac.id"; nimNip = "198703122010"
+                userId = 2L; name = "Joko Santoso"; email = "joko.santoso@kampus.ac.id"; nimNip = "198703122010"
             }
             AppRole.ADMIN -> {
-                name = "Admin Sarpras"; email = "admin.sarpras@kampus.ac.id"; nimNip = "-"
+                userId = 1L; name = "Admin Sarpras"; email = "admin.sarpras@kampus.ac.id"; nimNip = "-"
             }
         }
         isLoggedIn = true

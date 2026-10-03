@@ -40,10 +40,12 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +54,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tiketbantu.data.local.dao.CategoryDao
+import com.example.tiketbantu.data.local.dao.UserDao
+import com.example.tiketbantu.data.local.entity.CategoryEntity
+import com.example.tiketbantu.data.local.entity.UserEntity
 import com.example.tiketbantu.domain.model.Category
 import com.example.tiketbantu.domain.model.User
 import com.example.tiketbantu.ui.components.AppBackground
@@ -70,6 +76,8 @@ import com.example.tiketbantu.ui.theme.Hairline
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 /**
  * Admin Master Data Management screen (Users & Categories)
@@ -79,29 +87,39 @@ fun UserManagementScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val userDao = koinInject<UserDao>()
+    val categoryDao = koinInject<CategoryDao>()
+    val scope = rememberCoroutineScope()
+
+    val usersFromDb by userDao.getAllUsers().collectAsState(initial = emptyList())
+    val categoriesFromDb by categoryDao.getAllCategories().collectAsState(initial = emptyList())
+
+    val users = remember(usersFromDb) {
+        if (usersFromDb.isNotEmpty()) {
+            usersFromDb.map { User(it.id, it.name, it.email, it.nimNip, it.role, it.isActive) }
+        } else {
+            listOf(
+                User(id = 1, name = "Emily Johnson", email = "emily.j@kampus.ac.id", nimNip = "20210801001", role = "PELAPOR", isActive = true),
+                User(id = 2, name = "Pak Joko Santoso", email = "joko.s@sarpras.kampus.ac.id", nimNip = "19820719002", role = "AGEN", isActive = true),
+                User(id = 3, name = "Admin Sarpras", email = "admin.sarpras@kampus.ac.id", nimNip = "19790425001", role = "ADMIN", isActive = true)
+            )
+        }
+    }
+
+    val categories = remember(categoriesFromDb) {
+        if (categoriesFromDb.isNotEmpty()) {
+            categoriesFromDb.map { Category(it.id, it.name) }
+        } else {
+            listOf(
+                Category(id = 1, name = "Teknologi & IT"),
+                Category(id = 2, name = "Fasilitas Ruangan"),
+                Category(id = 3, name = "Infrastruktur Umum")
+            )
+        }
+    }
+
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Akun Pengguna", "Kategori Masalah")
-
-    val users = remember {
-        mutableStateListOf(
-            User(id = 1, name = "Emily Johnson", email = "emily.j@kampus.ac.id", nimNip = "20210801001", role = "PELAPOR", isActive = true),
-            User(id = 2, name = "Pak Budi", email = "budi.teknisi@sarpras.kampus.ac.id", nimNip = "19850312001", role = "AGEN", isActive = true),
-            User(id = 3, name = "Pak Joko Santoso", email = "joko.s@sarpras.kampus.ac.id", nimNip = "19820719002", role = "AGEN", isActive = true),
-            User(id = 4, name = "Admin Sarpras", email = "admin.sarpras@kampus.ac.id", nimNip = "19790425001", role = "ADMIN", isActive = true),
-            User(id = 5, name = "Ahmad Faiz", email = "ahmad.faiz@kampus.ac.id", nimNip = "20210801045", role = "PELAPOR", isActive = true),
-            User(id = 6, name = "Pak Bambang (MEP)", email = "bambang.mep@sarpras.kampus.ac.id", nimNip = "19800101003", role = "AGEN", isActive = false)
-        )
-    }
-
-    val categories = remember {
-        mutableStateListOf(
-            Category(id = 1, name = "Teknologi & IT (Lab & WiFi)"),
-            Category(id = 2, name = "Fasilitas Ruangan (AC, Kursi, Proyektor)"),
-            Category(id = 3, name = "Infrastruktur Kampus & Sanitasi"),
-            Category(id = 4, name = "Kelistrikan & Penerangan"),
-            Category(id = 5, name = "Keamanan & Akses Gedung")
-        )
-    }
 
     var showAddUserDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
@@ -193,9 +211,18 @@ fun UserManagementScreen(
                         UserCardItem(
                             user = user,
                             onToggleActive = { active ->
-                                val idx = users.indexOfFirst { it.id == user.id }
-                                if (idx != -1) {
-                                    users[idx] = user.copy(isActive = active)
+                                scope.launch {
+                                    userDao.updateUser(
+                                        UserEntity(
+                                            id = user.id,
+                                            name = user.name,
+                                            email = user.email,
+                                            nimNip = user.nimNip,
+                                            passwordHash = "pass123",
+                                            role = user.role,
+                                            isActive = active
+                                        )
+                                    )
                                 }
                             }
                         )
@@ -213,8 +240,18 @@ fun UserManagementScreen(
         AddUserDialog(
             onDismiss = { showAddUserDialog = false },
             onAdd = { name, email, nim, role ->
-                val newId = (users.maxOfOrNull { it.id } ?: 0) + 1
-                users.add(0, User(id = newId, name = name, email = email, nimNip = nim, role = role, isActive = true))
+                scope.launch {
+                    userDao.insertUser(
+                        UserEntity(
+                            name = name,
+                            email = email,
+                            nimNip = nim,
+                            passwordHash = "pass123",
+                            role = role,
+                            isActive = true
+                        )
+                    )
+                }
                 showAddUserDialog = false
             }
         )
@@ -224,8 +261,9 @@ fun UserManagementScreen(
         AddCategoryDialog(
             onDismiss = { showAddCategoryDialog = false },
             onAdd = { name ->
-                val newId = (categories.maxOfOrNull { it.id } ?: 0) + 1
-                categories.add(0, Category(id = newId, name = name))
+                scope.launch {
+                    categoryDao.insertCategory(CategoryEntity(name = name))
+                }
                 showAddCategoryDialog = false
             }
         )
