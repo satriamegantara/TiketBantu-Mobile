@@ -65,31 +65,6 @@ class FakeTicketRepository(seed: Boolean = true) : TicketRepository {
             list.filter { it.reporterId == userId }.sortedByDescending { it.createdAt }
         }
 
-    override fun getSupportedTickets(userId: Long): Flow<List<Ticket>> =
-        observeEnriched(userId).map { list ->
-            list.filter { it.isSupportedByMe }.sortedByDescending { it.createdAt }
-        }
-
-    override suspend fun updateTicketContent(
-        ticketId: Long,
-        title: String,
-        description: String,
-        categoryId: Long
-    ) {
-        tickets.update { current ->
-            current.map { ticket ->
-                if (ticket.id == ticketId) {
-                    ticket.copy(
-                        title = title,
-                        description = description,
-                        categoryId = categoryId,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                } else ticket
-            }
-        }
-    }
-
     override suspend fun createTicket(ticket: Ticket): Long {
         var newId = 0L
         tickets.update { current ->

@@ -94,11 +94,11 @@ abstract class AppDatabase : RoomDatabase() {
             """)
             db.execSQL("""
                 INSERT INTO users (id, name, email, nimNip, passwordHash, role, isActive)
-                VALUES (2, 'Pak Joko Santoso', 'joko.santoso@kampus.ac.id', '198703122010', 'agen123', 'AGEN', 1)
+                VALUES (2, 'Budi Teknisi', 'agen@kampus.ac.id', '199002022015041002', 'agen123', 'AGEN', 1)
             """)
             db.execSQL("""
                 INSERT INTO users (id, name, email, nimNip, passwordHash, role, isActive)
-                VALUES (3, 'Emily Johnson', 'emily.johnson@kampus.ac.id', '2021110045', 'user123', 'PELAPOR', 1)
+                VALUES (3, 'Siti Mahasiswa', 'user@kampus.ac.id', '2100018001', 'user123', 'PELAPOR', 1)
             """)
             db.execSQL("""
                 INSERT INTO users (id, name, email, nimNip, passwordHash, role, isActive)
