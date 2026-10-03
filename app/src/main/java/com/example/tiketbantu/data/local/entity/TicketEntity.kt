@@ -5,7 +5,10 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Table "tickets". [imageUrl] holds a local file path in filesDir, not a remote URL. */
+/**
+ * Room Entity for Tickets / Complaints.
+ * [imageUrl] holds a local file path in filesDir, not a remote URL.
+ */
 @Entity(
     tableName = "tickets",
     foreignKeys = [
@@ -33,22 +36,24 @@ import androidx.room.PrimaryKey
         Index(value = ["reporterId"]),
         Index(value = ["agentId"]),
         Index(value = ["status"]),
-        Index(value = ["createdAt"])
+        Index(value = ["createdAt"]),
+        Index(value = ["deletedAt"])
     ]
 )
 data class TicketEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
     val title: String,
     val description: String,
     val categoryId: Long,
     val locationBuilding: String,
     val locationFloor: String,
     val locationRoom: String,
-    val status: String,
+    val status: String = "BARU", // BARU, DIPROSES, SELESAI, DITUTUP
     val imageUrl: String? = null,
     val reporterId: Long,
     val agentId: Long? = null,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null
 )

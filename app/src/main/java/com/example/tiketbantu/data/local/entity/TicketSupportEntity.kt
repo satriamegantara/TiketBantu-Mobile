@@ -31,7 +31,9 @@ import androidx.room.PrimaryKey
     ]
 )
 data class TicketSupportEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
     val ticketId: Long,
-    val userId: Long
+    val userId: Long,
+    val createdAt: Long = System.currentTimeMillis()
 )

@@ -6,7 +6,10 @@ import com.example.tiketbantu.domain.repository.TicketRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** Room-backed implementation. All reads are reactive ([Flow]) so the UI re-sorts instantly. */
+/**
+ * Room-backed implementation of [TicketRepository].
+ * All reads are reactive ([Flow]) so the UI re-sorts instantly.
+ */
 class TicketRepositoryImpl(
     private val ticketDao: TicketDao
 ) : TicketRepository {

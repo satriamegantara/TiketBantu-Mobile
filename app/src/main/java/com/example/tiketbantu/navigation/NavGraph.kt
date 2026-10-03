@@ -1,5 +1,9 @@
 package com.example.tiketbantu.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -19,7 +23,7 @@ import com.example.tiketbantu.ui.screens.profile.ProfileScreen
 import com.example.tiketbantu.ui.screens.supported.SupportedTicketsScreen
 
 /**
- * Root Navigation Graph for TiketBantu Mobile.
+ * Root Type-Safe Navigation Graph for TiketBantu Mobile.
  * Connects all screens according to APP_FLOW_TiketBantu.md and features_tiketbantu.md.
  */
 @Composable
@@ -31,17 +35,39 @@ fun NavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            fadeIn(animationSpec = tween(250)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(250)
+            )
+        },
+        exitTransition = {
+            fadeOut(animationSpec = tween(250)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(250)
+            )
+        },
+        popEnterTransition = {
+            fadeIn(animationSpec = tween(250)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(250)
+            )
+        },
+        popExitTransition = {
+            fadeOut(animationSpec = tween(250)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(250)
+            )
+        }
     ) {
         composable<Screen.Login> {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate(Screen.Dashboard) {
-                        popUpTo(Screen.Login) { inclusive = true }
-                    }
+                    navController.navigateToDashboardFromAuth()
                 },
                 onNavigateToRegister = {
-                    navController.navigate(Screen.Register)
+                    navController.safeNavigate(Screen.Register)
                 }
             )
         }
@@ -49,12 +75,10 @@ fun NavGraph(
         composable<Screen.Register> {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Screen.Dashboard) {
-                        popUpTo(Screen.Login) { inclusive = true }
-                    }
+                    navController.navigateToDashboardFromAuth()
                 },
                 onNavigateToLogin = {
-                    navController.popBackStack()
+                    navController.safePopBackStack()
                 }
             )
         }
@@ -62,37 +86,37 @@ fun NavGraph(
         composable<Screen.Dashboard> {
             DashboardScreen(
                 onTicketClick = { ticketId ->
-                    navController.navigate(Screen.TicketDetail(ticketId))
+                    navController.safeNavigate(Screen.Detail(ticketId))
                 },
                 onProfileClick = {
-                    navController.navigate(Screen.Profile)
+                    navController.safeNavigate(Screen.Profile)
                 }
             )
         }
 
         composable<Screen.CreateTicket> {
             CreateTicketScreen(
-                onCancel = { navController.popBackStack() },
+                onCancel = { navController.safePopBackStack() },
                 onCreated = { ticketId ->
-                    navController.navigate(Screen.TicketDetail(ticketId)) {
-                        popUpTo(Screen.Dashboard)
+                    navController.safeNavigate(Screen.Detail(ticketId)) {
+                        popUpTo<Screen.Dashboard> { inclusive = false }
                     }
                 }
             )
         }
 
-        composable<Screen.TicketDetail> { backStackEntry ->
-            val route = backStackEntry.toRoute<Screen.TicketDetail>()
+        composable<Screen.Detail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.Detail>()
             TicketDetailScreen(
-                ticketId = route.ticketId,
-                onBack = { navController.popBackStack() }
+                ticketId = route.id,
+                onBack = { navController.safePopBackStack() }
             )
         }
 
         composable<Screen.MyTickets> {
             MyTicketsScreen(
                 onTicketClick = { ticketId ->
-                    navController.navigate(Screen.TicketDetail(ticketId))
+                    navController.safeNavigate(Screen.Detail(ticketId))
                 }
             )
         }
@@ -100,7 +124,7 @@ fun NavGraph(
         composable<Screen.SupportedTickets> {
             SupportedTicketsScreen(
                 onTicketClick = { ticketId ->
-                    navController.navigate(Screen.TicketDetail(ticketId))
+                    navController.safeNavigate(Screen.Detail(ticketId))
                 }
             )
         }
@@ -108,9 +132,7 @@ fun NavGraph(
         composable<Screen.Profile> {
             ProfileScreen(
                 onLogout = {
-                    navController.navigate(Screen.Login) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navController.navigateToLoginFromLogout()
                 }
             )
         }
@@ -118,20 +140,20 @@ fun NavGraph(
         composable<Screen.Monitoring> {
             MonitoringScreen(
                 onTicketClick = { ticketId ->
-                    navController.navigate(Screen.TicketDetail(ticketId))
+                    navController.safeNavigate(Screen.Detail(ticketId))
                 },
                 onManageUsersClick = {
-                    navController.navigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement)
                 },
                 onManageCategoriesClick = {
-                    navController.navigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement)
                 }
             )
         }
 
         composable<Screen.UserManagement> {
             UserManagementScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.safePopBackStack() }
             )
         }
     }
