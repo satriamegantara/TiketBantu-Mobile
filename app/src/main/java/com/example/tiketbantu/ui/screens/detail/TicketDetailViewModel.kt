@@ -187,12 +187,23 @@ class TicketDetailViewModel(
             }
             updateTicketStatusUseCase(ticketId, newStatus, user)
                 .onSuccess {
-                    val label = if (newStatus == TicketStatus.SELESAI) "Selesai" else "Ditutup"
+                    val label = when (newStatus) {
+                        TicketStatus.DIPROSES -> "Diproses"
+                        TicketStatus.SELESAI -> "Selesai"
+                        else -> "Ditutup"
+                    }
                     send(DetailEvent.ShowMessage("Status aduan diperbarui menjadi $label."))
                 }
                 .onFailure { e ->
                     send(DetailEvent.ShowMessage(e.localizedMessage ?: "Gagal memperbarui status."))
                 }
+        }
+    }
+
+    fun updateTicketContent(title: String, description: String, categoryId: Long) {
+        launchSafe {
+            ticketRepository.updateTicketContent(ticketId, title, description, categoryId)
+            send(DetailEvent.ShowMessage("Aduan berhasil diperbarui."))
         }
     }
 

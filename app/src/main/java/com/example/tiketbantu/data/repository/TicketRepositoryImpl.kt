@@ -31,11 +31,23 @@ class TicketRepositoryImpl(
     override fun getMyTickets(userId: Long): Flow<List<Ticket>> =
         ticketDao.observeMine(userId).map { rows -> rows.map { it.toDomain() } }
 
+    override fun getSupportedTickets(userId: Long): Flow<List<Ticket>> =
+        ticketDao.observeSupported(userId).map { rows -> rows.map { it.toDomain() } }
+
     override suspend fun createTicket(ticket: Ticket): Long =
         ticketDao.insertTicket(ticket.toEntity())
 
     override suspend fun updateTicketStatus(ticketId: Long, status: String, agentId: Long?) {
         ticketDao.updateStatus(ticketId, status, agentId, System.currentTimeMillis())
+    }
+
+    override suspend fun updateTicketContent(
+        ticketId: Long,
+        title: String,
+        description: String,
+        categoryId: Long
+    ) {
+        ticketDao.updateTicketContent(ticketId, title, description, categoryId, System.currentTimeMillis())
     }
 
     override suspend fun toggleSupport(ticketId: Long, userId: Long): Boolean =
