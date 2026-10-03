@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
+ * Concrete implementation of [AuthRepository] using Room [UserDao] and [SessionManager].
+ *
+ * Responsibilities:
+ * - Authenticate user credentials against the local Room DB.
+ * - Register new users with default role PELAPOR, rejecting duplicate emails.
+ * - Manage session state persistence via DataStore [SessionManager].
  */
 class AuthRepositoryImpl(
     private val userDao: UserDao,
@@ -19,11 +25,20 @@ class AuthRepositoryImpl(
         sessionManager.sessionState.map { it.currentUser }
 
     override suspend fun login(email: String, passwordHash: String): Result<User> {
+        val userEntity = userDao.getUserByEmail(email)
+            ?: return Result.failure(IllegalArgumentException("Email tidak terdaftar"))
 
+        if (!userEntity.isActive) {
+            return Result.failure(IllegalStateException("Akun ini telah dinonaktifkan"))
         }
 
+        if (userEntity.passwordHash != passwordHash) {
+            return Result.failure(IllegalArgumentException("Kata sandi salah"))
         }
 
+        val user = userEntity.toDomain()
+        sessionManager.saveSession(user)
+        return Result.success(user)
     }
 
     override suspend fun register(
@@ -32,18 +47,37 @@ class AuthRepositoryImpl(
         nimNip: String?,
         passwordHash: String
     ): Result<User> {
+        val existingUser = userDao.getUserByEmail(email)
+        if (existingUser != null) {
+            return Result.failure(IllegalArgumentException("Email sudah terdaftar"))
         }
 
+        val newUserEntity = UserEntity(
+            name = name,
+            email = email,
+            nimNip = nimNip,
             passwordHash = passwordHash,
             role = "PELAPOR",
             isActive = true
         )
 
+        val newId = userDao.insertUser(newUserEntity)
+        val user = newUserEntity.copy(id = newId).toDomain()
+        return Result.success(user)
     }
 
     override suspend fun logout() {
         sessionManager.clearSession()
     }
 
+    override suspend fun isLoggedIn(): Boolean = sessionManager.isLoggedIn()
 
+    private fun UserEntity.toDomain(): User = User(
+        id = id,
+        name = name,
+        email = email,
+        nimNip = nimNip,
+        role = role,
+        isActive = isActive
+    )
 }
