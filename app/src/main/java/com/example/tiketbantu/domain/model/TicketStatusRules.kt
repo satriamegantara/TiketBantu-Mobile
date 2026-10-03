@@ -10,23 +10,46 @@ package com.example.tiketbantu.domain.model
 object TicketStatusRules {
 
     private const val ROLE_AGEN = "AGEN"
+    private const val ROLE_ADMIN = "ADMIN"
 
     /** @return null when the transition is allowed, otherwise a user-facing reason (Indonesian). */
-    fun validate(user: User, ticket: Ticket, newStatus: String): String? = when {
-        user.role != ROLE_AGEN ->
-            "Hanya Agen yang dapat memperbarui status aduan."
-        TicketStatus.isFinished(ticket.status) ->
-            "Aduan sudah selesai atau ditutup dan tidak dapat diubah lagi."
-        ticket.status != TicketStatus.DIPROSES ->
-            "Aduan harus diklaim Agen terlebih dahulu sebelum statusnya diubah."
-        ticket.agentId != user.id ->
-            "Aduan ini sedang ditangani Agen lain."
-        newStatus != TicketStatus.SELESAI && newStatus != TicketStatus.DITUTUP ->
-            "Status tujuan tidak valid."
-        else -> null
+    fun validate(user: User, ticket: Ticket, newStatus: String): String? {
+        val userRole = user.role.uppercase()
+        if (userRole != ROLE_AGEN && userRole != ROLE_ADMIN) {
+            return "Hanya Agen atau Admin yang dapat memperbarui status aduan."
+        }
+        if (TicketStatus.isFinished(ticket.status)) {
+            return "Aduan sudah selesai atau ditutup dan tidak dapat diubah lagi."
+        }
+        if (newStatus == TicketStatus.DIPROSES) {
+            return if (ticket.status == TicketStatus.BARU || ticket.status == TicketStatus.DIPROSES) {
+                null
+            } else {
+                "Hanya aduan berstatus Baru yang dapat diproses."
+            }
+        }
+        if (ticket.status != TicketStatus.DIPROSES) {
+            return "Aduan harus diklaim dan diproses terlebih dahulu sebelum ditutup/selesai."
+        }
+        if (userRole != ROLE_ADMIN && ticket.agentId != null && ticket.agentId != user.id) {
+            return "Aduan ini sedang ditangani oleh teknisi lain."
+        }
+        if (newStatus != TicketStatus.SELESAI && newStatus != TicketStatus.DITUTUP) {
+            return "Status tujuan tidak valid."
+        }
+        return null
     }
 
     /** Whether the status-update actions should be shown to [user] for [ticket]. */
-    fun canUpdate(user: User, ticket: Ticket): Boolean =
-        validate(user, ticket, TicketStatus.SELESAI) == null
+    fun canUpdate(user: User, ticket: Ticket): Boolean {
+        if (TicketStatus.isFinished(ticket.status)) return false
+        val userRole = user.role.uppercase()
+        val isStaff = userRole == ROLE_AGEN || userRole == ROLE_ADMIN
+        if (!isStaff) return false
+        if (ticket.status == TicketStatus.BARU) return true
+        if (ticket.status == TicketStatus.DIPROSES) {
+            return userRole == ROLE_ADMIN || ticket.agentId == user.id || ticket.agentId == null
+        }
+        return false
+    }
 }

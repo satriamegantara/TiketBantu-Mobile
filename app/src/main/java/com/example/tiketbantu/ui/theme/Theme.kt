@@ -7,6 +7,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -59,7 +60,8 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun TiketBantuTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // The "Campus Glass" design is light-only for now.
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -69,7 +71,7 @@ fun TiketBantuTheme(
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
-                window.statusBarColor = colorScheme.background.toArgb()
+                // Status bar is transparent via enableEdgeToEdge(); only icon tint is set here.
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
             }
         }
