@@ -1,6 +1,7 @@
 package com.example.tiketbantu.di
 
 import com.example.tiketbantu.data.local.AppDatabase
+import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.data.repository.TicketRepositoryImpl
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.domain.usecase.GetFeedUseCase
@@ -14,29 +15,40 @@ import org.koin.dsl.module
 
 /**
  * Main Koin Dependency Injection module for TiketBantu Mobile.
- * Configures Room Database, DAOs, Repositories, UseCases, and ViewModels.
+ *
+ * Configures:
+ * - Application-scoped [CoroutineScope]
+ * - Room Database + all DAOs
+ * - [SessionManager] (shared session state holder)
+ * - Repository + UseCase layers
+ * - ViewModel layer
  */
 val appModule = module {
 
-    // Application-wide CoroutineScope for DB callbacks & background tasks
+    // ── Application-wide CoroutineScope ──────────────────────────────────────
+    // Used for DB callbacks, background tasks, and SessionManager lifecycle.
     single { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
 
-    // Room Database instance
+    // ── Room Database ────────────────────────────────────────────────────────
     single { AppDatabase.buildDatabase(androidContext(), get()) }
 
-    // Room DAOs
+    // ── Room DAOs ────────────────────────────────────────────────────────────
     single { get<AppDatabase>().userDao() }
     single { get<AppDatabase>().categoryDao() }
     single { get<AppDatabase>().ticketDao() }
     single { get<AppDatabase>().supportDao() }
     single { get<AppDatabase>().commentDao() }
 
-    // Repository Layer (Backed by Room Database)
+    // ── Session Manager (Shared State Holder — point 1.3) ────────────────────
+    // Singleton: one DataStore instance per app process.
+    single { SessionManager(androidContext(), get()) }
+
+    // ── Repository Layer ─────────────────────────────────────────────────────
     single<TicketRepository> { TicketRepositoryImpl(get(), get()) }
 
-    // UseCases Layer
+    // ── UseCase Layer ────────────────────────────────────────────────────────
     factory { GetFeedUseCase(get()) }
 
-    // ViewModel Layer
+    // ── ViewModel Layer ──────────────────────────────────────────────────────
     viewModel { FeedViewModel(get()) }
 }
