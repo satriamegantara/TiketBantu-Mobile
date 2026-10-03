@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SupportDao {
-    @Query("SELECT COUNT(*) FROM ticket_supports WHERE ticket_id = :ticketId")
+    @Query("SELECT COUNT(*) FROM ticket_supports WHERE ticketId = :ticketId")
     fun countSupportsForTicket(ticketId: Long): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM ticket_supports WHERE ticket_id = :ticketId AND user_id = :userId")
+    @Query("SELECT COUNT(*) FROM ticket_supports WHERE ticketId = :ticketId AND userId = :userId")
     suspend fun hasUserSupported(ticketId: Long, userId: Long): Int
 
-    @Query("SELECT ticket_id FROM ticket_supports WHERE user_id = :userId")
+    @Query("SELECT ticketId FROM ticket_supports WHERE userId = :userId")
     fun getSupportedTicketIdsByUser(userId: Long): Flow<List<Long>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -24,6 +24,6 @@ interface SupportDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(supports: List<TicketSupportEntity>)
 
-    @Query("DELETE FROM ticket_supports WHERE ticket_id = :ticketId AND user_id = :userId")
+    @Query("DELETE FROM ticket_supports WHERE ticketId = :ticketId AND userId = :userId")
     suspend fun deleteSupport(ticketId: Long, userId: Long): Int
 }
