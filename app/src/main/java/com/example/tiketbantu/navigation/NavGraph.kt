@@ -39,6 +39,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.tiketbantu.ui.screens.dashboard.DashboardScreen
+import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
 
 /**
  * Root Type-Safe Navigation Graph for TiketBantu Mobile.
@@ -50,6 +52,7 @@ import androidx.navigation.toRoute
  * - Smooth Material 3 enter/exit transitions (fade + slide).
  * - Anti-crash guardrails via [safeNavigate] and [safePopBackStack].
  * - Clean backstack management for authentication and session lifecycle.
+ * - Real screens wired: [DashboardScreen] (Feed) and [TicketDetailScreen] (Detail).
  */
 @Composable
 fun NavGraph(
@@ -127,31 +130,10 @@ fun NavGraph(
 
         // ── 3. Dashboard / Feed Screen ───────────────────────────────────────
         composable<Screen.Dashboard> {
-            NavDestinationScreen(
-                title = "Dashboard & Feed Aduan",
-                subtitle = "Feed aduan publik kampus dengan LazyColumn & sorting Most Liked",
-                badge = "Main Graph",
-                badgeColor = MaterialTheme.colorScheme.primary,
-                actions = listOf(
-                    NavAction("➕ Buat Aduan Baru") {
-                        navController.safeNavigate(Screen.CreateTicket)
-                    },
-                    NavAction("🔍 Lihat Detail Aduan #1 (AC Lab SI)") {
-                        navController.safeNavigate(Screen.Detail(1L))
-                    },
-                    NavAction("🔍 Lihat Detail Aduan #2 (Proyektor)") {
-                        navController.safeNavigate(Screen.Detail(2L))
-                    },
-                    NavAction("📋 Aduan Saya", isOutlined = true) {
-                        navController.safeNavigate(Screen.MyTickets)
-                    },
-                    NavAction("👤 Profil Pengguna", isOutlined = true) {
-                        navController.safeNavigate(Screen.Profile)
-                    },
-                    NavAction("📊 Pure Monitoring Dashboard (Admin)", isOutlined = true) {
-                        navController.safeNavigate(Screen.Monitoring)
-                    }
-                )
+            DashboardScreen(
+                onTicketClick = { ticketId ->
+                    navController.safeNavigate(Screen.Detail(ticketId))
+                }
             )
         }
 
@@ -179,21 +161,9 @@ fun NavGraph(
         // ── 5. Detail Screen (Detail/{id}) ───────────────────────────────────
         composable<Screen.Detail> { backStackEntry ->
             val route = backStackEntry.toRoute<Screen.Detail>()
-            val ticketId = route.id
-            NavDestinationScreen(
-                title = "Detail Aduan #$ticketId",
-                subtitle = "Informasi lengkap, riwayat status, foto terlampir, thread komentar & polling",
-                badge = "Route: Detail/{id} → id=$ticketId",
-                badgeColor = MaterialTheme.colorScheme.tertiary,
-                onBack = { navController.safePopBackStack() },
-                actions = listOf(
-                    NavAction("← Kembali ke Feed") {
-                        navController.safePopBackStack()
-                    },
-                    NavAction("❤️ Simulasi Dukungan 'Saya Juga Mengalami'", isOutlined = true) {
-                        // Interactive action verification
-                    }
-                )
+            TicketDetailScreen(
+                ticketId = route.id,
+                onBack = { navController.safePopBackStack() }
             )
         }
 

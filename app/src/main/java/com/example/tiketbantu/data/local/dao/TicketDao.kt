@@ -4,153 +4,127 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Transaction
 import com.example.tiketbantu.data.local.entity.TicketEntity
+import com.example.tiketbantu.data.local.entity.TicketSupportEntity
 import kotlinx.coroutines.flow.Flow
 
-data class TicketWithDetails(
-    val id: Long,
-    val title: String,
-    val description: String,
-    val categoryId: Long,
-    val categoryName: String,
-    val locationBuilding: String,
-    val locationFloor: String,
-    val locationRoom: String,
-    val status: String,
-    val imageUrl: String?,
-    val reporterId: Long,
-    val reporterName: String,
-    val agentId: Long?,
-    val agentName: String?,
-    val supportCount: Int,
-    val createdAt: Long,
-    val updatedAt: Long,
-    val deletedAt: Long?
-)
+/**
+ * Base projection shared by every read query. Uses the named parameter :currentUserId
+ * (every query that embeds it must declare that parameter).
+ * Soft-deleted tickets (deletedAt != null) are excluded here.
+ */
+private const val TICKET_META_BASE = """
+    SELECT
+        t.id AS id,
+        t.title AS title,
+        t.description AS description,
+        t.categoryId AS categoryId,
+        c.name AS categoryName,
+        t.locationBuilding AS locationBuilding,
+        t.locationFloor AS locationFloor,
+        t.locationRoom AS locationRoom,
+        t.status AS status,
+        t.imageUrl AS imageUrl,
+        t.reporterId AS reporterId,
+        r.name AS reporterName,
+        t.agentId AS agentId,
+        a.name AS agentName,
+        (SELECT COUNT(*) FROM ticket_supports s WHERE s.ticketId = t.id) AS supportCount,
+        EXISTS(SELECT 1 FROM ticket_supports s2 WHERE s2.ticketId = t.id AND s2.userId = :currentUserId) AS isSupportedByMe,
+        t.createdAt AS createdAt,
+        t.updatedAt AS updatedAt
+    FROM tickets t
+    INNER JOIN categories c ON c.id = t.categoryId
+    INNER JOIN users r ON r.id = t.reporterId
+    LEFT JOIN users a ON a.id = t.agentId
+    WHERE t.deletedAt IS NULL
+"""
 
 @Dao
-interface TicketDao {
+abstract class TicketDao {
 
-    @Query("""
-        SELECT 
-            t.id AS id,
-            t.title AS title,
-            t.description AS description,
-            t.category_id AS categoryId,
-            c.name AS categoryName,
-            t.location_building AS locationBuilding,
-            t.location_floor AS locationFloor,
-            t.location_room AS locationRoom,
-            t.status AS status,
-            t.image_url AS imageUrl,
-            t.reporter_id AS reporterId,
-            u_rep.name AS reporterName,
-            t.agent_id AS agentId,
-            u_age.name AS agentName,
-            (SELECT COUNT(*) FROM ticket_supports s WHERE s.ticket_id = t.id) AS supportCount,
-            t.created_at AS createdAt,
-            t.updated_at AS updatedAt,
-            t.deleted_at AS deletedAt
-        FROM tickets t
-        INNER JOIN categories c ON t.category_id = c.id
-        INNER JOIN users u_rep ON t.reporter_id = u_rep.id
-        LEFT JOIN users u_age ON t.agent_id = u_age.id
-        WHERE t.deleted_at IS NULL
-          AND (:categoryId IS NULL OR t.category_id = :categoryId)
-          AND (:status IS NULL OR t.status = :status)
-          AND (:query = '' OR t.title LIKE '%' || :query || '%' OR t.description LIKE '%' || :query || '%')
-        ORDER BY 
-            CASE WHEN t.status IN ('SELESAI', 'DITUTUP') THEN 1 ELSE 0 END ASC,
-            CASE WHEN :sortByMostLiked = 1 THEN (SELECT COUNT(*) FROM ticket_supports s WHERE s.ticket_id = t.id) END DESC,
-            t.created_at DESC
-    """)
-    fun getFeedTickets(
-        query: String = "",
-        categoryId: Long? = null,
-        status: String? = null,
-        sortByMostLiked: Int = 0 // 1 = true, 0 = false
-    ): Flow<List<TicketWithDetails>>
+    /**
+     * Public feed. Rules:
+     *  - active tickets (BARU/DIPROSES) first, SELESAI/DITUTUP always in the bottom block;
+     *  - inside each block: most supported first when [sortByMostLiked], otherwise newest first
+     *    (createdAt DESC is always the tie-breaker);
+     *  - [limit] implements infinite scroll (the ViewModel grows it page by page).
+     */
+    @Query(
+        "SELECT * FROM (" + TICKET_META_BASE + ") AS m " +
+            "WHERE (:query = '' OR m.title LIKE '%' || :query || '%' OR m.description LIKE '%' || :query || '%') " +
+            "AND (:categoryId IS NULL OR m.categoryId = :categoryId) " +
+            "AND (:status IS NULL OR m.status = :status) " +
+            "ORDER BY CASE WHEN m.status IN ('SELESAI', 'DITUTUP') THEN 1 ELSE 0 END ASC, " +
+            "CASE WHEN :sortByMostLiked = 1 THEN m.supportCount ELSE 0 END DESC, " +
+            "m.createdAt DESC " +
+            "LIMIT :limit"
+    )
+    abstract fun observeFeed(
+        query: String,
+        categoryId: Long?,
+        status: String?,
+        sortByMostLiked: Boolean,
+        currentUserId: Long,
+        limit: Int
+    ): Flow<List<TicketWithMeta>>
 
-    @Query("""
-        SELECT 
-            t.id AS id,
-            t.title AS title,
-            t.description AS description,
-            t.category_id AS categoryId,
-            c.name AS categoryName,
-            t.location_building AS locationBuilding,
-            t.location_floor AS locationFloor,
-            t.location_room AS locationRoom,
-            t.status AS status,
-            t.image_url AS imageUrl,
-            t.reporter_id AS reporterId,
-            u_rep.name AS reporterName,
-            t.agent_id AS agentId,
-            u_age.name AS agentName,
-            (SELECT COUNT(*) FROM ticket_supports s WHERE s.ticket_id = t.id) AS supportCount,
-            t.created_at AS createdAt,
-            t.updated_at AS updatedAt,
-            t.deleted_at AS deletedAt
-        FROM tickets t
-        INNER JOIN categories c ON t.category_id = c.id
-        INNER JOIN users u_rep ON t.reporter_id = u_rep.id
-        LEFT JOIN users u_age ON t.agent_id = u_age.id
-        WHERE t.id = :id AND t.deleted_at IS NULL
-        LIMIT 1
-    """)
-    fun getTicketDetailsById(id: Long): Flow<TicketWithDetails?>
+    @Query("SELECT * FROM (" + TICKET_META_BASE + ") AS m WHERE m.id = :id")
+    abstract fun observeById(id: Long, currentUserId: Long): Flow<TicketWithMeta?>
 
-    @Query("""
-        SELECT 
-            t.id AS id,
-            t.title AS title,
-            t.description AS description,
-            t.category_id AS categoryId,
-            c.name AS categoryName,
-            t.location_building AS locationBuilding,
-            t.location_floor AS locationFloor,
-            t.location_room AS locationRoom,
-            t.status AS status,
-            t.image_url AS imageUrl,
-            t.reporter_id AS reporterId,
-            u_rep.name AS reporterName,
-            t.agent_id AS agentId,
-            u_age.name AS agentName,
-            (SELECT COUNT(*) FROM ticket_supports s WHERE s.ticket_id = t.id) AS supportCount,
-            t.created_at AS createdAt,
-            t.updated_at AS updatedAt,
-            t.deleted_at AS deletedAt
-        FROM tickets t
-        INNER JOIN categories c ON t.category_id = c.id
-        INNER JOIN users u_rep ON t.reporter_id = u_rep.id
-        LEFT JOIN users u_age ON t.agent_id = u_age.id
-        WHERE t.reporter_id = :userId AND t.deleted_at IS NULL
-        ORDER BY t.created_at DESC
-    """)
-    fun getTicketsByReporter(userId: Long): Flow<List<TicketWithDetails>>
+    @Query(
+        "SELECT * FROM (" + TICKET_META_BASE + ") AS m " +
+            "WHERE m.reporterId = :currentUserId ORDER BY m.createdAt DESC"
+    )
+    abstract fun observeMine(currentUserId: Long): Flow<List<TicketWithMeta>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTicket(ticket: TicketEntity): Long
+    @Insert
+    abstract suspend fun insertTicket(ticket: TicketEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(tickets: List<TicketEntity>)
+    @Query(
+        "UPDATE tickets SET status = :status, agentId = COALESCE(:agentId, agentId), " +
+            "updatedAt = :updatedAt WHERE id = :ticketId"
+    )
+    abstract suspend fun updateStatus(
+        ticketId: Long,
+        status: String,
+        agentId: Long?,
+        updatedAt: Long = System.currentTimeMillis()
+    )
 
-    @Update
-    suspend fun updateTicket(ticket: TicketEntity)
+    @Query("UPDATE tickets SET deletedAt = :deletedAt WHERE id = :ticketId")
+    abstract suspend fun softDelete(ticketId: Long, deletedAt: Long = System.currentTimeMillis())
 
-    @Query("UPDATE tickets SET status = :status, agent_id = :agentId, updated_at = :updatedAt WHERE id = :ticketId")
-    suspend fun updateStatus(ticketId: Long, status: String, agentId: Long?, updatedAt: Long = System.currentTimeMillis())
+    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL AND status = :status")
+    abstract fun countByStatus(status: String): Flow<Int>
 
-    @Query("UPDATE tickets SET deleted_at = :deletedAt WHERE id = :ticketId")
-    suspend fun softDelete(ticketId: Long, deletedAt: Long = System.currentTimeMillis())
-
-    @Query("SELECT COUNT(*) FROM tickets WHERE deleted_at IS NULL AND status = :status")
-    fun countByStatus(status: String): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM tickets WHERE deleted_at IS NULL")
-    fun countTotalActive(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL")
+    abstract fun countTotalActive(): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM tickets")
-    suspend fun countAll(): Int
+    abstract suspend fun countAll(): Int
+
+    // ── "Saya Juga Mengalami" ────────────────────────────────────────────────
+
+    /** Returns the new row id, or -1 when (ticketId, userId) already exists (UNIQUE index). */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun insertSupport(support: TicketSupportEntity): Long
+
+    @Query("DELETE FROM ticket_supports WHERE ticketId = :ticketId AND userId = :userId")
+    abstract suspend fun deleteSupport(ticketId: Long, userId: Long): Int
+
+    /**
+     * One-tap toggle, atomic so double taps / concurrent calls cannot create duplicates.
+     * @return true if the user now supports the ticket, false if the support was removed.
+     */
+    @Transaction
+    open suspend fun toggleSupport(ticketId: Long, userId: Long): Boolean {
+        val insertedId = insertSupport(TicketSupportEntity(ticketId = ticketId, userId = userId))
+        if (insertedId == -1L) {
+            deleteSupport(ticketId, userId)
+            return false
+        }
+        return true
+    }
 }

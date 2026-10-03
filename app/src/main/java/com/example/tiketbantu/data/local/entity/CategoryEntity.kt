@@ -1,6 +1,5 @@
 package com.example.tiketbantu.data.local.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,7 +11,5 @@ import androidx.room.PrimaryKey
 data class CategoryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-
-    @ColumnInfo(name = "name")
     val name: String
 )
