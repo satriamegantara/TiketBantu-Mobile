@@ -63,7 +63,7 @@ sealed interface Screen {
     data object Monitoring : Screen
 
     @Serializable
-    data object UserManagement : Screen
+    data class UserManagement(val initialTab: Int = 0) : Screen
 }
 
 /**

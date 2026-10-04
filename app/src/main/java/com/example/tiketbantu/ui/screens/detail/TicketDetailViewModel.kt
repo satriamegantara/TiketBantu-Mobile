@@ -13,6 +13,7 @@ import com.example.tiketbantu.domain.repository.CommentRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.domain.usecase.ToggleSupportUseCase
 import com.example.tiketbantu.domain.usecase.UpdateTicketStatusUseCase
+import com.example.tiketbantu.ui.session.DemoSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -143,6 +144,12 @@ class TicketDetailViewModel(
         val content = _commentInput.value.trim()
         if (content.isEmpty() || _isSending.value) return
 
+        val ticket = (_ticketState.value as? UiState.Success)?.data
+        if (ticket != null && TicketStatus.isFinished(ticket.status)) {
+            send(DetailEvent.ShowMessage("Aduan ini telah dituntaskan/ditutup. Komentar baru tidak dapat ditambahkan."))
+            return
+        }
+
         launchSafe {
             _isSending.value = true
             try {
@@ -165,10 +172,20 @@ class TicketDetailViewModel(
     // ---- 3.3 support (also available on the detail page) ----
 
     fun onToggleSupport() {
+        val ticket = (_ticketState.value as? UiState.Success)?.data
+        if (ticket != null && TicketStatus.isFinished(ticket.status)) {
+            send(DetailEvent.ShowMessage("Aduan ini telah dituntaskan/ditutup dan tidak dapat didukung lagi."))
+            return
+        }
+
         launchSafe {
             val user = authRepository.getCurrentUser().first()
             if (user == null || !user.isActive) {
                 send(DetailEvent.ShowMessage("Silakan masuk terlebih dahulu."))
+                return@launchSafe
+            }
+            if (user.role.uppercase() == "AGEN") {
+                send(DetailEvent.ShowMessage("Teknisi tidak perlu memberikan dukungan suara pada aduan."))
                 return@launchSafe
             }
             val nowSupported = toggleSupportUseCase(ticketId, user.id)
@@ -181,8 +198,10 @@ class TicketDetailViewModel(
     fun updateStatus(newStatus: String) {
         launchSafe {
             val user = authRepository.getCurrentUser().first()
-            if (user == null) {
-                send(DetailEvent.ShowMessage("Silakan masuk terlebih dahulu."))
+                ?: User(id = DemoSession.userId, name = DemoSession.name, email = DemoSession.email, role = DemoSession.role.name)
+            val userRole = user.role.uppercase()
+            if (userRole != "AGEN" && userRole != "ADMIN") {
+                send(DetailEvent.ShowMessage("Akses ditolak: Hanya Agen atau Admin yang berwenang mengatur tindakan teknisi."))
                 return@launchSafe
             }
             updateTicketStatusUseCase(ticketId, newStatus, user)
@@ -202,6 +221,12 @@ class TicketDetailViewModel(
 
     fun updateTicketContent(title: String, description: String, categoryId: Long) {
         launchSafe {
+            val user = authRepository.getCurrentUser().first()
+            val ticket = (_ticketState.value as? UiState.Success)?.data
+            if (user == null || ticket == null || (ticket.reporterId != user.id && user.role.uppercase() != "ADMIN")) {
+                send(DetailEvent.ShowMessage("Anda tidak memiliki izin untuk mengedit aduan ini."))
+                return@launchSafe
+            }
             ticketRepository.updateTicketContent(ticketId, title, description, categoryId)
             send(DetailEvent.ShowMessage("Aduan berhasil diperbarui."))
         }

@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -237,8 +239,8 @@ fun CreateTicketScreen(
                 modifier = Modifier
                     .weight(1f)
                     .imePadding(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 item { TransparencyNotice() }
 
@@ -267,10 +269,37 @@ fun CreateTicketScreen(
                     GlassCard {
                         FieldLabel("Kategori Permasalahan", required = true)
                         Hint("Pilih kategori penanganan teknisi yang relevan")
-                        Spacer(Modifier.height(12.dp))
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CATEGORIES.forEach { option ->
-                                CategoryRow(option, selected = categoryId == option.id) { categoryId = option.id }
+                        Spacer(Modifier.height(10.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            items(CATEGORIES) { option ->
+                                val selected = categoryId == option.id
+                                Surface(
+                                    onClick = { categoryId = option.id },
+                                    shape = RoundedCornerShape(50),
+                                    color = if (selected) BrandIndigo else Color.White,
+                                    border = BorderStroke(1.dp, if (selected) BrandIndigo else Hairline),
+                                    shadowElevation = if (selected) 4.dp else 0.dp
+                                ) {
+                                    Row(
+                                        Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(option.icon, null, tint = if (selected) Color.White else BrandIndigo, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            option.label,
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
+                                            color = if (selected) Color.White else Ink
+                                        )
+                                        if (selected) {
+                                            Spacer(Modifier.width(6.dp))
+                                            Icon(Icons.Filled.CheckCircle, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
                             }
                         }
                         if (showErrors && categoryId == null) ErrorText("Pilih salah satu kategori")

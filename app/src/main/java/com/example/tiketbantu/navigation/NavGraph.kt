@@ -133,6 +133,15 @@ fun NavGraph(
             ProfileScreen(
                 onLogout = {
                     navController.navigateToLoginFromLogout()
+                },
+                onNavigateToMyTickets = {
+                    navController.safeNavigate(Screen.MyTickets)
+                },
+                onNavigateToSupported = {
+                    navController.safeNavigate(Screen.SupportedTickets)
+                },
+                onNavigateToCreate = {
+                    navController.safeNavigate(Screen.CreateTicket)
                 }
             )
         }
@@ -143,16 +152,18 @@ fun NavGraph(
                     navController.safeNavigate(Screen.Detail(ticketId))
                 },
                 onManageUsersClick = {
-                    navController.safeNavigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement(initialTab = 0))
                 },
                 onManageCategoriesClick = {
-                    navController.safeNavigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement(initialTab = 1))
                 }
             )
         }
 
-        composable<Screen.UserManagement> {
+        composable<Screen.UserManagement> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.UserManagement>()
             UserManagementScreen(
+                initialTab = route.initialTab,
                 onBack = { navController.safePopBackStack() }
             )
         }

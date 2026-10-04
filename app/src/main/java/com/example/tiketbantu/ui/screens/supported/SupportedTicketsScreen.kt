@@ -34,12 +34,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tiketbantu.domain.model.TicketStatus
+import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.FilterPill
 import com.example.tiketbantu.ui.components.TagChip
 import com.example.tiketbantu.ui.components.TicketCard
 import com.example.tiketbantu.ui.screens.feed.EmptyState
+import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
@@ -58,9 +60,19 @@ fun SupportedTicketsScreen(
     modifier: Modifier = Modifier
 ) {
     val repository: TicketRepository = koinInject()
+    val authRepository: AuthRepository = koinInject()
     val scope = rememberCoroutineScope()
 
-    val currentUserId = DemoSession.userId
+    val currentUser by authRepository.getCurrentUser().collectAsState(initial = null)
+    val role = currentUser?.let {
+        when (it.role.uppercase()) {
+            "ADMIN" -> AppRole.ADMIN
+            "AGEN" -> AppRole.AGEN
+            else -> AppRole.PELAPOR
+        }
+    } ?: if (DemoSession.isLoggedIn) DemoSession.role else AppRole.PELAPOR
+
+    val currentUserId = currentUser?.id ?: DemoSession.userId
     val ticketsFlow = remember(repository, currentUserId) {
         repository.getSupportedTickets(currentUserId)
     }
@@ -157,7 +169,7 @@ fun SupportedTicketsScreen(
                                     repository.toggleSupport(ticket.id, currentUserId)
                                 }
                             },
-                            role = DemoSession.role
+                            role = role
                         )
                     }
                 }

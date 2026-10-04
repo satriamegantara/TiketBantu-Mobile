@@ -116,7 +116,7 @@ fun MonitoringScreen(
     val totalAffected = allTickets.sumOf { it.supportCount }
 
     var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
-    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
+    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semua")
 
     AppBackground(modifier = modifier) {
         LazyColumn(
@@ -171,7 +171,7 @@ fun MonitoringScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Prioritas Dukungan Terbanyak",
+                        text = "Dukungan Terbanyak",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = Ink,
                         modifier = Modifier.weight(1f)
@@ -218,16 +218,6 @@ private fun MonitoringHeader(
                 name = DemoSession.name.ifBlank { "Admin Sarpras" },
                 size = 44.dp,
                 soft = false
-            )
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF22C55E))
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -326,17 +316,6 @@ private fun PeriodSection(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                 color = InkMuted
             )
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color(0xFFEEF2FF)
-            ) {
-                Text(
-                    text = "T.A. 2024/2025",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                    color = BrandIndigo,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
         }
         Spacer(Modifier.height(10.dp))
         Row(
