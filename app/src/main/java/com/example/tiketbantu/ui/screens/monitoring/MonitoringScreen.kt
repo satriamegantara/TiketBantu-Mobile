@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import org.koin.androidx.compose.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -98,7 +99,26 @@ fun MonitoringScreen(
     viewModel: MonitoringViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val repository: TicketRepository = koinInject()
+    val currentUserId = DemoSession.userId
+    val ticketsFlow = remember(repository, currentUserId) {
+        repository.getAllTickets(
+            query = "",
+            categoryId = null,
+            status = null,
+            sortByMostLiked = true,
+            currentUserId = currentUserId,
+            limit = 100
+        )
+    }
+    val allTickets by ticketsFlow.collectAsState(initial = emptyList())
+
+    val totalTickets = allTickets.size
+    val inProcessCount = allTickets.count { it.status == TicketStatus.DIPROSES }
+    val completedCount = allTickets.count { it.status == TicketStatus.SELESAI }
+    val totalAffected = allTickets.sumOf { it.supportCount }
+
+    var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
     val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
 
     AppBackground(modifier = modifier) {
@@ -235,8 +255,12 @@ private fun MonitoringHeader(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Monitoring Sistem",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 20.sp),
+                text = "Statistik",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 24.sp,
+                    letterSpacing = (-0.4).sp
+                ),
                 color = Ink
             )
             Spacer(Modifier.height(2.dp))
@@ -262,22 +286,6 @@ private fun MonitoringHeader(
                 )
             }
         }
-        CircleIconButton(
-            icon = Icons.Outlined.Refresh,
-            contentDescription = "Refresh",
-            onClick = onRefresh,
-            bordered = false,
-            container = Color.Transparent,
-            tint = InkSoft
-        )
-        CircleIconButton(
-            icon = if (isSearchActive) Icons.Default.Close else Icons.Outlined.Search,
-            contentDescription = "Search",
-            onClick = onSearch,
-            bordered = false,
-            container = if (isSearchActive) BrandIndigoSoft else Color.Transparent,
-            tint = if (isSearchActive) BrandIndigo else InkSoft
-        )
     }
 }
 
@@ -973,18 +981,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Kategori",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "Atur 12 klasifikasi masalah sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Kategori",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
@@ -1021,18 +1023,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Akun Agen & Teknisi",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "$activeAgentCount teknisi aktif unit pemeliharaan sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Akun Agen & Teknisi",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,

@@ -4,6 +4,7 @@ import com.example.tiketbantu.data.local.AppDatabase
 import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.data.repository.AuthRepositoryImpl
 import com.example.tiketbantu.data.repository.CommentRepositoryImpl
+import com.example.tiketbantu.data.repository.FakeAuthRepository
 import com.example.tiketbantu.data.repository.TicketRepositoryImpl
 import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.CommentRepository
