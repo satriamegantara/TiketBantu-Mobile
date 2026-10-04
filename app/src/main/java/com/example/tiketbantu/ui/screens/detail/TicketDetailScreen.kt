@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Engineering
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.HighlightOff
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
@@ -105,6 +106,7 @@ import com.example.tiketbantu.ui.components.FieldLabel
 import com.example.tiketbantu.ui.components.FilterPill
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
+import com.example.tiketbantu.ui.components.InfoCountPill
 import com.example.tiketbantu.ui.components.InitialsAvatar
 import com.example.tiketbantu.ui.components.StatusPill
 import com.example.tiketbantu.ui.components.SupportPill
@@ -400,7 +402,11 @@ private fun DetailTopBar(
                     TagChip(ticket.categoryName.ifBlank { "Umum" }, container = Color(0xFFDDF4FF), content = Color(0xFF0369A1))
                 }
             }
-            Text("Tiket Penanganan Fasilitas", style = MaterialTheme.typography.bodySmall, color = InkMuted)
+            Text(
+                text = if (role == AppRole.AGEN) "Tugas Penanganan Fasilitas" else "Detail Aduan Fasilitas",
+                style = MaterialTheme.typography.bodySmall,
+                color = InkMuted
+            )
         }
         CircleIconButton(Icons.Outlined.Share, "Bagikan", onShare, bordered = false, container = Color.Transparent)
         if (canEdit || canDelete) {
@@ -448,14 +454,12 @@ private fun DetailList(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item(key = "status") { StatusCard(ticket, role) }
         item(key = "main") { MainInfoCard(ticket, onZoomPhoto) }
-        if (role != AppRole.AGEN) {
-            item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
-        }
+        item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
 
         val isStaff = role == AppRole.AGEN || role == AppRole.ADMIN
 
@@ -672,17 +676,19 @@ private fun SupportCard(ticket: Ticket, role: AppRole, onToggleSupport: () -> Un
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "Dukungan Anda mempercepat prioritas penanganan sarpras",
+                    text = if (role == AppRole.AGEN || role == AppRole.ADMIN)
+                        "Statistik jumlah pelapor yang mendukung penanganan fasilitas ini"
+                    else "Dukungan Anda mempercepat prioritas penanganan sarpras",
                     style = MaterialTheme.typography.bodySmall,
                     color = InkMuted
                 )
             }
             Spacer(Modifier.width(12.dp))
-            if (role == AppRole.ADMIN) {
-                TagChip(
-                    text = "${ticket.supportCount} Dukungan",
-                    container = BrandIndigoSoft,
-                    content = BrandIndigo
+            if (role == AppRole.AGEN || role == AppRole.ADMIN) {
+                InfoCountPill(
+                    icon = Icons.Outlined.FavoriteBorder,
+                    count = ticket.supportCount,
+                    contentDescription = "Jumlah dukungan"
                 )
             } else {
                 SupportPill(
@@ -902,7 +908,7 @@ private fun LockedCommentBar(status: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 94.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {

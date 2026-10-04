@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Place
@@ -342,13 +343,13 @@ fun TicketCard(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Visibility,
-                            contentDescription = "Detail Aduan",
+                            contentDescription = if (role == AppRole.AGEN) "Detail Tugas" else "Detail Aduan",
                             tint = Color(0xFF00838F),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            text = "Detail Aduan",
+                            text = if (role == AppRole.AGEN) "Detail Tugas" else "Detail Aduan",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             color = Ink
                         )
@@ -366,17 +367,17 @@ fun TicketCard(
                         onClick = onClick
                     )
 
-                    if (ticket.status == TicketStatus.SELESAI) {
+                    if (role == AppRole.AGEN || role == AppRole.ADMIN) {
+                        InfoCountPill(
+                            icon = Icons.Outlined.FavoriteBorder,
+                            count = ticket.supportCount,
+                            contentDescription = "Jumlah dukungan"
+                        )
+                    } else if (ticket.status == TicketStatus.SELESAI) {
                         TagChip(
                             text = "${ticket.supportCount} Terbantu",
                             container = SuccessSoftBg,
                             content = SuccessText
-                        )
-                    } else if (role == AppRole.AGEN || role == AppRole.ADMIN) {
-                        TagChip(
-                            text = "${ticket.supportCount} Dukungan",
-                            container = com.example.tiketbantu.ui.theme.SupportOrangeSoft,
-                            content = com.example.tiketbantu.ui.theme.SupportOrangeText
                         )
                     } else {
                         SupportPill(
@@ -493,7 +494,7 @@ private fun HandlerBox(ticket: Ticket, role: AppRole, onClaimClick: (() -> Unit)
             }
         }
         isStaff && (ticket.status == TicketStatus.DIPROSES || ticket.agentName != null) -> {
-            val agent = ticket.agentName ?: "Pak Budi Santoso"
+            val agent = ticket.agentName ?: "Agen Sarpras"
             Surface(
                 shape = shape,
                 color = Color(0xFFF8FAFC),

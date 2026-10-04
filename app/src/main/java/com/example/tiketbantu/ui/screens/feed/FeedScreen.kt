@@ -58,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -79,8 +80,10 @@ import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.CommentRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
+import com.example.tiketbantu.ui.components.AdaptiveFeedLayout
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
+import com.example.tiketbantu.ui.components.FeedSidebar
 import com.example.tiketbantu.ui.components.FilterPill
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
@@ -278,8 +281,10 @@ fun FeedContent(
     val listState = rememberLazyListState()
     LoadMoreEffect(listState, canLoadMore, onLoadMore)
 
-    PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = modifier.fillMaxSize()) {
-        LazyColumn(
+    AdaptiveFeedLayout(
+        feedContent = {
+            PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 140.dp),
@@ -460,6 +465,17 @@ fun FeedContent(
             }
         }
     }
+},
+sidebarContent = {
+    FeedSidebar(
+        totalTickets = tickets.size,
+        baruCount = tickets.count { it.status == TicketStatus.BARU },
+        diprosesCount = tickets.count { it.status == TicketStatus.DIPROSES },
+        selesaiCount = tickets.count { it.status == TicketStatus.SELESAI }
+    )
+},
+modifier = modifier
+)
 
     if (showFilterBottomSheet) {
         FilterBottomSheet(
@@ -711,12 +727,13 @@ fun EmptyState(
     title: String,
     message: String,
     modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.Outlined.Inbox,
     actionLabel: String? = null,
     onAction: () -> Unit = {}
 ) {
     GlassCard(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.Inbox, null, tint = BrandIndigo, modifier = Modifier.size(40.dp))
+            Icon(icon, null, tint = BrandIndigo, modifier = Modifier.size(40.dp))
             Spacer(Modifier.size(8.dp))
             Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             Text(message, style = MaterialTheme.typography.bodySmall, color = InkSoft, textAlign = TextAlign.Center)
