@@ -75,6 +75,8 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onLogout: () -> Unit,
     onMyTicketsClick: () -> Unit = {},
+    onSupportedTicketsClick: () -> Unit = {},
+    onDoneTicketsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
@@ -140,7 +142,9 @@ fun ProfileScreen(
                     sentCount = stats.sentCount,
                     supportCount = stats.supportCount,
                     doneCount = stats.doneCount,
-                    onMyTicketsClick = onMyTicketsClick
+                    onMyTicketsClick = onMyTicketsClick,
+                    onSupportedTicketsClick = onSupportedTicketsClick,
+                    onDoneTicketsClick = onDoneTicketsClick
                 )
             }
 
@@ -354,7 +358,9 @@ private fun UserStatsCard(
     sentCount: Int = 0,
     supportCount: Int = 0,
     doneCount: Int = 0,
-    onMyTicketsClick: () -> Unit = {}
+    onMyTicketsClick: () -> Unit = {},
+    onSupportedTicketsClick: () -> Unit = {},
+    onDoneTicketsClick: () -> Unit = {}
 ) {
     GlassCard(
         modifier = Modifier
@@ -382,13 +388,15 @@ private fun UserStatsCard(
                 icon = Icons.Outlined.LocalFireDepartment,
                 count = supportCount.toString(),
                 label = "Dukungan Diberi",
-                color = SupportOrange
+                color = SupportOrange,
+                onClick = onSupportedTicketsClick
             )
             StatItem(
                 icon = Icons.Outlined.CheckCircle,
                 count = doneCount.toString(),
                 label = "Telah Tuntas",
-                color = Color(0xFF16A34A)
+                color = Color(0xFF16A34A),
+                onClick = onDoneTicketsClick
             )
         }
     }

@@ -31,7 +31,7 @@ data class SearchFilterState(
     val query: String = "",
     val isSearchActive: Boolean = false,
     val selectedStatus: String? = null,
-    val period: String = "Minggu Ini"
+    val period: String = "Semua"
 )
 
 data class MonitoringUiState(
@@ -49,7 +49,7 @@ data class MonitoringUiState(
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val selectedStatus: String? = null,
-    val selectedPeriod: String = "Minggu Ini"
+    val selectedPeriod: String = "Semua"
 )
 
 /**
@@ -86,27 +86,44 @@ class MonitoringViewModel(
         agentsFlow,
         _filter
     ) { tickets, agents, filter ->
-        val total = tickets.size
-        val baru = tickets.count { it.status == TicketStatus.BARU }
-        val inProcess = tickets.count { it.status == TicketStatus.DIPROSES }
-        val completed = tickets.count { it.status == TicketStatus.SELESAI }
-        val rejected = tickets.count { it.status == TicketStatus.DITUTUP }
-        val affected = tickets.sumOf { it.supportCount }
+        val now = System.currentTimeMillis()
+        val periodTickets = when (filter.period) {
+            "Hari Ini" -> {
+                val oneDayAgo = now - 24 * 3600 * 1000L
+                tickets.filter { it.createdAt >= oneDayAgo }
+            }
+            "Minggu Ini" -> {
+                val oneWeekAgo = now - 7L * 24 * 3600 * 1000L
+                tickets.filter { it.createdAt >= oneWeekAgo }
+            }
+            "Bulan Ini" -> {
+                val oneMonthAgo = now - 30L * 24 * 3600 * 1000L
+                tickets.filter { it.createdAt >= oneMonthAgo }
+            }
+            else -> tickets
+        }
+
+        val total = periodTickets.size
+        val baru = periodTickets.count { it.status == TicketStatus.BARU }
+        val inProcess = periodTickets.count { it.status == TicketStatus.DIPROSES }
+        val completed = periodTickets.count { it.status == TicketStatus.SELESAI }
+        val rejected = periodTickets.count { it.status == TicketStatus.DITUTUP }
+        val affected = periodTickets.sumOf { it.supportCount }
         val activeAgents = agents.count { it.isActive }
         val completedPct = if (total > 0) (completed * 100 / total) else 0
 
-        val itCount = tickets.count { it.categoryId == 1L || it.categoryName.contains("IT", ignoreCase = true) }
-        val ruanganCount = tickets.count { it.categoryId == 2L || it.categoryName.contains("Ruangan", ignoreCase = true) }
-        val umumCount = tickets.count { it.categoryId == 3L || it.categoryName.contains("Umum", ignoreCase = true) }
+        val itCount = periodTickets.count { it.categoryId == 1L || it.categoryName.contains("IT", ignoreCase = true) }
+        val ruanganCount = periodTickets.count { it.categoryId == 2L || it.categoryName.contains("Ruangan", ignoreCase = true) }
+        val umumCount = periodTickets.count { it.categoryId == 3L || it.categoryName.contains("Umum", ignoreCase = true) }
 
         val denom = total.coerceAtLeast(1)
-        val itPct = if (tickets.isEmpty()) 45 else (itCount * 100) / denom
-        val ruanganPct = if (tickets.isEmpty()) 35 else (ruanganCount * 100) / denom
-        val umumPct = if (tickets.isEmpty()) 20 else (100 - itPct - ruanganPct).coerceAtLeast(0)
+        val itPct = if (periodTickets.isEmpty()) 0 else (itCount * 100) / denom
+        val ruanganPct = if (periodTickets.isEmpty()) 0 else (ruanganCount * 100) / denom
+        val umumPct = if (periodTickets.isEmpty()) 0 else (100 - itPct - ruanganPct).coerceAtLeast(0)
 
-        val wIt = if (tickets.isEmpty()) 0.45f else (itCount.toFloat() / denom).coerceAtLeast(0.05f)
-        val wRuangan = if (tickets.isEmpty()) 0.35f else (ruanganCount.toFloat() / denom).coerceAtLeast(0.05f)
-        val wUmum = if (tickets.isEmpty()) 0.20f else (umumCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wIt = if (periodTickets.isEmpty()) 0.33f else (itCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wRuangan = if (periodTickets.isEmpty()) 0.33f else (ruanganCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wUmum = if (periodTickets.isEmpty()) 0.33f else (umumCount.toFloat() / denom).coerceAtLeast(0.05f)
 
         val catList = listOf(
             CategoryStat(1L, "Teknologi & IT (Lab & WiFi)", itCount, itPct, wIt, CatIT),
@@ -117,7 +134,7 @@ class MonitoringViewModel(
         val query = filter.query
         val statusFilter = filter.selectedStatus
 
-        val filtered = tickets.filter { ticket ->
+        val filtered = periodTickets.filter { ticket ->
             val matchQuery = query.isBlank() ||
                 ticket.title.contains(query, ignoreCase = true) ||
                 ticket.description.contains(query, ignoreCase = true) ||
@@ -127,7 +144,8 @@ class MonitoringViewModel(
             matchQuery && matchStatus
         }
 
-        val priority = tickets.sortedByDescending { it.supportCount }.take(3)
+        val priority = periodTickets.sortedByDescending { it.supportCount }.take(3)
+        val hasCustomFilter = filter.isSearchActive || statusFilter != null || filter.period != "Semua"
 
         MonitoringUiState(
             total = total,
@@ -140,7 +158,7 @@ class MonitoringViewModel(
             completedPct = completedPct,
             categories = catList,
             priorityTickets = priority,
-            displayedTickets = if (filter.isSearchActive || statusFilter != null) filtered else priority,
+            displayedTickets = if (hasCustomFilter) filtered else priority,
             searchQuery = filter.query,
             isSearchActive = filter.isSearchActive,
             selectedStatus = filter.selectedStatus,

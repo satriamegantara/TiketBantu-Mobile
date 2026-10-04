@@ -90,6 +90,7 @@ fun UserManagementScreen(
     val userDao = koinInject<UserDao>()
     val categoryDao = koinInject<CategoryDao>()
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val usersFromDb by userDao.getAllUsers().collectAsState(initial = emptyList())
     val categoriesFromDb by categoryDao.getAllCategories().collectAsState(initial = emptyList())
@@ -123,6 +124,7 @@ fun UserManagementScreen(
 
     var showAddUserDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var categoryToEdit by remember { mutableStateOf<Category?>(null) }
 
     AppBackground(modifier = modifier) {
         Column(
@@ -213,13 +215,21 @@ fun UserManagementScreen(
                             onToggleActive = { active ->
                                 scope.launch {
                                     userDao.updateActiveStatus(user.id, active)
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        if (active) "Akun ${user.name} diaktifkan" else "Akun ${user.name} dinonaktifkan",
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         )
                     }
                 } else {
                     items(categories, key = { it.id }) { category ->
-                        CategoryCardItem(category = category)
+                        CategoryCardItem(
+                            category = category,
+                            onEdit = { categoryToEdit = category }
+                        )
                     }
                 }
             }
@@ -241,6 +251,7 @@ fun UserManagementScreen(
                             isActive = true
                         )
                     )
+                    android.widget.Toast.makeText(context, "Pengguna $name berhasil ditambahkan", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 showAddUserDialog = false
             }
@@ -253,8 +264,24 @@ fun UserManagementScreen(
             onAdd = { name ->
                 scope.launch {
                     categoryDao.insertCategory(CategoryEntity(name = name))
+                    android.widget.Toast.makeText(context, "Kategori $name berhasil ditambahkan", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 showAddCategoryDialog = false
+            }
+        )
+    }
+
+    if (categoryToEdit != null) {
+        val target = categoryToEdit!!
+        EditCategoryDialog(
+            category = target,
+            onDismiss = { categoryToEdit = null },
+            onSave = { newName ->
+                scope.launch {
+                    categoryDao.updateCategory(CategoryEntity(id = target.id, name = newName))
+                    android.widget.Toast.makeText(context, "Kategori berhasil diubah menjadi $newName", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                categoryToEdit = null
             }
         )
     }
@@ -316,8 +343,14 @@ private fun UserCardItem(
 }
 
 @Composable
-private fun CategoryCardItem(category: Category) {
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+private fun CategoryCardItem(
+    category: Category,
+    onEdit: () -> Unit
+) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onEdit
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -351,8 +384,8 @@ private fun CategoryCardItem(category: Category) {
             }
             CircleIconButton(
                 icon = Icons.Outlined.Edit,
-                contentDescription = "Edit",
-                onClick = {},
+                contentDescription = "Edit Kategori",
+                onClick = onEdit,
                 bordered = false,
                 container = FieldBg,
                 size = 36.dp
@@ -433,6 +466,46 @@ private fun AddCategoryDialog(
         confirmButton = {
             TextButton(
                 onClick = { if (name.isNotBlank()) onAdd(name) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Simpan", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Batal", color = InkSoft) }
+        }
+    )
+}
+
+@Composable
+private fun EditCategoryDialog(
+    category: Category,
+    onDismiss: () -> Unit,
+    onSave: (newName: String) -> Unit
+) {
+    var name by remember { mutableStateOf(category.name) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = { Text("Edit Kategori Sarpras", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Perbarui nama untuk kategori #${category.id}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkMuted
+                )
+                AppInput(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = "Nama Kategori (contoh: Fasilitas Ruangan)"
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (name.isNotBlank()) onSave(name.trim()) },
                 enabled = name.isNotBlank()
             ) {
                 Text("Simpan", color = BrandIndigo, fontWeight = FontWeight.Bold)

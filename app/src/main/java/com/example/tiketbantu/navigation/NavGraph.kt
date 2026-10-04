@@ -29,6 +29,7 @@ import com.example.tiketbantu.ui.screens.monitoring.MonitoringScreen
 import com.example.tiketbantu.ui.screens.mytickets.MyTicketsScreen
 import com.example.tiketbantu.ui.screens.profile.ProfileScreen
 import com.example.tiketbantu.ui.screens.supported.SupportedTicketsScreen
+import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import org.koin.androidx.compose.koinViewModel
@@ -184,6 +185,13 @@ fun NavGraph(
                         navController.navigateToLoginFromLogout()
                     },
                     onMyTicketsClick = {
+                        navController.safeNavigate(Screen.MyTickets)
+                    },
+                    onSupportedTicketsClick = {
+                        navController.safeNavigate(Screen.SupportedTickets)
+                    },
+                    onDoneTicketsClick = {
+                        DemoSession.myTicketsInitialStatus = TicketStatus.SELESAI
                         navController.safeNavigate(Screen.MyTickets)
                     }
                 )

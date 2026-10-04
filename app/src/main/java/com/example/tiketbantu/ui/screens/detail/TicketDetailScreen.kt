@@ -317,6 +317,7 @@ fun TicketDetailScreen(
     }
 
     if (confirmDelete) {
+        val context = androidx.compose.ui.platform.LocalContext.current
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             containerColor = Color.White,
@@ -327,6 +328,7 @@ fun TicketDetailScreen(
                     confirmDelete = false
                     scope.launch {
                         runCatching { repository.softDeleteTicket(ticketId) }
+                        android.widget.Toast.makeText(context, "Aduan berhasil dihapus dari publik", android.widget.Toast.LENGTH_SHORT).show()
                         onBack()
                     }
                 }) { Text("Hapus", color = DangerRed, fontWeight = FontWeight.Bold) }

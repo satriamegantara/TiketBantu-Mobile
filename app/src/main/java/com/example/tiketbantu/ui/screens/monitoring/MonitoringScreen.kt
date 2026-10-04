@@ -146,7 +146,10 @@ fun MonitoringScreen(
                     activeAgents = uiState.activeAgentCount,
                     completed = uiState.completedCount,
                     completedPct = uiState.completedPct,
-                    affected = uiState.totalAffected
+                    affected = uiState.totalAffected,
+                    selectedStatus = uiState.selectedStatus,
+                    isSearchActive = uiState.isSearchActive,
+                    onSelectStatus = viewModel::onStatusFilterChange
                 )
             }
 
@@ -155,8 +158,12 @@ fun MonitoringScreen(
             }
 
             item(key = "priority_header") {
-                val isFiltering = uiState.isSearchActive || uiState.selectedStatus != null
-                val headerTitle = if (isFiltering) "Hasil Penelusuran Aduan" else "Prioritas Dukungan Terbanyak"
+                val isFiltering = uiState.isSearchActive || uiState.selectedStatus != null || uiState.selectedPeriod != "Semua"
+                val headerTitle = when {
+                    uiState.isSearchActive || uiState.selectedStatus != null -> "Hasil Penelusuran Aduan"
+                    uiState.selectedPeriod != "Semua" -> "Aduan Periode ${uiState.selectedPeriod}"
+                    else -> "Prioritas Dukungan Terbanyak"
+                }
                 val badgeLabel = if (isFiltering) "${uiState.displayedTickets.size} Tiket" else "${uiState.baruCount.coerceAtLeast(1)} Kritis"
 
                 Row(
@@ -189,7 +196,7 @@ fun MonitoringScreen(
             item(key = "priority_list") {
                 PriorityTicketList(
                     tickets = uiState.displayedTickets,
-                    isFiltering = uiState.isSearchActive || uiState.selectedStatus != null,
+                    isFiltering = uiState.isSearchActive || uiState.selectedStatus != null || uiState.selectedPeriod != "Semua",
                     onTicketClick = onTicketClick
                 )
             }
@@ -465,7 +472,10 @@ private fun StatsGrid(
     activeAgents: Int,
     completed: Int,
     completedPct: Int,
-    affected: Int
+    affected: Int,
+    selectedStatus: String?,
+    isSearchActive: Boolean,
+    onSelectStatus: (String?) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp),
@@ -510,6 +520,8 @@ private fun StatsGrid(
                 badgeFg = if (baruCount > 0) Color(0xFF15803D) else InkMuted,
                 value = "$total",
                 label = "Total Aduan Masuk",
+                isSelected = selectedStatus == null && !isSearchActive,
+                onClick = { onSelectStatus(null) },
                 modifier = Modifier.weight(1f)
             )
             StatCard(
@@ -521,6 +533,8 @@ private fun StatsGrid(
                 badgeFg = BrandIndigo,
                 value = "$inProcess",
                 label = "Sedang Diproses Agen",
+                isSelected = selectedStatus == TicketStatus.DIPROSES,
+                onClick = { onSelectStatus(TicketStatus.DIPROSES) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -538,6 +552,8 @@ private fun StatsGrid(
                 badgeFg = Color(0xFF15803D),
                 value = "$completed",
                 label = "Berhasil Selesai ✓",
+                isSelected = selectedStatus == TicketStatus.SELESAI,
+                onClick = { onSelectStatus(TicketStatus.SELESAI) },
                 modifier = Modifier.weight(1f)
             )
             StatCard(
@@ -549,6 +565,8 @@ private fun StatsGrid(
                 badgeFg = Color(0xFFC2410C),
                 value = "%,d".format(affected).replace(',', '.'),
                 label = "Warga Terdampak",
+                isSelected = false,
+                onClick = { onSelectStatus(null) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -565,10 +583,15 @@ private fun StatCard(
     badgeFg: Color,
     value: String,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null
 ) {
     GlassCard(
         modifier = modifier,
+        containerColor = if (isSelected) iconBg.copy(alpha = 0.45f) else Color.White,
+        borderColor = if (isSelected) iconTint else Hairline,
+        onClick = onClick,
         contentPadding = PaddingValues(14.dp)
     ) {
         Row(
@@ -604,13 +627,30 @@ private fun StatCard(
             color = Ink
         )
         Spacer(Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-            color = InkSoft,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(iconTint)
+                )
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                ),
+                color = if (isSelected) Ink else InkSoft,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

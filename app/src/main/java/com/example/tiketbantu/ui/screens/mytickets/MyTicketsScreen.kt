@@ -71,7 +71,8 @@ fun MyTicketsScreen(
     val allTickets by ticketsFlow.collectAsState(initial = emptyList())
 
     val statusFilters = listOf("Semua", TicketStatus.DIPROSES, TicketStatus.BARU, TicketStatus.SELESAI)
-    var selectedStatus by remember { mutableStateOf("Semua") }
+    val initial = remember { DemoSession.myTicketsInitialStatus.also { DemoSession.myTicketsInitialStatus = null } }
+    var selectedStatus by remember { mutableStateOf(initial ?: "Semua") }
 
     val filteredTickets = remember(allTickets, selectedStatus, role, currentUserId) {
         val base = if (role == AppRole.AGEN) {

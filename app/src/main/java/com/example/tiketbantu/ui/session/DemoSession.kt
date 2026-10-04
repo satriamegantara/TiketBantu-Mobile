@@ -23,6 +23,7 @@ object DemoSession {
     var email by mutableStateOf("emily.johnson@kampus.ac.id")
     var nimNip by mutableStateOf("2021110045")
     var role by mutableStateOf(AppRole.PELAPOR)
+    var myTicketsInitialStatus by mutableStateOf<String?>(null)
 
     val firstName: String get() = name.substringBefore(' ')
 
