@@ -55,8 +55,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Refresh
 import com.example.tiketbantu.data.local.dao.SupportDao
 import com.example.tiketbantu.data.local.dao.TicketDao
 import com.example.tiketbantu.domain.repository.AuthRepository
@@ -70,6 +71,7 @@ import com.example.tiketbantu.ui.theme.BrandCyan
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
+import com.example.tiketbantu.ui.theme.FieldBg
 import com.example.tiketbantu.ui.theme.Hairline
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
@@ -92,8 +94,8 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
-    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
-    val stats by viewModel.userStats.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsState()
+    val stats by viewModel.userStats.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
@@ -162,7 +164,13 @@ fun ProfileScreen(
             }
 
             item(key = "menu_section") {
-                MenuSettingsCard(onLogoutClick = { showLogoutDialog = true })
+                MenuSettingsCard(
+                    onLogoutClick = { showLogoutDialog = true },
+                    onMyTicketsClick = onMyTicketsClick,
+                    sentCount = stats.sentCount,
+                    onOpenGuide = { showGuideDialog = true },
+                    onOpenContact = { showContactDialog = true }
+                )
             }
         }
     }
@@ -266,7 +274,7 @@ private fun RoleSwitcherCard(onSwitchRole: (AppRole) -> Unit) {
             .padding(horizontal = 20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.SwapHoriz, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+            Icon(Icons.Outlined.Refresh, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -439,7 +447,13 @@ private fun StatItem(
 }
 
 @Composable
-private fun MenuSettingsCard(onLogoutClick: () -> Unit) {
+private fun MenuSettingsCard(
+    onLogoutClick: () -> Unit,
+    onMyTicketsClick: () -> Unit = {},
+    sentCount: Int = 0,
+    onOpenGuide: () -> Unit = {},
+    onOpenContact: () -> Unit = {}
+) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -478,6 +492,79 @@ private fun MenuSettingsCard(onLogoutClick: () -> Unit) {
             iconColor = Color(0xFF0369A1),
             onClick = onOpenContact
         )
+    }
+}
+
+@Composable
+private fun MenuItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = InkSoft, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = Ink,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted)
+        }
+    }
+}
+
+@Composable
+private fun ShortcutTile(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    badgeColor: Color,
+    iconColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(badgeColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Ink
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = InkMuted
+                )
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted)
+        }
     }
 }
 
@@ -634,8 +721,8 @@ private fun ContactDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ContactItem(icon = Icons.Outlined.LocationOn, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
-                ContactItem(icon = Icons.Outlined.Schedule, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
+                ContactItem(icon = Icons.Outlined.Place, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
+                ContactItem(icon = Icons.Outlined.AccessTime, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
                 ContactItem(icon = Icons.Outlined.Info, label = "Email Helpdesk", valText = "helpdesk.sarpras@kampus.ac.id")
             }
         },

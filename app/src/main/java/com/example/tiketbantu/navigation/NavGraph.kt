@@ -199,10 +199,10 @@ fun NavGraph(
                     navController.safeNavigate(Screen.Detail(ticketId))
                 },
                 onManageUsersClick = {
-                    navController.safeNavigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement(0))
                 },
                 onManageCategoriesClick = {
-                    navController.safeNavigate(Screen.UserManagement)
+                    navController.safeNavigate(Screen.UserManagement(1))
                 }
             )
         }
@@ -213,4 +213,5 @@ fun NavGraph(
             )
         }
     }
+}
 }

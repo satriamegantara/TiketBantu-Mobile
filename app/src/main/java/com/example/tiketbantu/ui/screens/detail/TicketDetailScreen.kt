@@ -173,9 +173,10 @@ fun TicketDetailScreen(
     var pendingStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    var zoomedPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val role = DemoSession.role
-    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
+    val activeRole = DemoSession.role
+    val canAct = canUpdateStatus || activeRole == AppRole.AGEN || activeRole == AppRole.ADMIN
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {

@@ -98,26 +98,7 @@ fun MonitoringScreen(
     viewModel: MonitoringViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val repository: TicketRepository = koinInject()
-    val currentUserId = DemoSession.userId
-    val ticketsFlow = remember(repository, currentUserId) {
-        repository.getAllTickets(
-            query = "",
-            categoryId = null,
-            status = null,
-            sortByMostLiked = true,
-            currentUserId = currentUserId,
-            limit = 100
-        )
-    }
-    val allTickets by ticketsFlow.collectAsState(initial = emptyList())
-
-    val totalTickets = allTickets.size
-    val inProcessCount = allTickets.count { it.status == TicketStatus.DIPROSES }
-    val completedCount = allTickets.count { it.status == TicketStatus.SELESAI }
-    val totalAffected = allTickets.sumOf { it.supportCount }
-
-    var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
+    val uiState by viewModel.uiState.collectAsState()
     val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
 
     AppBackground(modifier = modifier) {
