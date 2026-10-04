@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,9 +86,7 @@ fun MyTicketsScreen(
         val base = if (role == AppRole.AGEN) {
             allTickets.filter {
                 it.agentId == currentUserId ||
-                it.agentName?.contains("Joko") == true ||
-                it.status == TicketStatus.DIPROSES ||
-                it.status == TicketStatus.BARU
+                (it.status == TicketStatus.BARU && it.agentId == null)
             }
         } else {
             allTickets
@@ -115,7 +115,7 @@ fun MyTicketsScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = if (role == AppRole.AGEN) "Daftar tiket sarpras yang ditugaskan ke Anda" else "Pantau status aduan fasilitas yang Anda kirim",
+                        text = if (role == AppRole.AGEN) "Daftar tugas penanganan sarpras yang ditugaskan kepada Anda" else "Pantau status aduan fasilitas yang Anda kirim",
                         style = MaterialTheme.typography.bodyMedium,
                         color = InkMuted
                     )
@@ -132,9 +132,9 @@ fun MyTicketsScreen(
             ) {
                 statusFilters.forEach { status ->
                     val label = when (status) {
-                        "Semua" -> "Semua"
-                        TicketStatus.BARU -> "Baru"
-                        TicketStatus.DIPROSES -> "Diproses"
+                        "Semua" -> if (role == AppRole.AGEN) "Semua Tugas" else "Semua"
+                        TicketStatus.BARU -> if (role == AppRole.AGEN) "Tugas Baru" else "Baru"
+                        TicketStatus.DIPROSES -> if (role == AppRole.AGEN) "Penanganan" else "Diproses"
                         TicketStatus.SELESAI -> "Selesai"
                         else -> status
                     }
@@ -149,9 +149,30 @@ fun MyTicketsScreen(
             Spacer(Modifier.height(8.dp))
 
             if (filteredTickets.isEmpty()) {
+                val emptyTitle = if (role == AppRole.AGEN) "Belum Ada Tugas" else "Belum Ada Aduan"
+                val emptyMessage = if (role == AppRole.AGEN) {
+                    if (selectedStatus == "Semua") {
+                        "Belum ada tugas penanganan yang ditugaskan kepada Anda."
+                    } else {
+                        val statusLabel = when (selectedStatus) {
+                            TicketStatus.BARU -> "tugas baru"
+                            TicketStatus.DIPROSES -> "penanganan"
+                            TicketStatus.SELESAI -> "tugas selesai"
+                            else -> selectedStatus.lowercase()
+                        }
+                        "Tidak ada tugas penanganan dengan status $statusLabel."
+                    }
+                } else {
+                    if (selectedStatus == "Semua") {
+                        "Anda belum membuat aduan fasilitas kampus."
+                    } else {
+                        "Tidak ada aduan dengan status ${selectedStatus.lowercase()}."
+                    }
+                }
                 EmptyState(
-                    title = "Belum Ada Aduan",
-                    message = if (role == AppRole.AGEN) "Belum ada tiket penanganan untuk filter ini." else "Anda belum membuat aduan pada kategori ini.",
+                    title = emptyTitle,
+                    message = emptyMessage,
+                    icon = if (role == AppRole.AGEN) Icons.AutoMirrored.Outlined.Assignment else Icons.Outlined.Inbox,
                     modifier = Modifier.weight(1f)
                 )
             } else {

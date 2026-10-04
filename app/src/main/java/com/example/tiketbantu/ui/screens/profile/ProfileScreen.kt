@@ -450,27 +450,38 @@ private fun HelpAndInfoCard(
 
 @Composable
 private fun LogoutCard(onLogoutClick: () -> Unit) {
-    GlassCard(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
     ) {
         Surface(
             onClick = onLogoutClick,
-            color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(14.dp),
+            color = Color(0xFFFEF2F2),
+            border = BorderStroke(1.dp, Color(0xFFFEE2E2)),
+            modifier = Modifier.height(44.dp)
         ) {
             Row(
-                modifier = Modifier.padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = DangerRed, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(12.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    tint = DangerRed,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Keluar Akun",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = DangerRed,
-                    modifier = Modifier.weight(1f)
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    ),
+                    color = DangerRed
                 )
             }
         }

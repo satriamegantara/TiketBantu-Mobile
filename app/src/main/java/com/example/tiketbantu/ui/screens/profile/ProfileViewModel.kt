@@ -69,23 +69,6 @@ class ProfileViewModel(
         }
     }
 
-    fun switchRoleDemo(targetRole: AppRole) {
-        viewModelScope.launch {
-            DemoSession.loginAs(targetRole)
-            val (email, rawPassword) = when (targetRole) {
-                AppRole.PELAPOR -> "emily.johnson@kampus.ac.id" to "user123"
-                AppRole.AGEN -> "joko.santoso@kampus.ac.id" to "agen123"
-                AppRole.ADMIN -> "admin@kampus.ac.id" to "admin123"
-            }
-            authRepository.login(email, hashSha256(rawPassword))
-        }
-    }
-
-    private fun hashSha256(input: String): String {
-        val bytes = java.security.MessageDigest.getInstance("SHA-256")
-            .digest(input.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
