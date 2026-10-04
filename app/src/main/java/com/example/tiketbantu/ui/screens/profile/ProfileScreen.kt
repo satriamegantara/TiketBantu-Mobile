@@ -55,9 +55,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.outlined.AccessTime
-import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.tiketbantu.data.local.dao.SupportDao
 import com.example.tiketbantu.data.local.dao.TicketDao
 import com.example.tiketbantu.domain.repository.AuthRepository
@@ -71,7 +70,6 @@ import com.example.tiketbantu.ui.theme.BrandCyan
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
-import com.example.tiketbantu.ui.theme.FieldBg
 import com.example.tiketbantu.ui.theme.Hairline
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
@@ -93,10 +91,15 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToMyTickets: () -> Unit = {},
+    onNavigateToSupported: () -> Unit = {},
+    onNavigateToCreate: () -> Unit = {},
+    onMyTicketsClick: () -> Unit = onNavigateToMyTickets,
+    viewModel: ProfileViewModel = koinViewModel()
 ) {
-    val currentUser by viewModel.currentUser.collectAsState()
-    val stats by viewModel.userStats.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val stats by viewModel.userStats.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
@@ -153,14 +156,27 @@ fun ProfileScreen(
                     sentCount = stats.sentCount,
                     supportCount = stats.supportCount,
                     doneCount = stats.doneCount,
-                    onMyTicketsClick = onMyTicketsClick,
-                    onSupportedTicketsClick = onSupportedTicketsClick,
-                    onDoneTicketsClick = onDoneTicketsClick
+                    onMyTicketsClick = onMyTicketsClick
                 )
             }
 
-            item(key = "menu_section") {
-                MenuSettingsCard(onLogoutClick = { showLogoutDialog = true })
+            item(key = "shortcuts") {
+                QuickShortcutsCard(
+                    onNavigateToMyTickets = onNavigateToMyTickets,
+                    onNavigateToSupported = onNavigateToSupported,
+                    onNavigateToCreate = onNavigateToCreate
+                )
+            }
+
+            item(key = "help_info") {
+                HelpAndInfoCard(
+                    onOpenGuide = { showGuideDialog = true },
+                    onOpenContact = { showContactDialog = true }
+                )
+            }
+
+            item(key = "logout_section") {
+                LogoutCard(onLogoutClick = { showLogoutDialog = true })
             }
         }
     }
@@ -264,7 +280,7 @@ private fun RoleSwitcherCard(onSwitchRole: (AppRole) -> Unit) {
             .padding(horizontal = 20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.SwapHoriz, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+            Icon(Icons.Outlined.Sync, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -354,9 +370,7 @@ private fun UserStatsCard(
     sentCount: Int = 0,
     supportCount: Int = 0,
     doneCount: Int = 0,
-    onMyTicketsClick: () -> Unit = {},
-    onSupportedTicketsClick: () -> Unit = {},
-    onDoneTicketsClick: () -> Unit = {}
+    onMyTicketsClick: () -> Unit = {}
 ) {
     GlassCard(
         modifier = Modifier
@@ -384,15 +398,13 @@ private fun UserStatsCard(
                 icon = Icons.Outlined.LocalFireDepartment,
                 count = supportCount.toString(),
                 label = "Dukungan Diberi",
-                color = SupportOrange,
-                onClick = onSupportedTicketsClick
+                color = SupportOrange
             )
             StatItem(
                 icon = Icons.Outlined.CheckCircle,
                 count = doneCount.toString(),
                 label = "Telah Tuntas",
-                color = Color(0xFF16A34A),
-                onClick = onDoneTicketsClick
+                color = Color(0xFF16A34A)
             )
         }
     }
@@ -437,7 +449,99 @@ private fun StatItem(
 }
 
 @Composable
-private fun MenuSettingsCard(onLogoutClick: () -> Unit) {
+private fun QuickShortcutsCard(
+    onNavigateToMyTickets: (() -> Unit)?,
+    onNavigateToSupported: (() -> Unit)?,
+    onNavigateToCreate: (() -> Unit)?
+) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+        Text(
+            text = "Aksi Cepat & Navigasi",
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = Ink
+        )
+        Spacer(Modifier.height(12.dp))
+
+        ShortcutTile(
+            icon = Icons.Outlined.ConfirmationNumber,
+            title = "Aduan Saya",
+            subtitle = "Kelola daftar aduan yang Anda kirimkan",
+            badgeColor = BrandIndigoSoft,
+            iconColor = BrandIndigo,
+            onClick = onNavigateToMyTickets
+        )
+        Spacer(Modifier.height(8.dp))
+
+        ShortcutTile(
+            icon = Icons.Outlined.FavoriteBorder,
+            title = "Aduan Saya Dukung",
+            subtitle = "Daftar tiket yang Anda beri suara dukungan",
+            badgeColor = Color(0xFFFFF1F2),
+            iconColor = Color(0xFFE11D48),
+            onClick = onNavigateToSupported
+        )
+        Spacer(Modifier.height(8.dp))
+
+        ShortcutTile(
+            icon = Icons.Outlined.AddCircleOutline,
+            title = "Buat Aduan Baru",
+            subtitle = "Laporkan kerusakan fasilitas kampus baru",
+            badgeColor = SuccessSoftBg,
+            iconColor = SuccessText,
+            onClick = onNavigateToCreate
+        )
+    }
+}
+
+@Composable
+private fun ShortcutTile(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    badgeColor: Color,
+    iconColor: Color,
+    onClick: (() -> Unit)?
+) {
+    Surface(
+        onClick = { onClick?.invoke() },
+        enabled = onClick != null,
+        shape = RoundedCornerShape(14.dp),
+        color = FieldBg,
+        border = BorderStroke(1.dp, Hairline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(badgeColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Ink)
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = InkMuted)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun HelpAndInfoCard(
+    onOpenGuide: () -> Unit,
+    onOpenContact: () -> Unit
+) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -468,79 +572,6 @@ private fun MenuSettingsCard(onLogoutClick: () -> Unit) {
             iconColor = Color(0xFF0369A1),
             onClick = onOpenContact
         )
-    }
-}
-
-@Composable
-private fun MenuItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        color = Color.Transparent,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = InkSoft, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = Ink,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted)
-        }
-    }
-}
-
-@Composable
-private fun ShortcutTile(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    badgeColor: Color,
-    iconColor: Color,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        color = Color.Transparent,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(badgeColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Ink
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = InkMuted
-                )
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted)
-        }
     }
 }
 
@@ -635,8 +666,8 @@ private fun ContactDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ContactItem(icon = Icons.Outlined.Place, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
-                ContactItem(icon = Icons.Outlined.AccessTime, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
+                ContactItem(icon = Icons.Outlined.LocationOn, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
+                ContactItem(icon = Icons.Outlined.Schedule, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
                 ContactItem(icon = Icons.Outlined.Info, label = "Email Helpdesk", valText = "helpdesk.sarpras@kampus.ac.id")
             }
         },

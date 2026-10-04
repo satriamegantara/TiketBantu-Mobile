@@ -173,10 +173,15 @@ fun TicketDetailScreen(
     var pendingStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
-    var zoomedPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val role = DemoSession.role
+    val activeRole = when (currentUser?.role?.uppercase()) {
+        "ADMIN" -> AppRole.ADMIN
+        "AGEN" -> AppRole.AGEN
+        else -> DemoSession.role
+    }
+    val role = activeRole
     val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
+    var zoomedPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {
@@ -328,7 +333,6 @@ fun TicketDetailScreen(
     }
 
     if (confirmDelete) {
-        val context = androidx.compose.ui.platform.LocalContext.current
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             containerColor = Color.White,
@@ -339,7 +343,6 @@ fun TicketDetailScreen(
                     confirmDelete = false
                     scope.launch {
                         runCatching { repository.softDeleteTicket(ticketId) }
-                        android.widget.Toast.makeText(context, "Aduan berhasil dihapus dari publik", android.widget.Toast.LENGTH_SHORT).show()
                         onBack()
                     }
                 }) { Text("Hapus", color = DangerRed, fontWeight = FontWeight.Bold) }

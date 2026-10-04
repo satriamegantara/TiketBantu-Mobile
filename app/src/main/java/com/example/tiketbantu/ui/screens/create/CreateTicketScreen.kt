@@ -234,8 +234,14 @@ fun CreateTicketScreen(
                         Hint("Pilih kategori penanganan teknisi yang relevan")
                         Spacer(Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CATEGORIES.forEach { option ->
-                                CategoryRow(option, selected = categoryId == option.id) { categoryId = option.id }
+                            categoriesToDisplay.forEach { category ->
+                                val isSelected = formState.categoryId == category.id
+                                CategoryRow(
+                                    label = category.name,
+                                    icon = getCategoryIcon(category.name),
+                                    selected = isSelected,
+                                    onClick = { viewModel.onCategorySelected(category) }
+                                )
                             }
                         }
                         if (formState.categoryError != null) {
