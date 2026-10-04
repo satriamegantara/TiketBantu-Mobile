@@ -11,8 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Production Room + SessionManager-backed implementation of [AuthRepository].
- * Manages user authentication, registration, local persistence, and session lifecycle.
+ * Concrete implementation of [AuthRepository] using Room [UserDao] and [SessionManager].
+ *
+ * Responsibilities:
+ * - Authenticate user credentials against the local Room DB (supports hashed and plaintext seeders).
+ * - Register new users with default role PELAPOR, rejecting duplicate emails.
+ * - Manage session state persistence via DataStore [SessionManager] and synchronize [DemoSession].
  */
 class AuthRepositoryImpl(
     private val userDao: UserDao,
@@ -40,14 +44,7 @@ class AuthRepositoryImpl(
             return Result.failure(IllegalArgumentException("Kata sandi salah"))
         }
 
-        val domainUser = User(
-            id = entity.id,
-            name = entity.name,
-            email = entity.email,
-            nimNip = entity.nimNip,
-            role = entity.role,
-            isActive = entity.isActive
-        )
+        val domainUser = entity.toDomain()
 
         sessionManager.saveSession(domainUser)
         syncDemoSession(domainUser)
@@ -73,25 +70,17 @@ class AuthRepositoryImpl(
             return Result.failure(IllegalArgumentException("Email sudah terdaftar"))
         }
 
-        val newId = userDao.insertUser(
-            UserEntity(
-                name = name.trim(),
-                email = trimmedEmail,
-                nimNip = nimNip?.trim()?.ifBlank { null },
-                passwordHash = passwordHash,
-                role = "PELAPOR",
-                isActive = true
-            )
-        )
-
-        val domainUser = User(
-            id = newId,
+        val newUserEntity = UserEntity(
             name = name.trim(),
             email = trimmedEmail,
             nimNip = nimNip?.trim()?.ifBlank { null },
+            passwordHash = passwordHash,
             role = "PELAPOR",
             isActive = true
         )
+
+        val newId = userDao.insertUser(newUserEntity)
+        val domainUser = newUserEntity.copy(id = newId).toDomain()
 
         return Result.success(domainUser)
     }
@@ -116,4 +105,13 @@ class AuthRepositoryImpl(
         }
         DemoSession.isLoggedIn = true
     }
+
+    private fun UserEntity.toDomain(): User = User(
+        id = id,
+        name = name,
+        email = email,
+        nimNip = nimNip,
+        role = role,
+        isActive = isActive
+    )
 }
