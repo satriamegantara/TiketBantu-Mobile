@@ -59,7 +59,7 @@ fun MainScreen() {
 
     val showBottomBar = !currentRoute.contains("Login") &&
             !currentRoute.contains("Register") &&
-            !currentRoute.contains("TicketDetail") &&
+            !currentRoute.contains("Detail") &&
             !currentRoute.contains("CreateTicket")
 
     Box(modifier = Modifier.fillMaxSize()) {
