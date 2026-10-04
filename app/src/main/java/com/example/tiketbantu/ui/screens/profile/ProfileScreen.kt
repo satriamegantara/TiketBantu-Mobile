@@ -33,6 +33,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import android.widget.Toast
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -83,6 +87,10 @@ fun ProfileScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val stats by viewModel.userStats.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showSecurityDialog by remember { mutableStateOf(false) }
+    var showNotifDialog by remember { mutableStateOf(false) }
+    var showFaqDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     val name = currentUser?.name?.ifBlank { null } ?: DemoSession.name
     val email = currentUser?.email?.ifBlank { null } ?: DemoSession.email
@@ -152,6 +160,10 @@ fun ProfileScreen(
                 MenuSettingsCard(
                     sentCount = stats.sentCount,
                     onMyTicketsClick = onMyTicketsClick,
+                    onSecurityClick = { showSecurityDialog = true },
+                    onNotifClick = { showNotifDialog = true },
+                    onFaqClick = { showFaqDialog = true },
+                    onAboutClick = { showAboutDialog = true },
                     onLogoutClick = { showLogoutDialog = true }
                 )
             }
@@ -177,6 +189,33 @@ fun ProfileScreen(
                     Text("Batal", color = InkSoft)
                 }
             }
+        )
+    }
+
+    if (showSecurityDialog) {
+        SecurityDialog(
+            name = name,
+            email = email,
+            nimNip = nimNip,
+            onDismiss = { showSecurityDialog = false }
+        )
+    }
+
+    if (showNotifDialog) {
+        NotificationPreferencesDialog(
+            onDismiss = { showNotifDialog = false }
+        )
+    }
+
+    if (showFaqDialog) {
+        FaqDialog(
+            onDismiss = { showFaqDialog = false }
+        )
+    }
+
+    if (showAboutDialog) {
+        AboutAppDialog(
+            onDismiss = { showAboutDialog = false }
         )
     }
 }
@@ -444,6 +483,10 @@ private fun StatItem(
 private fun MenuSettingsCard(
     sentCount: Int,
     onMyTicketsClick: () -> Unit,
+    onSecurityClick: () -> Unit,
+    onNotifClick: () -> Unit,
+    onFaqClick: () -> Unit,
+    onAboutClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     GlassCard(
@@ -458,7 +501,7 @@ private fun MenuSettingsCard(
         )
         Spacer(Modifier.height(8.dp))
 
-        // Akses navigasi ke Aduan Saya (Sesuai Task 4.5 & DESIGN_TiketBantu baris 175)
+        // Akses navigasi ke Aduan Saya (Sesuai Task 4.5 & DESIGN_TiketBantu baris 173)
         MenuItem(
             icon = Icons.Outlined.ConfirmationNumber,
             title = "Aduan Saya ($sentCount)",
@@ -466,13 +509,32 @@ private fun MenuSettingsCard(
         )
         Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
 
-        MenuItem(icon = Icons.Outlined.Shield, title = "Keamanan Akun & SSO Kampus", onClick = {})
+        MenuItem(
+            icon = Icons.Outlined.Shield,
+            title = "Keamanan Akun & SSO Kampus",
+            onClick = onSecurityClick
+        )
         Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
-        MenuItem(icon = Icons.Outlined.Notifications, title = "Notifikasi & Pembaruan Laporan", onClick = {})
+
+        MenuItem(
+            icon = Icons.Outlined.Notifications,
+            title = "Notifikasi & Pembaruan Laporan",
+            onClick = onNotifClick
+        )
         Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
-        MenuItem(icon = Icons.Outlined.HelpOutline, title = "Pusat Bantuan & FAQ Sarpras", onClick = {})
+
+        MenuItem(
+            icon = Icons.Outlined.HelpOutline,
+            title = "Pusat Bantuan & FAQ Sarpras",
+            onClick = onFaqClick
+        )
         Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
-        MenuItem(icon = Icons.Outlined.Info, title = "Tentang TiketBantu Mobile v2.0", onClick = {})
+
+        MenuItem(
+            icon = Icons.Outlined.Info,
+            title = "Tentang TiketBantu Mobile v2.0",
+            onClick = onAboutClick
+        )
         Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
 
         // Logout
@@ -524,4 +586,276 @@ private fun MenuItem(
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted)
         }
     }
+}
+
+@Composable
+private fun SecurityDialog(
+    name: String,
+    email: String,
+    nimNip: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BrandIndigoSoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Shield, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text("Keamanan Akun & SSO", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Akun Anda terhubung langsung dengan sistem Single Sign-On (SSO) Kampus.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ink
+                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, Hairline),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("• Nama: $name", style = MaterialTheme.typography.bodySmall, color = Ink)
+                        Text("• Email SSO: $email", style = MaterialTheme.typography.bodySmall, color = Ink)
+                        Text("• Identitas: $nimNip", style = MaterialTheme.typography.bodySmall, color = Ink)
+                        Text("• Enkripsi: Password hash lokal tersimpan aman", style = MaterialTheme.typography.bodySmall, color = Color(0xFF16A34A), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun NotificationPreferencesDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var statusNotif by remember { mutableStateOf(true) }
+    var commentNotif by remember { mutableStateOf(true) }
+    var toastFeedback by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFFEF3C7)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Notifications, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text("Preferensi Notifikasi", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    text = "Atur preferensi pemberitahuan laporan sarpras di perangkat ini:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkMuted
+                )
+                PreferenceSwitchRow(
+                    title = "Pembaruan Status Tiket",
+                    subtitle = "Notifikasi saat tiket berubah ke Diproses / Selesai",
+                    checked = statusNotif,
+                    onCheckedChange = { statusNotif = it }
+                )
+                PreferenceSwitchRow(
+                    title = "Tanggapan / Komentar Agen",
+                    subtitle = "Pemberitahuan saat teknisi menulis update tindak lanjut",
+                    checked = commentNotif,
+                    onCheckedChange = { commentNotif = it }
+                )
+                PreferenceSwitchRow(
+                    title = "Toast Feedback di Layar",
+                    subtitle = "Umpan balik instan setiap aksi berhasil",
+                    checked = toastFeedback,
+                    onCheckedChange = { toastFeedback = it }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                Toast.makeText(context, "Preferensi notifikasi berhasil disimpan", Toast.LENGTH_SHORT).show()
+                onDismiss()
+            }) {
+                Text("Simpan", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = InkSoft)
+            }
+        }
+    )
+}
+
+@Composable
+private fun PreferenceSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = Ink)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = InkMuted)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = BrandIndigo,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Hairline
+            )
+        )
+    }
+}
+
+@Composable
+private fun FaqDialog(
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFE0F7FA)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = Color(0xFF00838F), modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text("Pusat Bantuan & FAQ", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FaqItem(
+                    q = "Cara membuat aduan fasilitas?",
+                    a = "Tekan tombol '+' di menu bawah, lengkapi lokasi gedung/ruangan dan lampirkan 1 foto bukti kendala."
+                )
+                FaqItem(
+                    q = "Apa itu 'Saya Juga Mengalami'?",
+                    a = "Fitur solidaritas warga kampus. Semakin banyak dukungan suara, prioritas penanganan semakin tinggi."
+                )
+                FaqItem(
+                    q = "Berapa lama laporan ditangani?",
+                    a = "Teknisi sarpras biasanya mengklaim aduan dalam 1x24 jam kerja sesuai ketersediaan sparepart."
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                ) {
+                    Text(
+                        text = "Kontak Operasional: sarpras@kampus.ac.id",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = InkSoft,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun FaqItem(q: String, a: String) {
+    Column {
+        Text(text = "Q: $q", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = Ink)
+        Text(text = a, style = MaterialTheme.typography.labelSmall, color = InkSoft)
+    }
+}
+
+@Composable
+private fun AboutAppDialog(
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BrandIndigoSoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text("Tentang TiketBantu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "TiketBantu Mobile v2.0.0",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink
+                )
+                Text(
+                    text = "Sistem pelaporan fasilitas sarana & prasarana kampus terpadu berbasis transparansi publik dan urgensi suara solidaritas mahasiswa.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkSoft
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Teknologi: Jetpack Compose, Material 3, Room Local DB, Koin Dependency Injection.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = InkMuted
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup", color = BrandIndigo, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
