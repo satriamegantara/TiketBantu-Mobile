@@ -334,73 +334,40 @@ fun FeedContent(
                 }
             }
 
-            // Compact Active Filter Indicator Chips
-            if (isFilterActive) {
-                item(key = "active_filter_chips") {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // Compact Single Active Filter Indicator
+            if (activeFilterCount > 0) {
+                item(key = "active_filter_indicator") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (filter.status != null) {
-                            val label = STATUS_FILTERS.firstOrNull { it.first == filter.status }?.second ?: filter.status
-                            item(key = "active_status") {
-                                ActiveFilterChip(
-                                    label = "Status: $label",
-                                    onRemove = { onStatusSelected(null) }
-                                )
-                            }
-                        }
-
-                        if (filter.categoryId != null) {
-                            val label = CATEGORY_FILTERS.firstOrNull { it.first == filter.categoryId }?.second ?: "Kategori"
-                            item(key = "active_cat") {
-                                ActiveFilterChip(
-                                    label = "Kategori: $label",
-                                    onRemove = { onCategorySelected(null) }
-                                )
-                            }
-                        }
-
-                        if (effectiveSort == FeedSort.MOST_LIKED) {
-                            item(key = "active_sort") {
-                                ActiveFilterChip(
-                                    label = "Urutan: Terbanyak Didukung",
-                                    onRemove = { onSortSelected(FeedSort.LATEST) }
-                                )
-                            }
-                        }
-
-                        if (searchInput.isNotBlank()) {
-                            item(key = "active_search") {
-                                ActiveFilterChip(
-                                    label = "Cari: \"$searchInput\"",
-                                    onRemove = { onSearchChange("") }
-                                )
-                            }
-                        }
-
-                        item(key = "active_reset") {
-                            Surface(
-                                onClick = onResetFilters,
-                                shape = RoundedCornerShape(50),
-                                color = DangerRed.copy(alpha = 0.1f),
-                                border = BorderStroke(1.dp, DangerRed.copy(alpha = 0.3f)),
-                                modifier = Modifier.height(32.dp)
+                        Surface(
+                            onClick = { showFilterBottomSheet = true },
+                            shape = RoundedCornerShape(50),
+                            color = BrandIndigoSoft,
+                            border = BorderStroke(1.dp, BrandIndigo.copy(alpha = 0.3f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Reset Semua",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = DangerRed
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Icon(Icons.Default.Clear, contentDescription = "Reset filter", tint = DangerRed, modifier = Modifier.size(14.dp))
-                                }
+                                Icon(Icons.Outlined.Tune, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "Filter · $activeFilterCount aktif",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = BrandIndigo
+                                )
                             }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(
+                            onClick = onResetFilters,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text("Reset", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = DangerRed)
                         }
                     }
                 }
@@ -510,36 +477,6 @@ fun FeedContent(
     }
 }
 
-@Composable
-private fun ActiveFilterChip(
-    label: String,
-    onRemove: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = BrandIndigoSoft,
-        border = BorderStroke(1.dp, BrandIndigo.copy(alpha = 0.4f)),
-        modifier = Modifier.height(32.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = BrandIndigo)
-            Spacer(Modifier.width(4.dp))
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(BrandIndigo.copy(alpha = 0.15f))
-                    .clickable(onClick = onRemove),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Clear, contentDescription = "Hapus filter", tint = BrandIndigo, modifier = Modifier.size(12.dp))
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -685,24 +622,53 @@ private fun FilterBottomSheet(
 
             Spacer(Modifier.height(4.dp))
 
-            // Terapkan Button
-            Surface(
-                onClick = {
-                    onApply(draftStatus, draftCategoryId, draftSort)
-                    onDismiss()
-                },
-                shape = RoundedCornerShape(12.dp),
-                color = BrandIndigo,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
+            // Reset and Terapkan Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "Terapkan Filter",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
-                    )
+                Surface(
+                    onClick = {
+                        draftStatus = null
+                        draftCategoryId = null
+                        draftSort = FeedSort.LATEST
+                        onApply(null, null, FeedSort.LATEST)
+                        onDismiss()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    color = FieldBg,
+                    border = BorderStroke(1.dp, Hairline),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Reset",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = InkSoft
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = {
+                        onApply(draftStatus, draftCategoryId, draftSort)
+                        onDismiss()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    color = BrandIndigo,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Terapkan",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }

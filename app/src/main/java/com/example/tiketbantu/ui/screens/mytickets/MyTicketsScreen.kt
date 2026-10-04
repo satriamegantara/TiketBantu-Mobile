@@ -16,9 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -102,25 +99,16 @@ fun MyTicketsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = if (onBack != null) 12.dp else 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp),
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (onBack != null) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = Ink
-                        )
-                    }
-                    Spacer(Modifier.width(4.dp))
-                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (role == AppRole.AGEN) "Tugas Penanganan" else "Aduan Saya",
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
                         color = Ink
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = if (role == AppRole.AGEN) "Daftar tiket sarpras yang ditugaskan ke Anda" else "Pantau status aduan fasilitas yang Anda kirim",
                         style = MaterialTheme.typography.bodyMedium,

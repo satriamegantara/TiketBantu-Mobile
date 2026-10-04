@@ -22,17 +22,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ConfirmationNumber
-import androidx.compose.material.icons.automirrored.outlined.ContactSupport
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.LocalFireDepartment
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,10 +74,6 @@ import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessSoftBg
 import com.example.tiketbantu.ui.theme.SuccessText
-import com.example.tiketbantu.ui.theme.SupportOrange
-import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tiketbantu.ui.theme.FieldBg
 import org.koin.androidx.compose.koinViewModel
@@ -143,28 +137,13 @@ fun ProfileScreen(
                 )
             }
 
-            item(key = "role_switcher") {
-                RoleSwitcherCard(
-                    onSwitchRole = { targetRole ->
-                        viewModel.switchRoleDemo(targetRole)
-                    }
-                )
-            }
-
             item(key = "stats") {
                 UserStatsCard(
+                    role = role,
                     sentCount = stats.sentCount,
                     supportCount = stats.supportCount,
                     doneCount = stats.doneCount,
                     onMyTicketsClick = onMyTicketsClick
-                )
-            }
-
-            item(key = "shortcuts") {
-                QuickShortcutsCard(
-                    onNavigateToMyTickets = onNavigateToMyTickets,
-                    onNavigateToSupported = onNavigateToSupported,
-                    onNavigateToCreate = onNavigateToCreate
                 )
             }
 
@@ -273,100 +252,8 @@ private fun UserProfileCard(
 }
 
 @Composable
-private fun RoleSwitcherCard(onSwitchRole: (AppRole) -> Unit) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Sync, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Simulasi Peran (Multi-Role Preview)",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Ink
-                )
-                Text(
-                    text = "Ganti peran secara instan untuk menguji alur fitur",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = InkMuted
-                )
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            RolePillOption(
-                role = AppRole.PELAPOR,
-                title = "Pelapor",
-                subtitle = "Mahasiswa",
-                selected = DemoSession.role == AppRole.PELAPOR,
-                onClick = { onSwitchRole(AppRole.PELAPOR) },
-                modifier = Modifier.weight(1f)
-            )
-            RolePillOption(
-                role = AppRole.AGEN,
-                title = "Teknisi",
-                subtitle = "Pak Joko",
-                selected = DemoSession.role == AppRole.AGEN,
-                onClick = { onSwitchRole(AppRole.AGEN) },
-                modifier = Modifier.weight(1f)
-            )
-            RolePillOption(
-                role = AppRole.ADMIN,
-                title = "Admin",
-                subtitle = "Sarpras",
-                selected = DemoSession.role == AppRole.ADMIN,
-                onClick = { onSwitchRole(AppRole.ADMIN) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun RolePillOption(
-    role: AppRole,
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) BrandIndigo else FieldBg,
-        border = if (selected) null else BorderStroke(1.dp, Hairline),
-        modifier = modifier.height(64.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (selected) Color.White else Ink
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = if (selected) Color.White.copy(alpha = 0.8f) else InkMuted
-            )
-        }
-    }
-}
-
-@Composable
 private fun UserStatsCard(
+    role: AppRole,
     sentCount: Int = 0,
     supportCount: Int = 0,
     doneCount: Int = 0,
@@ -378,7 +265,7 @@ private fun UserStatsCard(
             .padding(horizontal = 20.dp)
     ) {
         Text(
-            text = "Aktivitas Kontribusi Kampus",
+            text = if (role == AppRole.AGEN) "Aktivitas Penanganan" else "Aktivitas Aduan",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = Ink
         )
@@ -387,25 +274,59 @@ private fun UserStatsCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            StatItem(
-                icon = Icons.Outlined.ConfirmationNumber,
-                count = sentCount.toString(),
-                label = "Aduan Dikirim",
-                color = BrandIndigo,
-                onClick = onMyTicketsClick
-            )
-            StatItem(
-                icon = Icons.Outlined.LocalFireDepartment,
-                count = supportCount.toString(),
-                label = "Dukungan Diberi",
-                color = SupportOrange
-            )
-            StatItem(
-                icon = Icons.Outlined.CheckCircle,
-                count = doneCount.toString(),
-                label = "Telah Tuntas",
-                color = Color(0xFF16A34A)
-            )
+            when (role) {
+                AppRole.AGEN -> {
+                    StatItem(
+                        icon = Icons.Outlined.Assignment,
+                        count = sentCount.toString(),
+                        label = "Tugas Ditangani",
+                        color = BrandIndigo,
+                        onClick = onMyTicketsClick
+                    )
+                    StatItem(
+                        icon = Icons.Outlined.CheckCircle,
+                        count = doneCount.toString(),
+                        label = "Telah Tuntas",
+                        color = Color(0xFF16A34A)
+                    )
+                }
+                AppRole.ADMIN -> {
+                    StatItem(
+                        icon = Icons.Outlined.ConfirmationNumber,
+                        count = sentCount.toString(),
+                        label = "Total Aduan",
+                        color = BrandIndigo,
+                        onClick = onMyTicketsClick
+                    )
+                    StatItem(
+                        icon = Icons.Outlined.CheckCircle,
+                        count = doneCount.toString(),
+                        label = "Telah Tuntas",
+                        color = Color(0xFF16A34A)
+                    )
+                }
+                else -> {
+                    StatItem(
+                        icon = Icons.Outlined.ConfirmationNumber,
+                        count = sentCount.toString(),
+                        label = "Aduan Dikirim",
+                        color = BrandIndigo,
+                        onClick = onMyTicketsClick
+                    )
+                    StatItem(
+                        icon = Icons.Outlined.FavoriteBorder,
+                        count = supportCount.toString(),
+                        label = "Didukung",
+                        color = Color(0xFFE11D48)
+                    )
+                    StatItem(
+                        icon = Icons.Outlined.CheckCircle,
+                        count = doneCount.toString(),
+                        label = "Telah Tuntas",
+                        color = Color(0xFF16A34A)
+                    )
+                }
+            }
         }
     }
 }
@@ -445,55 +366,6 @@ private fun StatItem(
                 color = InkMuted
             )
         }
-    }
-}
-
-@Composable
-private fun QuickShortcutsCard(
-    onNavigateToMyTickets: (() -> Unit)?,
-    onNavigateToSupported: (() -> Unit)?,
-    onNavigateToCreate: (() -> Unit)?
-) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Text(
-            text = "Aksi Cepat & Navigasi",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = Ink
-        )
-        Spacer(Modifier.height(12.dp))
-
-        ShortcutTile(
-            icon = Icons.Outlined.ConfirmationNumber,
-            title = "Aduan Saya",
-            subtitle = "Kelola daftar aduan yang Anda kirimkan",
-            badgeColor = BrandIndigoSoft,
-            iconColor = BrandIndigo,
-            onClick = onNavigateToMyTickets
-        )
-        Spacer(Modifier.height(8.dp))
-
-        ShortcutTile(
-            icon = Icons.Outlined.FavoriteBorder,
-            title = "Aduan Saya Dukung",
-            subtitle = "Daftar tiket yang Anda beri suara dukungan",
-            badgeColor = Color(0xFFFFF1F2),
-            iconColor = Color(0xFFE11D48),
-            onClick = onNavigateToSupported
-        )
-        Spacer(Modifier.height(8.dp))
-
-        ShortcutTile(
-            icon = Icons.Outlined.AddCircleOutline,
-            title = "Buat Aduan Baru",
-            subtitle = "Laporkan kerusakan fasilitas kampus baru",
-            badgeColor = SuccessSoftBg,
-            iconColor = SuccessText,
-            onClick = onNavigateToCreate
-        )
     }
 }
 
@@ -555,17 +427,17 @@ private fun HelpAndInfoCard(
         Spacer(Modifier.height(12.dp))
 
         ShortcutTile(
-            icon = Icons.AutoMirrored.Outlined.HelpOutline,
+            icon = Icons.Outlined.HelpOutline,
             title = "Panduan & Alur Pelaporan",
             subtitle = "Petunjuk alur pengajuan & penanganan aduan",
-            badgeColor = Color(0xFFF3E8FF),
-            iconColor = Color(0xFF7E22CE),
+            badgeColor = BrandIndigoSoft,
+            iconColor = BrandIndigo,
             onClick = onOpenGuide
         )
         Spacer(Modifier.height(8.dp))
 
         ShortcutTile(
-            icon = Icons.AutoMirrored.Outlined.ContactSupport,
+            icon = Icons.Outlined.SupportAgent,
             title = "Kontak Unit Sarpras",
             subtitle = "Jam operasional kantor & helpdesk pemeliharaan",
             badgeColor = Color(0xFFE0F2FE),
@@ -612,16 +484,16 @@ private fun GuideDialog(onDismiss: () -> Unit) {
         containerColor = Color.White,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null, tint = BrandIndigo)
+                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = BrandIndigo)
                 Spacer(Modifier.width(8.dp))
                 Text("Panduan Pelaporan Aduan", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                GuideStep(number = "1", title = "Buat Laporan Aduan", desc = "Pilih lokasi gedung/ruangan, sertakan deskripsi kerusakan, dan sertakan foto bukti.")
-                GuideStep(number = "2", title = "Berikan Dukungan Suara", desc = "Gunakan tombol heart pada aduan fasilitas publik untuk mempercepat penanganan unit teknisi.")
-                GuideStep(number = "3", title = "Penanganan Teknisi Sarpras", desc = "Teknisi Sarpras akan mengklaim tiket, memproses tindakan fisik, dan menandai tiket Selesai.")
+                GuideStep(number = "1", title = "Buat Laporan Aduan", desc = "Pilih lokasi sarpras, deskripsikan kendala yang terjadi, dan lampirkan foto bukti.")
+                GuideStep(number = "2", title = "Beri Dukungan", desc = "Tekan tombol hati pada aduan fasilitas publik untuk mendukung prioritas perbaikan.")
+                GuideStep(number = "3", title = "Penanganan Teknisi", desc = "Teknisi sarpras akan memverifikasi, menangani perbaikan fisik di lokasi, dan menyelesaikan tiket.")
             }
         },
         confirmButton = {
@@ -659,16 +531,16 @@ private fun ContactDialog(onDismiss: () -> Unit) {
         containerColor = Color.White,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Outlined.ContactSupport, contentDescription = null, tint = Color(0xFF0369A1))
+                Icon(Icons.Outlined.SupportAgent, contentDescription = null, tint = BrandIndigo)
                 Spacer(Modifier.width(8.dp))
                 Text("Kontak Unit Sarpras Kampus", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ContactItem(icon = Icons.Outlined.LocationOn, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
+                ContactItem(icon = Icons.Outlined.Apartment, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
                 ContactItem(icon = Icons.Outlined.Schedule, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
-                ContactItem(icon = Icons.Outlined.Info, label = "Email Helpdesk", valText = "helpdesk.sarpras@kampus.ac.id")
+                ContactItem(icon = Icons.Outlined.Email, label = "Email Helpdesk", valText = "helpdesk.sarpras@kampus.ac.id")
             }
         },
         confirmButton = {

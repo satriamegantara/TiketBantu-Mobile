@@ -50,7 +50,7 @@ fun StatusBadge(
         TicketStatus.SELESAI -> Triple(
             StatusBadgeSelesai.copy(alpha = 0.18f),
             Color(0xFF047857), // Darker green for WCAG AA
-            "✓ SELESAI"
+            "SELESAI"
         )
         TicketStatus.DITUTUP -> Triple(
             StatusBadgeDitutup.copy(alpha = 0.15f),

@@ -382,11 +382,9 @@ private fun DetailTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+            .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", onBack, bordered = false, container = Color.Transparent)
-        Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -450,12 +448,14 @@ private fun DetailList(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 180.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item(key = "status") { StatusCard(ticket, role) }
         item(key = "main") { MainInfoCard(ticket, onZoomPhoto) }
-        item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
+        if (role != AppRole.AGEN) {
+            item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
+        }
 
         val isStaff = role == AppRole.AGEN || role == AppRole.ADMIN
 
@@ -660,63 +660,37 @@ private fun InfoTile(icon: ImageVector, label: String, value: String, caption: S
 @Composable
 private fun SupportCard(ticket: Ticket, role: AppRole, onToggleSupport: () -> Unit) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.LocalFireDepartment, null, tint = SupportOrange, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Dukungan Civitas Kampus", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold), color = Ink)
-                }
-                Text(
-                    "Validasi bersama mempercepat antrean penanganan sarpras",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InkSoft
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Surface(shape = RoundedCornerShape(12.dp), color = SupportOrangeSoft) {
-                Text(
-                    "${ticket.supportCount}\nSuara",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold, lineHeight = 14.sp),
-                    color = SupportOrangeText,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = SupportOrangeSoft.copy(alpha = 0.6f),
-            border = BorderStroke(1.dp, SupportOrange.copy(alpha = 0.15f)),
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                val shown = supporterNames.take(ticket.supportCount.coerceAtMost(3))
-                AvatarStack(shown, extra = (ticket.supportCount - shown.size).coerceAtLeast(0), size = 26.dp)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "Terdampak di ${ticket.locationRoom.ifBlank { ticket.locationBuilding }}",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = SupportOrangeText,
-                        maxLines = 2
-                    )
-                }
-                Spacer(Modifier.width(6.dp))
-                if (role == AppRole.AGEN || role == AppRole.ADMIN) {
-                    TagChip(
-                        text = "${ticket.supportCount} Suara",
-                        container = SupportOrangeSoft,
-                        content = SupportOrangeText
-                    )
-                } else {
-                    SupportPill(
-                        count = ticket.supportCount,
-                        supported = ticket.isSupportedByMe,
-                        onClick = onToggleSupport,
-                        enabled = !TicketStatus.isFinished(ticket.status)
-                    )
-                }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Dukungan Aduan",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Ink
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "Dukungan Anda mempercepat prioritas penanganan sarpras",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkMuted
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            if (role == AppRole.ADMIN) {
+                TagChip(
+                    text = "${ticket.supportCount} Dukungan",
+                    container = BrandIndigoSoft,
+                    content = BrandIndigo
+                )
+            } else {
+                SupportPill(
+                    count = ticket.supportCount,
+                    supported = ticket.isSupportedByMe,
+                    onClick = onToggleSupport,
+                    enabled = !TicketStatus.isFinished(ticket.status)
+                )
             }
         }
     }
@@ -968,7 +942,7 @@ private fun CommentInputBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 90.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextField(

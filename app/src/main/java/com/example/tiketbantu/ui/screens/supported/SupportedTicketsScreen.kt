@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,16 +36,12 @@ import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.FilterPill
-import com.example.tiketbantu.ui.components.TagChip
 import com.example.tiketbantu.ui.components.TicketCard
 import com.example.tiketbantu.ui.screens.feed.EmptyState
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
-import com.example.tiketbantu.ui.theme.SupportOrange
-import com.example.tiketbantu.ui.theme.SupportOrangeSoft
-import com.example.tiketbantu.ui.theme.SupportOrangeText
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -97,26 +91,14 @@ fun SupportedTicketsScreen(
                     .fillMaxWidth()
                     .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Dukungan Saya",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
-                        color = Ink,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TagChip(
-                        text = "${supportedTickets.size} Didukung",
-                        icon = Icons.Default.LocalFireDepartment,
-                        container = SupportOrangeSoft,
-                        content = SupportOrangeText
-                    )
-                }
+                Text(
+                    text = "Aduan yang Didukung",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
+                    color = Ink
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Aduan sarpras yang Anda dukung dengan 'Saya Juga Mengalami'",
+                    text = "Daftar aduan fasilitas kampus yang Anda dukung",
                     style = MaterialTheme.typography.bodyMedium,
                     color = InkMuted
                 )
@@ -151,7 +133,7 @@ fun SupportedTicketsScreen(
             if (supportedTickets.isEmpty()) {
                 EmptyState(
                     title = "Belum Ada Dukungan",
-                    message = "Anda belum mendukung aduan fasilitas apapun. Buka Beranda dan klik 'Saya Juga Mengalami' untuk mempercepat penanganan fasilitas kampus.",
+                    message = "Anda belum memberikan dukungan pada aduan manapun. Tekan ikon hati pada aduan di Beranda untuk mendukung perbaikannya.",
                     modifier = Modifier.weight(1f)
                 )
             } else {

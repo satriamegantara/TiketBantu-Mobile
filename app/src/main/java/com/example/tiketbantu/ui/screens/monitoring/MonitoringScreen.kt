@@ -100,7 +100,7 @@ fun MonitoringScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
+    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini")
 
     AppBackground(modifier = modifier) {
         LazyColumn(
@@ -219,46 +219,22 @@ private fun MonitoringHeader(
             .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
-            InitialsAvatar(
-                name = DemoSession.name.ifBlank { "Admin Sarpras" },
-                size = 44.dp,
-                soft = false
-            )
-        }
-        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Statistik",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     letterSpacing = (-0.4).sp
                 ),
                 color = Ink
             )
-            Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = BrandIndigo,
-                    modifier = Modifier.padding(end = 6.dp)
-                ) {
-                    Text(
-                        text = "ADMIN",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
-                Text(
-                    text = "Ruang Operasional Sarpras & Infrastruktur",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = InkMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pantau data operasional sarana & prasarana kampus",
+                style = MaterialTheme.typography.bodyMedium,
+                color = InkMuted
+            )
         }
     }
 }

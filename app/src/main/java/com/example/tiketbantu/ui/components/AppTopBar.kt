@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -74,8 +73,8 @@ fun UserGreetingHeader(
 
     val (greetingTitle, greetingSubtitle) = when (role) {
         AppRole.AGEN -> "Siap Menangani Tugas Hari Ini?" to "Pantau aduan yang ditugaskan dan perbarui progres pengerjaannya."
-        AppRole.ADMIN -> "Selamat Datang, Admin! 🛠️" to "Ringkasan & kelola sistem pengawasan sarpras kampus."
-        else -> "Halo, $firstName! 👋" to "Ada kendala fasilitas yang perlu dibantu hari ini?"
+        AppRole.ADMIN -> "Ringkasan Operasional" to "Pantau dan kelola layanan sarana prasarana kampus."
+        else -> "Halo, $firstName" to "Ada kendala fasilitas yang perlu dibantu hari ini?"
     }
 
     Column(
@@ -174,17 +173,9 @@ fun AppTopBar(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (onBackClick != null) {
-            CircleIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Kembali",
-                onClick = onBackClick
-            )
-            Spacer(Modifier.width(12.dp))
-        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,

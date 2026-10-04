@@ -107,7 +107,7 @@ val OnErrorContainer = Color(0xFF7F1D1D)
 // Legacy tokens (kept for backward compatibility)
 // ═══════════════════════════════════════════════════════
 val StatusBadgeBaru = Color(0xFFF59E0B)
-val StatusBadgeDiproses = Color(0xFF7C3AED)
+val StatusBadgeDiproses = Color(0xFFD97706)
 val StatusBadgeSelesai = Color(0xFF10B981)
 val StatusBadgeDitutup = Color(0xFF94A3B8)
 
