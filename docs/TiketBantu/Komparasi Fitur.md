@@ -4,7 +4,6 @@
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | **Profile Screen** (umum)                                                       | ✅ “Profile Screen & Layar _Aduan Saya_” (baris 184‑185)                                           | ✅ Implementasi lengkap `ProfileScreen`                                                                                                   | Kedua dokumen mencakup layar profil.                     |
 | **Quick Shortcuts & Navigasi** (kartu “Aksi Cepat & Navigasi”)                  | ❌ Tidak ada entri yang menyebutkan _QuickShortcuts_, _ShortcutTile_ atau _Aksi Cepat & Navigasi_. | ✅ `QuickShortcutsCard`, `ShortcutTile` (tiga shortcut: _Aduan Saya_, _Aduan Saya Dukung_, _Buat Aduan Baru_) – lihat baris 452‑496.      | **Fitur yang **tidak terdokumentasi** di outline.        |
-| **Role Switcher** (pembaruan peran secara instan)                               | ❌ Tidak ada deskripsi tentang _RoleSwitcherCard_ atau simulasi peran.                             | ✅ `RoleSwitcherCard` (baris 276‑330) yang memungkinkan pergantian peran _Pelapor / Agen / Admin_ secara dinamis.                         | **Fitur yang **tidak tercatat** di outline.              |
 | **Statistik kontribusi** (`UserStatsCard`)                                      | ❌ Outline tidak menyebutkan statistik (_sentCount_, _supportCount_, _doneCount_).                 | ✅ `UserStatsCard` (baris 368‑410) menampilkan tiga statistik utama.                                                                      | **Fitur yang **tidak ada** dalam outline.                |
 | **Help & Info** (bantuan & layanan kampus)                                      | ❌ Tidak ada bagian “Bantuan & Layanan” dalam outline.                                             | ✅ `HelpAndInfoCard` (baris 540‑576) dengan dua `ShortcutTile` (Panduan & Kontak).                                                        | **Fitur **tidak terdokumentasi**.                        |
 | **Logout** (konfirmasi keluar)                                                  | ❌ Tidak ada catatan tentang _LogoutCard_ atau dialog logout.                                      | ✅ `LogoutCard` (baris 579‑606) + `AlertDialog` untuk konfirmasi (baris 184‑204).                                                         | **Fitur **tidak ada** di outline.                        |
@@ -20,10 +19,9 @@
 
 1. **QuickShortcutsCard** – kumpulan tiga shortcut “Aduan Saya”, “Aduan Saya Dukung”, “Buat Aduan Baru”.
 2. **ShortcutTile** – komponen UI yang menampilkan ikon, judul, deskripsi, badge‑color, dan aksi navigasi.
-3. **RoleSwitcherCard** – UI untuk _role switching_ (Pelapor ↔ Agen ↔ Admin) dalam mode “Demo”.
-4. **UserStatsCard** – tampilan tiga statistik kontribusi pengguna (aduan dikirim, dukungan, selesai).
-5. **HelpAndInfoCard** – bagian “Bantuan & Layanan Kampus” dengan dua shortcut (Panduan & Kontak).
-6. **GuideDialog** – dialog penjelasan langkah‑langkah pelaporan aduan.
-7. **ContactDialog** – dialog menampilkan informasi kontak unit sarpras (lokasi, jam layanan, email).
-8. **LogoutCard** + **Logout Confirmation AlertDialog** – tombol keluar + dialog konfirmasi.
-9. **Komponen UI tambahan** (`GlassCard`, `InitialsAvatar`, `TagChip`, `StatItem`, `ContactItem`, ds.) yang tidak disebutkan dalam outline.
+3. **UserStatsCard** – tampilan tiga statistik kontribusi pengguna (aduan dikirim, dukungan, selesai).
+4. **HelpAndInfoCard** – bagian “Bantuan & Layanan Kampus” dengan dua shortcut (Panduan & Kontak).
+5. **GuideDialog** – dialog penjelasan langkah‑langkah pelaporan aduan.
+6. **ContactDialog** – dialog menampilkan informasi kontak unit sarpras (lokasi, jam layanan, email).
+7. **LogoutCard** + **Logout Confirmation AlertDialog** – tombol keluar + dialog konfirmasi.
+8. **Komponen UI tambahan** (`GlassCard`, `InitialsAvatar`, `TagChip`, `StatItem`, `ContactItem`, ds.) yang tidak disebutkan dalam outline.

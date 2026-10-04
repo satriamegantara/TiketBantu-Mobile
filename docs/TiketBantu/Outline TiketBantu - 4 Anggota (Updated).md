@@ -95,7 +95,6 @@ ANGGOTA 1: PANCAR (Lead Architect & Core Infrastructure)
 | **App Navigation (Top‑Bar & Bottom‑Bar)** | Komponen navigasi utama adaptif per role, badge tiket pada bottom‑bar. | `AppTopBar.kt`, `BottomNavigationBar.kt` (ui/components) | **Tidak terdokumentasi** pada outline. |
 | **Design System (warna, tipografi, token spacing)** | Definisi warna brand, style teks, dimensi, serta komponen dasar Material‑3. | `Color.kt`, `Type.kt`, `Shape.kt`, `Theme.kt` (ui/theme) | **Tidak terdokumentasi** pada outline. |
 | **Quick Shortcuts & Navigasi (Aksi Cepat & Navigasi)** | Kartu `QuickShortcutsCard` dengan tiga shortcut: *Aduan Saya*, *Aduan Saya Dukung*, *Buat Aduan Baru*. | `QuickShortcutsCard.kt`, `ShortcutTile.kt` (ui/components) | **Tidak terdokumentasi** pada outline. |
-| **Role Switcher** | UI untuk berpindah peran (Pelapor ↔ Agen ↔ Admin) secara dinamis dalam mode demo. | `RoleSwitcherCard.kt` (ui/components) | **Tidak terdokumentasi** pada outline. |
 | **User Stats Card** | Menampilkan tiga statistik utama pengguna (aduan terkirim, dukungan, selesai). | `UserStatsCard.kt` (ui/components) | **Tidak terdokumentasi** pada outline. |
 | **Help & Info Card** | Bagian bantuan & layanan kampus dengan dua shortcut (Panduan & Kontak). | `HelpAndInfoCard.kt` (ui/components) | **Tidak terdokumentasi** pada outline. |
 | **Logout Card & Dialog** | Tombol logout dengan dialog konfirmasi. | `LogoutCard.kt`, `AlertDialog` (ui/components) | **Tidak terdokumentasi** pada outline. |

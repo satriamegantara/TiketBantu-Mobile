@@ -28,7 +28,6 @@ data class ProfileUserStats(
  * Responsibilities:
  * - Expose reactive current user identity via [AuthRepository.getCurrentUser].
  * - Compute dynamic activity stats (Sent tickets, Supported tickets, Completed tickets) from Room DAOs.
- * - Manage role switching for demo accounts with verified credentials.
  * - Safely clear session via [AuthRepository.logout] upon user exit.
  */
 class ProfileViewModel(

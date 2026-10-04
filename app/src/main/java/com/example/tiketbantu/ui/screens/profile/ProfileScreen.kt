@@ -79,8 +79,8 @@ import com.example.tiketbantu.ui.theme.FieldBg
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * Profile Screen: User info, real-time Role Switcher (Pelapor / Agen / Admin),
- * statistics, and settings menus.
+ * Profile Screen: User info, statistics, quick shortcuts, help & info,
+ * and session logout.
  */
 @Composable
 fun ProfileScreen(
