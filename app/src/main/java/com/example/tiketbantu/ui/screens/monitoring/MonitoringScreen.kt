@@ -158,7 +158,7 @@ fun MonitoringScreen(
             item(key = "priority_header") {
                 val isFiltering = uiState.isSearchActive || uiState.selectedStatus != null
                 val headerTitle = if (isFiltering) "Hasil Penelusuran Aduan" else "Prioritas Dukungan Terbanyak"
-                val badgeLabel = if (isFiltering) "${uiState.displayedTickets.size} Tiket" else "${uiState.baruCount.coerceAtLeast(1)} Kritis"
+                val badgeLabel = if (isFiltering) "${uiState.displayedTickets.size} Tiket" else "${uiState.displayedTickets.size} Prioritas"
 
                 Row(
                     modifier = Modifier
@@ -174,7 +174,7 @@ fun MonitoringScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Prioritas Dukungan Terbanyak",
+                        text = headerTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = Ink,
                         modifier = Modifier.weight(1f)
@@ -600,14 +600,12 @@ private fun CategoryDistributionCard(categories: List<CategoryStat> = emptyList(
                 .height(8.dp)
                 .clip(RoundedCornerShape(50))
         ) {
-            if (categories.isNotEmpty()) {
+            if (categories.isNotEmpty() && categories.any { it.count > 0 }) {
                 categories.forEach { cat ->
                     Box(Modifier.weight(cat.weight).fillMaxSize().background(cat.color))
                 }
             } else {
-                Box(Modifier.weight(0.45f).fillMaxSize().background(CatIT))
-                Box(Modifier.weight(0.35f).fillMaxSize().background(CatRuangan))
-                Box(Modifier.weight(0.20f).fillMaxSize().background(CatUmum))
+                Box(Modifier.fillMaxWidth().fillMaxSize().background(Hairline))
             }
         }
 
@@ -619,11 +617,12 @@ private fun CategoryDistributionCard(categories: List<CategoryStat> = emptyList(
                 CategoryRow(color = cat.color, name = cat.name, percent = "${cat.percent}%", count = "${cat.count} tiket")
             }
         } else {
-            CategoryRow(color = CatIT, name = "Teknologi & IT (Lab & WiFi)", percent = "45%", count = "0 tiket")
-            Spacer(Modifier.height(10.dp))
-            CategoryRow(color = CatRuangan, name = "Fasilitas Ruangan (AC, Kursi, Proyektor)", percent = "35%", count = "0 tiket")
-            Spacer(Modifier.height(10.dp))
-            CategoryRow(color = CatUmum, name = "Infrastruktur Kampus & Sanitasi", percent = "20%", count = "0 tiket")
+            Text(
+                text = "Belum ada data kategori.",
+                style = MaterialTheme.typography.bodySmall,
+                color = InkMuted,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
         }
     }
 }
@@ -678,69 +677,24 @@ private fun PriorityTicketList(
         modifier = Modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (tickets.isEmpty() && isFiltering) {
+        if (tickets.isEmpty()) {
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Tidak ada aduan yang sesuai dengan filter atau kata kunci pencarian.",
+                    text = if (isFiltering) {
+                        "Tidak ada aduan yang sesuai dengan filter atau kata kunci pencarian."
+                    } else {
+                        "Belum ada aduan yang terdaftar."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = InkMuted,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 14.dp)
+                        .padding(vertical = 18.dp)
                 )
             }
         } else {
-            val priorityItems = if (tickets.isNotEmpty()) {
-                if (isFiltering) tickets else tickets.take(3)
-            } else {
-                listOf(
-                    Ticket(
-                        id = 101,
-                        title = "Proyektor Lab Multimedia Mati Total Saat Ujian Praktikum",
-                        description = "Kendala lampu mati mendadak saat praktikum.",
-                        categoryId = 1,
-                        categoryName = "Teknologi & IT",
-                        locationBuilding = "Gedung Thomas Aquinas",
-                        locationFloor = "3",
-                        locationRoom = "Ruang 304",
-                        status = TicketStatus.BARU,
-                        reporterId = 5,
-                        reporterName = "BEM FTI",
-                        supportCount = 428
-                    ),
-                    Ticket(
-                        id = 102,
-                        title = "AC Sentral Gedung Kuliah Bersama Bocor & Berisik",
-                        description = "Air menetes ke selasar utama.",
-                        categoryId = 2,
-                        categoryName = "Fasilitas Ruangan",
-                        locationBuilding = "GKB 1",
-                        locationFloor = "2",
-                        locationRoom = "Selasar Barat",
-                        status = TicketStatus.DIPROSES,
-                        reporterId = 6,
-                        reporterName = "Mahasiswa",
-                        agentName = "Pak Bambang (MEP)",
-                        supportCount = 312
-                    ),
-                    Ticket(
-                        id = 103,
-                        title = "Koneksi Access Point Eduroam Perpustakaan Pusat Putus-Nyambung",
-                        description = "Sinyal hilang timbul saat banyak pengunjung.",
-                        categoryId = 1,
-                        categoryName = "Teknologi & IT",
-                        locationBuilding = "Perpustakaan Pusat",
-                        locationFloor = "1",
-                        locationRoom = "Area Baca",
-                        status = TicketStatus.BARU,
-                        reporterId = 7,
-                        reporterName = "Tim Mahasiswa Skripsi",
-                        supportCount = 289
-                    )
-                )
-            }
-
+            val priorityItems = if (isFiltering) tickets else tickets.take(3)
             priorityItems.forEach { ticket ->
                 PriorityTicketCard(ticket = ticket, onClick = { onTicketClick(ticket.id) })
             }
@@ -850,7 +804,7 @@ private fun PriorityTicketCard(
 
 @Composable
 private fun MasterDataActionCard(
-    activeAgentCount: Int = 18,
+    activeAgentCount: Int = 0,
     onManageCategories: () -> Unit,
     onManageUsers: () -> Unit
 ) {

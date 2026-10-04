@@ -96,27 +96,11 @@ fun UserManagementScreen(
     val categoriesFromDb by categoryDao.getAllCategories().collectAsState(initial = emptyList())
 
     val users = remember(usersFromDb) {
-        if (usersFromDb.isNotEmpty()) {
-            usersFromDb.map { User(it.id, it.name, it.email, it.nimNip, it.role, it.isActive) }
-        } else {
-            listOf(
-                User(id = 1, name = "Emily Johnson", email = "emily.j@kampus.ac.id", nimNip = "20210801001", role = "PELAPOR", isActive = true),
-                User(id = 2, name = "Pak Joko Santoso", email = "joko.s@sarpras.kampus.ac.id", nimNip = "19820719002", role = "AGEN", isActive = true),
-                User(id = 3, name = "Admin Sarpras", email = "admin.sarpras@kampus.ac.id", nimNip = "19790425001", role = "ADMIN", isActive = true)
-            )
-        }
+        usersFromDb.map { User(it.id, it.name, it.email, it.nimNip, it.role, it.isActive) }
     }
 
     val categories = remember(categoriesFromDb) {
-        if (categoriesFromDb.isNotEmpty()) {
-            categoriesFromDb.map { Category(it.id, it.name) }
-        } else {
-            listOf(
-                Category(id = 1, name = "Teknologi & IT"),
-                Category(id = 2, name = "Fasilitas Ruangan"),
-                Category(id = 3, name = "Infrastruktur Umum")
-            )
-        }
+        categoriesFromDb.map { Category(it.id, it.name) }
     }
 
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }

@@ -8,9 +8,10 @@ import com.example.tiketbantu.data.local.dao.UserDao
 import com.example.tiketbantu.domain.model.Ticket
 import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.domain.repository.TicketRepository
-import com.example.tiketbantu.ui.theme.CatIT
-import com.example.tiketbantu.ui.theme.CatRuangan
-import com.example.tiketbantu.ui.theme.CatUmum
+import com.example.tiketbantu.ui.theme.CatFasilitas
+import com.example.tiketbantu.ui.theme.CatHardware
+import com.example.tiketbantu.ui.theme.CatJaringan
+import com.example.tiketbantu.ui.theme.CatSoftware
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -112,23 +113,27 @@ class MonitoringViewModel(
         val activeAgents = agents.count { it.isActive }
         val completedPct = if (total > 0) (completed * 100 / total) else 0
 
-        val itCount = periodTickets.count { it.categoryId == 1L || it.categoryName.contains("IT", ignoreCase = true) }
-        val ruanganCount = periodTickets.count { it.categoryId == 2L || it.categoryName.contains("Ruangan", ignoreCase = true) }
-        val umumCount = periodTickets.count { it.categoryId == 3L || it.categoryName.contains("Umum", ignoreCase = true) }
+        val jaringanCount = periodTickets.count { it.categoryId == 1L || it.categoryName.contains("Jaringan", ignoreCase = true) }
+        val hardwareCount = periodTickets.count { it.categoryId == 2L || it.categoryName.contains("Hardware", ignoreCase = true) }
+        val softwareCount = periodTickets.count { it.categoryId == 3L || it.categoryName.contains("Software", ignoreCase = true) }
+        val fasilitasCount = periodTickets.count { it.categoryId == 4L || it.categoryName.contains("Fasilitas", ignoreCase = true) }
 
         val denom = total.coerceAtLeast(1)
-        val itPct = if (periodTickets.isEmpty()) 0 else (itCount * 100) / denom
-        val ruanganPct = if (periodTickets.isEmpty()) 0 else (ruanganCount * 100) / denom
-        val umumPct = if (periodTickets.isEmpty()) 0 else (100 - itPct - ruanganPct).coerceAtLeast(0)
+        val jaringanPct = if (periodTickets.isEmpty()) 0 else (jaringanCount * 100) / denom
+        val hardwarePct = if (periodTickets.isEmpty()) 0 else (hardwareCount * 100) / denom
+        val softwarePct = if (periodTickets.isEmpty()) 0 else (softwareCount * 100) / denom
+        val fasilitasPct = if (periodTickets.isEmpty()) 0 else (fasilitasCount * 100) / denom
 
-        val wIt = if (periodTickets.isEmpty()) 0.33f else (itCount.toFloat() / denom).coerceAtLeast(0.05f)
-        val wRuangan = if (periodTickets.isEmpty()) 0.33f else (ruanganCount.toFloat() / denom).coerceAtLeast(0.05f)
-        val wUmum = if (periodTickets.isEmpty()) 0.33f else (umumCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wJaringan = if (periodTickets.isEmpty()) 0.25f else (jaringanCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wHardware = if (periodTickets.isEmpty()) 0.25f else (hardwareCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wSoftware = if (periodTickets.isEmpty()) 0.25f else (softwareCount.toFloat() / denom).coerceAtLeast(0.05f)
+        val wFasilitas = if (periodTickets.isEmpty()) 0.25f else (fasilitasCount.toFloat() / denom).coerceAtLeast(0.05f)
 
         val catList = listOf(
-            CategoryStat(1L, "Teknologi & IT (Lab & WiFi)", itCount, itPct, wIt, CatIT),
-            CategoryStat(2L, "Fasilitas Ruangan (AC, Kursi, Proyektor)", ruanganCount, ruanganPct, wRuangan, CatRuangan),
-            CategoryStat(3L, "Infrastruktur Kampus & Sanitasi", umumCount, umumPct, wUmum, CatUmum)
+            CategoryStat(1L, "Jaringan (WiFi & Internet)", jaringanCount, jaringanPct, wJaringan, CatJaringan),
+            CategoryStat(2L, "Hardware (PC, Lab & Proyektor)", hardwareCount, hardwarePct, wHardware, CatHardware),
+            CategoryStat(3L, "Software (SIAKAD & LMS)", softwareCount, softwarePct, wSoftware, CatSoftware),
+            CategoryStat(4L, "Fasilitas (AC, Kursi & Gedung)", fasilitasCount, fasilitasPct, wFasilitas, CatFasilitas)
         )
 
         val query = filter.query
@@ -154,7 +159,7 @@ class MonitoringViewModel(
             completedCount = completed,
             rejectedCount = rejected,
             totalAffected = affected,
-            activeAgentCount = if (activeAgents > 0) activeAgents else 6,
+            activeAgentCount = activeAgents,
             completedPct = completedPct,
             categories = catList,
             priorityTickets = priority,
