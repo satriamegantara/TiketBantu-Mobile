@@ -79,7 +79,7 @@ class AuthViewModel(
         if (email.isBlank()) {
             emailError = "Email wajib diisi"
             hasError = true
-        } else if (!EMAIL_REGEX.matches(email)) {
+        } else if (email.contains("@") && !EMAIL_REGEX.matches(email)) {
             emailError = "Format email tidak valid"
             hasError = true
         }
@@ -117,29 +117,6 @@ class AuthViewModel(
 
     fun resetLoginUiState() {
         _loginUiState.value = UiState.Idle
-    }
-
-    fun fillDemoAccount(role: String) {
-        when (role.uppercase()) {
-            "PELAPOR" -> {
-                _loginFormState.value = LoginFormState(
-                    email = "emily.johnson@kampus.ac.id",
-                    password = "user123"
-                )
-            }
-            "AGEN" -> {
-                _loginFormState.value = LoginFormState(
-                    email = "joko.santoso@kampus.ac.id",
-                    password = "agen123"
-                )
-            }
-            "ADMIN" -> {
-                _loginFormState.value = LoginFormState(
-                    email = "admin@kampus.ac.id",
-                    password = "admin123"
-                )
-            }
-        }
     }
 
     // ── Register Form Handlers ────────────────────────────────────────────────

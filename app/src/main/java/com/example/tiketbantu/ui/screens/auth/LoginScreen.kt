@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,13 +48,12 @@ import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.DangerRed
-import com.example.tiketbantu.ui.theme.FieldBg
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 
 /**
- * Modern Glass Login Screen with Instant Demo Role login selectors and ViewModel binding.
+ * Modern Glass Login Screen.
  */
 @Composable
 fun LoginScreen(
@@ -176,65 +173,12 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Demo Login Shortcut Box
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Akses Cepat Demo (Multi-Role):",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Ink
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    DemoRoleButton("Pelapor", "Emily", modifier = Modifier.weight(1f)) {
-                        viewModel.fillDemoAccount("PELAPOR")
-                        viewModel.login()
-                    }
-                    DemoRoleButton("Teknisi", "Pak Joko", modifier = Modifier.weight(1f)) {
-                        viewModel.fillDemoAccount("AGEN")
-                        viewModel.login()
-                    }
-                    DemoRoleButton("Admin", "Sarpras", modifier = Modifier.weight(1f)) {
-                        viewModel.fillDemoAccount("ADMIN")
-                        viewModel.login()
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(20.dp))
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Belum memiliki akun?", style = MaterialTheme.typography.bodyMedium, color = InkSoft)
                 TextButton(onClick = onNavigateToRegister) {
                     Text("Daftar Sekarang", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = BrandIndigo)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DemoRoleButton(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = FieldBg,
-        modifier = modifier.height(52.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = BrandIndigo)
-            Text(text = subtitle, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = InkMuted)
         }
     }
 }
