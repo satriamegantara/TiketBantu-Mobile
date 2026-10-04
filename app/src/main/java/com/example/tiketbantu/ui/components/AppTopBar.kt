@@ -92,7 +92,7 @@ fun UserGreetingHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                BrandEmblem(modifier = Modifier.size(34.dp))
+                BrandEmblem(modifier = Modifier.size(40.dp))
                 Spacer(Modifier.width(10.dp))
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -100,7 +100,7 @@ fun UserGreetingHeader(
                             text = "Tiket",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Black,
-                                fontSize = 19.sp,
+                                fontSize = 20.sp,
                                 letterSpacing = (-0.5).sp
                             ),
                             color = Ink
@@ -109,7 +109,7 @@ fun UserGreetingHeader(
                             text = "Bantu",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Black,
-                                fontSize = 19.sp,
+                                fontSize = 20.sp,
                                 letterSpacing = (-0.5).sp
                             ),
                             color = BrandIndigo
@@ -117,7 +117,7 @@ fun UserGreetingHeader(
                     }
                     Text(
                         text = "Layanan Sarpras Kampus",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         color = InkMuted
                     )
                 }
@@ -138,7 +138,7 @@ fun UserGreetingHeader(
             text = greetingTitle,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 22.sp,
+                fontSize = 25.sp,
                 letterSpacing = (-0.4).sp
             ),
             color = Ink

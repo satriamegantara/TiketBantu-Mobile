@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -135,27 +134,15 @@ fun UserManagementScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CircleIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Kembali",
-                    onClick = onBack
+                Text(
+                    text = "Kelola Master Data",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Master Data",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "Manajemen Akun & Kategori Sarpras",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = InkMuted
-                    )
-                }
                 Surface(
                     onClick = {
                         if (selectedTab == 0) showAddUserDialog = true

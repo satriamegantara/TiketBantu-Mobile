@@ -223,8 +223,12 @@ private fun MonitoringHeader(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Monitoring Sistem",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 20.sp),
+                text = "Statistik",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 24.sp,
+                    letterSpacing = (-0.4).sp
+                ),
                 color = Ink
             )
             Spacer(Modifier.height(2.dp))
@@ -250,22 +254,6 @@ private fun MonitoringHeader(
                 )
             }
         }
-        CircleIconButton(
-            icon = Icons.Outlined.Refresh,
-            contentDescription = "Refresh",
-            onClick = onRefresh,
-            bordered = false,
-            container = Color.Transparent,
-            tint = InkSoft
-        )
-        CircleIconButton(
-            icon = Icons.Outlined.Search,
-            contentDescription = "Search",
-            onClick = onSearch,
-            bordered = false,
-            container = Color.Transparent,
-            tint = InkSoft
-        )
     }
 }
 
@@ -811,18 +799,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Kategori",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "Atur 12 klasifikasi masalah sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Kategori",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
@@ -859,18 +841,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Akun Agen & Teknisi",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "18 teknisi aktif unit pemeliharaan sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Akun Agen & Teknisi",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,

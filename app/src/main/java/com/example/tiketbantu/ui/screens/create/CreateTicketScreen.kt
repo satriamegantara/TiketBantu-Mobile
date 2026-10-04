@@ -242,8 +242,6 @@ fun CreateTicketScreen(
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                item { TransparencyNotice() }
-
                 // Judul
                 item {
                     GlassCard {
@@ -411,42 +409,6 @@ fun CreateTicketScreen(
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
-    }
-}
-
-@Composable
-private fun TransparencyNotice() {
-    GlassCard(containerColor = Color.White) {
-        Row(verticalAlignment = Alignment.Top) {
-            Box(
-                Modifier.size(42.dp).clip(CircleShape).background(InfoBlue),
-                contentAlignment = Alignment.Center
-            ) { Icon(Icons.Outlined.Lightbulb, null, tint = Color.White, modifier = Modifier.size(22.dp)) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Transparansi Fasilitas Kampus",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    TagChip("PUBLIK", fontSize = 10.sp)
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    buildAnnotatedString {
-                        append("Semua laporan di TiketBantu bersifat ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ink)) { append("100% Terbuka") }
-                        append(". Pastikan cek isu serupa di feed dengan ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = DangerRed)) { append("\"Saya Juga Mengalami\"") }
-                        append(" agar percepat verifikasi!")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InkSoft
-                )
-            }
-        }
     }
 }
 

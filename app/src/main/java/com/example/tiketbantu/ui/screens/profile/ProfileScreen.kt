@@ -119,17 +119,12 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp)
                 ) {
                     Text(
-                        text = "Profil Pengguna",
+                        text = "Profil",
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
                         color = Ink
-                    )
-                    Text(
-                        text = "Identitas akun dan pusat informasi layanan kampus",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = InkMuted
                     )
                 }
             }
@@ -161,9 +156,6 @@ fun ProfileScreen(
                 )
             }
 
-            item(key = "app_version") {
-                AppInfoCard()
-            }
 
             item(key = "logout_section") {
                 LogoutCard(onLogoutClick = { showLogoutDialog = true })
@@ -444,68 +436,6 @@ private fun HelpAndInfoCard(
     }
 }
 
-@Composable
-private fun AppInfoCard() {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Brush.linearGradient(listOf(BrandIndigo, BrandCyan))),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Outlined.Shield, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "TiketBantu Mobile",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Ink
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    TagChip("v1.2.0", container = BrandIndigoSoft, content = BrandIndigo, fontSize = 10.sp)
-                }
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "Sistem Pelaporan & Pemeliharaan Sarpras Kampus",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = InkMuted
-                )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(SuccessSoftBg)
-                .padding(horizontal = 10.dp, vertical = 6.dp)
-        ) {
-            Box(
-                Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF22C55E))
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "Semua Layanan Operasional Normal",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = SuccessText
-            )
-        }
-    }
-}
 
 @Composable
 private fun LogoutCard(onLogoutClick: () -> Unit) {
