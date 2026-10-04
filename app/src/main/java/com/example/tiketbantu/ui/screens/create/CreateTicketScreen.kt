@@ -29,16 +29,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -50,7 +55,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,15 +107,18 @@ private const val TITLE_MAX = 80
 private const val MAX_PHOTO_BYTES = 5L * 1024 * 1024
 
 private val FALLBACK_CATEGORIES = listOf(
-    CategoryEntity(id = 1, name = "Teknologi & IT"),
-    CategoryEntity(id = 2, name = "Fasilitas Ruangan"),
-    CategoryEntity(id = 3, name = "Infrastruktur Umum")
+    CategoryEntity(id = 1, name = "Jaringan"),
+    CategoryEntity(id = 2, name = "Hardware"),
+    CategoryEntity(id = 3, name = "Software"),
+    CategoryEntity(id = 4, name = "Fasilitas")
 )
 
 private fun getCategoryIcon(name: String): ImageVector = when {
-    name.contains("IT", ignoreCase = true) || name.contains("Teknologi", ignoreCase = true) -> Icons.Outlined.Computer
-    name.contains("Ruang", ignoreCase = true) -> Icons.Outlined.MeetingRoom
-    else -> Icons.Outlined.Apartment
+    name.contains("Jaringan", ignoreCase = true) || name.contains("WiFi", ignoreCase = true) || name.contains("Internet", ignoreCase = true) -> Icons.Outlined.Computer
+    name.contains("Hardware", ignoreCase = true) || name.contains("Komputer", ignoreCase = true) || name.contains("Perangkat", ignoreCase = true) -> Icons.Outlined.Computer
+    name.contains("Software", ignoreCase = true) || name.contains("Sistem", ignoreCase = true) || name.contains("Aplikasi", ignoreCase = true) -> Icons.Outlined.Lightbulb
+    name.contains("Fasilitas", ignoreCase = true) || name.contains("Gedung", ignoreCase = true) || name.contains("Ruang", ignoreCase = true) -> Icons.Outlined.Apartment
+    else -> Icons.Outlined.Category
 }
 
 /**
@@ -229,19 +239,13 @@ fun CreateTicketScreen(
                 item {
                     GlassCard {
                         FieldLabel("Kategori Permasalahan", required = true)
-                        Hint("Pilih kategori penanganan teknisi yang relevan")
-                        Spacer(Modifier.height(12.dp))
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            categoriesToDisplay.forEach { category ->
-                                val isSelected = formState.categoryId == category.id
-                                CategoryRow(
-                                    label = category.name,
-                                    icon = getCategoryIcon(category.name),
-                                    selected = isSelected,
-                                    onClick = { viewModel.onCategorySelected(category) }
-                                )
-                            }
-                        }
+                        Spacer(Modifier.height(6.dp))
+                        CategoryDropdownSelector(
+                            categories = categoriesToDisplay,
+                            selectedCategoryId = formState.categoryId,
+                            onCategorySelected = viewModel::onCategorySelected,
+                            isError = formState.categoryError != null
+                        )
                         if (formState.categoryError != null) {
                             ErrorText(formState.categoryError!!)
                         }
@@ -363,35 +367,124 @@ fun CreateTicketScreen(
 }
 
 @Composable
-private fun CategoryRow(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
+private fun CategoryDropdownSelector(
+    categories: List<CategoryEntity>,
+    selectedCategoryId: Long?,
+    onCategorySelected: (CategoryEntity) -> Unit,
+    isError: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) BrandIndigoSoft else Color.White,
-        border = BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) BrandIndigo else Hairline),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(if (selected) Color.White else FieldBg),
-                contentAlignment = Alignment.Center
-            ) { Icon(icon, null, tint = if (selected) BrandIndigo else InkSoft, modifier = Modifier.size(18.dp)) }
-            Spacer(Modifier.width(12.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
-                color = if (selected) BrandIndigo else Ink,
-                modifier = Modifier.weight(1f)
-            )
-            if (selected) Icon(Icons.Filled.CheckCircle, null, tint = BrandIndigo, modifier = Modifier.size(22.dp))
+    var expanded by remember { mutableStateOf(false) }
+    val selectedCategory = categories.firstOrNull { it.id == selectedCategoryId }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        Surface(
+            onClick = { expanded = !expanded },
+            shape = RoundedCornerShape(14.dp),
+            color = if (selectedCategory != null) BrandIndigoSoft.copy(alpha = 0.35f) else FieldBg,
+            border = BorderStroke(
+                width = if (expanded || selectedCategory != null) 1.5.dp else 1.dp,
+                color = when {
+                    isError -> DangerRed
+                    expanded -> BrandIndigo
+                    selectedCategory != null -> BrandIndigo
+                    else -> Hairline
+                }
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (selectedCategory != null) BrandIndigoSoft else Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (selectedCategory != null) getCategoryIcon(selectedCategory.name) else Icons.Outlined.Category,
+                        contentDescription = null,
+                        tint = if (selectedCategory != null) BrandIndigo else InkSoft,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = selectedCategory?.name ?: "Pilih kategori permasalahan…",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (selectedCategory != null) FontWeight.SemiBold else FontWeight.Normal
+                    ),
+                    color = if (selectedCategory != null) Ink else InkMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Pilih kategori",
+                    tint = if (expanded) BrandIndigo else InkSoft,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .background(Color.White)
+        ) {
+            categories.forEach { category ->
+                val isSelected = category.id == selectedCategoryId
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            ),
+                            color = if (isSelected) BrandIndigo else Ink
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = getCategoryIcon(category.name),
+                            contentDescription = null,
+                            tint = if (isSelected) BrandIndigo else InkMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    trailingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Terpilih",
+                                tint = BrandIndigo,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else null,
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    },
+                    modifier = Modifier.background(
+                        if (isSelected) BrandIndigoSoft.copy(alpha = 0.5f) else Color.Transparent
+                    )
+                )
+            }
         }
     }
 }
+
 
 @Composable
 private fun PhotoSection(
