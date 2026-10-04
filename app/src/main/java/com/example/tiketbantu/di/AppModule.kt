@@ -55,7 +55,8 @@ val appModule = module {
     // ── Repository Layer (Backed by Room Database) ───────────────────────────
     single<TicketRepository> { TicketRepositoryImpl(ticketDao = get()) }
     single<CommentRepository> { CommentRepositoryImpl(commentDao = get()) }
-    single<AuthRepository> { FakeAuthRepository() }
+    single<AuthRepository> { AuthRepositoryImpl(userDao = get(), sessionManager = get()) }
+
 
     // ── UseCase Layer ────────────────────────────────────────────────────────
     factory { GetFeedUseCase(get()) }
