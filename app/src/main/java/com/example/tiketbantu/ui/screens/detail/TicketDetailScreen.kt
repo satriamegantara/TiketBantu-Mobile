@@ -173,17 +173,9 @@ fun TicketDetailScreen(
     var pendingStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
-    var zoomedPhotoPath by remember { mutableStateOf<String?>(null) }
 
-    val activeRole = currentUser?.let {
-        when (it.role.uppercase()) {
-            "ADMIN" -> AppRole.ADMIN
-            "AGEN" -> AppRole.AGEN
-            else -> AppRole.PELAPOR
-        }
-    } ?: if (DemoSession.isLoggedIn) DemoSession.role else AppRole.PELAPOR
-    val isStaff = activeRole == AppRole.AGEN || activeRole == AppRole.ADMIN
-    val canAct = isStaff && canUpdateStatus
+    val role = DemoSession.role
+    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {
@@ -287,9 +279,9 @@ fun TicketDetailScreen(
     pendingStatus?.let { status ->
         val (dialogTitle, dialogText, confirmBtnText) = when (status) {
             TicketStatus.DIPROSES -> Triple(
-                "Klaim & Kerjakan Aduan?",
-                "Tiket ini akan ditugaskan ke Anda dan statusnya berubah menjadi 'Diproses'.",
-                "Ya, Ambil Tiket"
+                "Konfirmasi Klaim Tugas",
+                "Tiket ini akan ditugaskan ke Anda dan statusnya langsung berubah menjadi 'Diproses'.",
+                "Ya, Klaim Tugas"
             )
             TicketStatus.SELESAI -> Triple(
                 "Tandai Aduan Selesai?",
@@ -752,7 +744,7 @@ private fun ActionPanel(
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Bolt, null, tint = Color.White, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Ambil & Kerjakan Aduan", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Klaim Tugas Ini", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         } else {

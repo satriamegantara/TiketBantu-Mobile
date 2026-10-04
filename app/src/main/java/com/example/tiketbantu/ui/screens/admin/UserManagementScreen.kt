@@ -213,17 +213,7 @@ fun UserManagementScreen(
                             user = user,
                             onToggleActive = { active ->
                                 scope.launch {
-                                    userDao.updateUser(
-                                        UserEntity(
-                                            id = user.id,
-                                            name = user.name,
-                                            email = user.email,
-                                            nimNip = user.nimNip,
-                                            passwordHash = "pass123",
-                                            role = user.role,
-                                            isActive = active
-                                        )
-                                    )
+                                    userDao.updateActiveStatus(user.id, active)
                                 }
                             }
                         )

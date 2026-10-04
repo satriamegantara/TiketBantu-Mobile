@@ -8,236 +8,241 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.tiketbantu.domain.repository.AuthRepository
-import com.example.tiketbantu.ui.components.AppBackground
-import com.example.tiketbantu.ui.components.AppInput
-import com.example.tiketbantu.ui.components.BrandEmblem
-import com.example.tiketbantu.ui.components.FieldLabel
-import com.example.tiketbantu.ui.components.GlassCard
-import com.example.tiketbantu.ui.components.GradientButton
-import com.example.tiketbantu.ui.session.AppRole
-import com.example.tiketbantu.ui.session.DemoSession
-import com.example.tiketbantu.ui.theme.BrandIndigo
-import com.example.tiketbantu.ui.theme.DangerRed
-import com.example.tiketbantu.ui.theme.FieldBg
-import com.example.tiketbantu.ui.theme.Ink
-import com.example.tiketbantu.ui.theme.InkMuted
-import com.example.tiketbantu.ui.theme.InkSoft
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import com.example.tiketbantu.base.UiState
 
 /**
- * Modern Glass Login Screen with Instant Demo Role login selectors
+ * Screen Composable for User, Agent, and Admin login.
  */
 @Composable
 fun LoginScreen(
+    viewModel: AuthViewModel,
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val authRepository: AuthRepository = koinInject()
-    val scope = rememberCoroutineScope()
+    val formState by viewModel.loginFormState.collectAsState()
+    val uiState by viewModel.loginUiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
 
-    var email by remember { mutableStateOf("emily.johnson@kampus.ac.id") }
-    var password by remember { mutableStateOf("password123") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is UiState.Success -> {
+                viewModel.resetLoginUiState()
+                onLoginSuccess()
+            }
+            is UiState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.resetLoginUiState()
+            }
+            else -> Unit
+        }
+    }
 
-    AppBackground(modifier = modifier) {
-        Column(
+    val isLoading = uiState is UiState.Loading
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(innerPadding)
+                .imePadding(),
+            contentAlignment = Alignment.Center
         ) {
-            BrandEmblem(tint = BrandIndigo, modifier = Modifier.size(56.dp))
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = "TiketBantu Mobile",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 28.sp),
-                color = Ink
-            )
-            Text(
-                text = "Sistem Transparansi Fasilitas & Sarpras Kampus",
-                style = MaterialTheme.typography.bodyMedium,
-                color = InkMuted,
-                textAlign = TextAlign.Center
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // ── Header / Branding ─────────────────────────────────────────
+                Text(
+                    text = "TiketBantu",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Sistem Pengaduan Fasilitas Kampus",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(Modifier.height(32.dp))
-
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                FieldLabel(text = "Email Kampus", required = true)
-                Spacer(Modifier.height(6.dp))
-                AppInput(
-                    value = email,
-                    onValueChange = { email = it },
-                    placeholder = "nama@kampus.ac.id",
-                    leadingIcon = { Icon(Icons.Outlined.Email, null, tint = InkMuted) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                // ── Field Email ───────────────────────────────────────────────
+                OutlinedTextField(
+                    value = formState.email,
+                    onValueChange = viewModel::onLoginEmailChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Email Kampus / Akun") },
+                    placeholder = { Text("contoh: nama@kampus.ac.id") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = "Ikon Email"
+                        )
+                    },
+                    isError = formState.emailError != null,
+                    supportingText = {
+                        formState.emailError?.let {
+                            Text(text = it, color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    )
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                FieldLabel(text = "Kata Sandi", required = true)
-                Spacer(Modifier.height(6.dp))
-                AppInput(
-                    value = password,
-                    onValueChange = { password = it },
-                    placeholder = "••••••••",
-                    leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = InkMuted) },
+                // ── Field Password ────────────────────────────────────────────
+                OutlinedTextField(
+                    value = formState.password,
+                    onValueChange = viewModel::onLoginPasswordChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Kata Sandi") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Ikon Kata Sandi"
+                        )
+                    },
                     trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        IconButton(
+                            onClick = viewModel::toggleLoginPasswordVisibility,
+                            modifier = Modifier.size(48.dp)
+                        ) {
                             Icon(
-                                if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = null,
-                                tint = InkMuted
+                                imageVector = if (formState.isPasswordVisible) {
+                                    Icons.Default.VisibilityOff
+                                } else {
+                                    Icons.Default.Visibility
+                                },
+                                contentDescription = if (formState.isPasswordVisible) {
+                                    "Sembunyikan kata sandi"
+                                } else {
+                                    "Tampilkan kata sandi"
+                                }
                             )
                         }
                     },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
-                )
-
-                if (errorMessage != null) {
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = errorMessage ?: "",
-                        color = DangerRed,
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                GradientButton(
-                    text = if (isLoading) "Memproses..." else "Masuk ke Akun",
-                    enabled = !isLoading && email.isNotBlank(),
-                    onClick = {
-                        errorMessage = null
-                        isLoading = true
-                        scope.launch {
-                            val result = authRepository.login(email, password)
-                            isLoading = false
-                            result.onSuccess {
-                                onLoginSuccess()
-                            }.onFailure { error ->
-                                errorMessage = error.localizedMessage ?: "Gagal masuk. Periksa email dan password."
-                            }
+                    visualTransformation = if (formState.isPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    isError = formState.passwordError != null,
+                    supportingText = {
+                        formState.passwordError?.let {
+                            Text(text = it, color = MaterialTheme.colorScheme.error)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            viewModel.login()
+                        }
+                    )
                 )
-            }
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Demo Login Shortcut Box
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Akses Cepat Demo (Multi-Role):",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Ink
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // ── Tombol Masuk ──────────────────────────────────────────────
+                Button(
+                    onClick = {
+                        focusManager.clearFocus()
+                        viewModel.login()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                    enabled = !isLoading
                 ) {
-                    DemoRoleButton("Pelapor", "Emily", modifier = Modifier.weight(1f)) {
-                        scope.launch {
-                            authRepository.login("emily.johnson@kampus.ac.id", "password123")
-                            onLoginSuccess()
-                        }
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Masuk",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
-                    DemoRoleButton("Teknisi", "Pak Joko", modifier = Modifier.weight(1f)) {
-                        scope.launch {
-                            authRepository.login("joko.santoso@kampus.ac.id", "password123")
-                            onLoginSuccess()
-                        }
-                    }
-                    DemoRoleButton("Admin", "Sarpras", modifier = Modifier.weight(1f)) {
-                        scope.launch {
-                            authRepository.login("admin.sarpras@kampus.ac.id", "password123")
-                            onLoginSuccess()
-                        }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Navigasi ke Register ──────────────────────────────────────
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Belum memiliki akun?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(onClick = onNavigateToRegister) {
+                        Text(
+                            text = "Daftar di sini",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
-
-            Spacer(Modifier.height(20.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Belum memiliki akun?", style = MaterialTheme.typography.bodyMedium, color = InkSoft)
-                TextButton(onClick = onNavigateToRegister) {
-                    Text("Daftar Sekarang", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = BrandIndigo)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DemoRoleButton(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = FieldBg,
-        modifier = modifier.height(52.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = BrandIndigo)
-            Text(text = subtitle, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = InkMuted)
         }
     }
 }

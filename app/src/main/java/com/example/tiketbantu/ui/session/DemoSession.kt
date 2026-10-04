@@ -36,7 +36,7 @@ object DemoSession {
                 userId = 2L; name = "Joko Santoso"; email = "joko.santoso@kampus.ac.id"; nimNip = "198703122010"
             }
             AppRole.ADMIN -> {
-                userId = 1L; name = "Admin Sarpras"; email = "admin.sarpras@kampus.ac.id"; nimNip = "-"
+                userId = 1L; name = "Admin Sarpras"; email = "admin@kampus.ac.id"; nimNip = "198001012010121001"
             }
         }
         isLoggedIn = true

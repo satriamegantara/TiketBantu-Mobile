@@ -3,7 +3,6 @@ package com.example.tiketbantu.di
 import com.example.tiketbantu.data.local.AppDatabase
 import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.data.repository.CommentRepositoryImpl
-import com.example.tiketbantu.data.repository.FakeAuthRepository
 import com.example.tiketbantu.data.repository.TicketRepositoryImpl
 import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.CommentRepository
@@ -11,8 +10,12 @@ import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.domain.usecase.GetFeedUseCase
 import com.example.tiketbantu.domain.usecase.ToggleSupportUseCase
 import com.example.tiketbantu.domain.usecase.UpdateTicketStatusUseCase
+import com.example.tiketbantu.ui.screens.auth.AuthViewModel
+import com.example.tiketbantu.ui.screens.create.CreateTicketViewModel
 import com.example.tiketbantu.ui.screens.detail.TicketDetailViewModel
 import com.example.tiketbantu.ui.screens.feed.FeedViewModel
+import com.example.tiketbantu.ui.screens.monitoring.MonitoringViewModel
+import com.example.tiketbantu.ui.screens.profile.ProfileViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,7 +63,23 @@ val appModule = module {
     factory { UpdateTicketStatusUseCase(get()) }
 
     // ── ViewModel Layer ──────────────────────────────────────────────────────
+    viewModel { AuthViewModel(authRepository = get()) }
+    viewModel {
+        CreateTicketViewModel(
+            ticketRepository = get(),
+            categoryDao = get(),
+            sessionManager = get(),
+            context = androidContext()
+        )
+    }
     viewModel { FeedViewModel(get(), get(), get()) }
+    viewModel {
+        ProfileViewModel(
+            authRepository = get(),
+            ticketDao = get(),
+            supportDao = get()
+        )
+    }
     viewModel { (ticketId: Long) ->
         TicketDetailViewModel(
             ticketId = ticketId,
@@ -69,6 +88,13 @@ val appModule = module {
             authRepository = get(),
             toggleSupportUseCase = get(),
             updateTicketStatusUseCase = get()
+        )
+    }
+    viewModel {
+        MonitoringViewModel(
+            ticketRepository = get(),
+            categoryDao = get(),
+            userDao = get()
         )
     }
 }
