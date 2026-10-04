@@ -87,9 +87,6 @@ class AuthViewModel(
         if (password.isBlank()) {
             passwordError = "Kata sandi wajib diisi"
             hasError = true
-        } else if (password.length < 8) {
-            passwordError = "Kata sandi minimal 8 karakter"
-            hasError = true
         }
 
         if (hasError) {
@@ -195,12 +192,12 @@ class AuthViewModel(
             hasError = true
         }
 
-        // 4. Kata Sandi: Wajib, minimal 8 karakter
+        // 4. Kata Sandi: Wajib, minimal 6 karakter
         if (password.isBlank()) {
             passwordError = "Kata sandi wajib diisi"
             hasError = true
-        } else if (password.length < 8) {
-            passwordError = "Kata sandi minimal 8 karakter"
+        } else if (password.length < 6) {
+            passwordError = "Kata sandi minimal 6 karakter"
             hasError = true
         }
 

@@ -254,7 +254,7 @@ fun RegisterScreen(
                             Text(text = formState.passwordError!!, color = MaterialTheme.colorScheme.error)
                         } else {
                             Text(
-                                text = "Minimal 8 karakter",
+                                text = "Minimal 6 karakter",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

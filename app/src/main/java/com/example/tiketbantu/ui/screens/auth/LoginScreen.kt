@@ -179,13 +179,8 @@ fun LoginScreen(
                     },
                     isError = formState.passwordError != null,
                     supportingText = {
-                        if (formState.passwordError != null) {
-                            Text(text = formState.passwordError!!, color = MaterialTheme.colorScheme.error)
-                        } else {
-                            Text(
-                                text = "Minimal 8 karakter",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        formState.passwordError?.let {
+                            Text(text = it, color = MaterialTheme.colorScheme.error)
                         }
                     },
                     singleLine = true,
