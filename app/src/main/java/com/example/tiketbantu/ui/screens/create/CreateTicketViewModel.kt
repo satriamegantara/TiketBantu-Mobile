@@ -45,7 +45,6 @@ data class CreateTicketFormState(
     val floor: String = "",
     val room: String = "",
     val description: String = "",
-    val agreed: Boolean = false,
     val photo: PickedPhotoState? = null,
     val titleError: String? = null,
     val categoryError: String? = null,
@@ -53,7 +52,6 @@ data class CreateTicketFormState(
     val floorError: String? = null,
     val roomError: String? = null,
     val descriptionError: String? = null,
-    val agreedError: String? = null,
     val photoError: String? = null
 ) {
     val isTitleValid: Boolean get() = title.isNotBlank() && title.length <= TITLE_MAX
@@ -62,11 +60,10 @@ data class CreateTicketFormState(
     val isFloorValid: Boolean get() = floor.isNotBlank()
     val isRoomValid: Boolean get() = room.isNotBlank()
     val isDescriptionValid: Boolean get() = description.isNotBlank()
-    val isAgreedValid: Boolean get() = agreed
 
     val isValid: Boolean
         get() = isTitleValid && isCategoryValid && isBuildingValid &&
-                isFloorValid && isRoomValid && isDescriptionValid && isAgreedValid
+                isFloorValid && isRoomValid && isDescriptionValid
 }
 
 /**
@@ -131,9 +128,6 @@ class CreateTicketViewModel(
         _formState.update { it.copy(description = newDescription, descriptionError = null) }
     }
 
-    fun onAgreedChanged(isAgreed: Boolean) {
-        _formState.update { it.copy(agreed = isAgreed, agreedError = null) }
-    }
 
     fun onPhotoSelected(uri: Uri?) {
         if (uri == null) return
@@ -171,7 +165,6 @@ class CreateTicketViewModel(
         var floorErr: String? = null
         var roomErr: String? = null
         var descErr: String? = null
-        var agreeErr: String? = null
 
         if (current.title.isBlank()) {
             titleErr = "Judul aduan wajib diisi"
@@ -197,10 +190,6 @@ class CreateTicketViewModel(
             descErr = "Deskripsi detail wajib diisi"
             hasError = true
         }
-        if (!current.agreed) {
-            agreeErr = "Centang pernyataan tanggung jawab terlebih dahulu"
-            hasError = true
-        }
 
         if (hasError) {
             _formState.update {
@@ -210,8 +199,7 @@ class CreateTicketViewModel(
                     buildingError = buildingErr,
                     floorError = floorErr,
                     roomError = roomErr,
-                    descriptionError = descErr,
-                    agreedError = agreeErr
+                    descriptionError = descErr
                 )
             }
             return

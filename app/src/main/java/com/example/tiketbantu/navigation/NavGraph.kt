@@ -182,6 +182,9 @@ fun NavGraph(
                 ProfileScreen(
                     onLogout = {
                         navController.navigateToLoginFromLogout()
+                    },
+                    onNavigateToMyTickets = {
+                        navController.safeNavigate(Screen.MyTickets)
                     }
                 )
             }

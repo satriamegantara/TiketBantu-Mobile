@@ -82,7 +82,12 @@ fun MyTicketsScreen(
 
     val filteredTickets = remember(allTickets, selectedStatus, role, currentUserId) {
         val base = if (role == AppRole.AGEN) {
-            allTickets.filter { it.agentId == currentUserId || it.agentName?.contains("Joko") == true || it.status == TicketStatus.DIPROSES }
+            allTickets.filter {
+                it.agentId == currentUserId ||
+                it.agentName?.contains("Joko") == true ||
+                it.status == TicketStatus.DIPROSES ||
+                it.status == TicketStatus.BARU
+            }
         } else {
             allTickets
         }

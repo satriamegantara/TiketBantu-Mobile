@@ -39,8 +39,6 @@ import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.VerifiedUser
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -338,31 +336,6 @@ fun CreateTicketScreen(
                     )
                 }
 
-                // Pernyataan
-                item {
-                    GlassCard(contentPadding = PaddingValues(12.dp)) {
-                        Row(verticalAlignment = Alignment.Top) {
-                            Checkbox(
-                                checked = formState.agreed,
-                                onCheckedChange = viewModel::onAgreedChanged,
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = BrandIndigo,
-                                    uncheckedColor = if (formState.agreedError != null) DangerRed else InkMuted
-                                )
-                            )
-                            Column(Modifier.padding(top = 12.dp, end = 6.dp)) {
-                                Text(
-                                    "Saya menyatakan bahwa data yang dilaporkan adalah fasilitas kampus yang sebenarnya dan dapat dipertanggungjawabkan kepada biro sarana prasarana.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = InkSoft
-                                )
-                                if (formState.agreedError != null) {
-                                    ErrorText(formState.agreedError!!)
-                                }
-                            }
-                        }
-                    }
-                }
 
                 item {
                     GradientButton(
