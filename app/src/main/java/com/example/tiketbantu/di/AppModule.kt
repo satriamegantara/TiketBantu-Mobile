@@ -2,6 +2,7 @@ package com.example.tiketbantu.di
 
 import com.example.tiketbantu.data.local.AppDatabase
 import com.example.tiketbantu.data.preferences.SessionManager
+import com.example.tiketbantu.data.repository.AuthRepositoryImpl
 import com.example.tiketbantu.data.repository.CommentRepositoryImpl
 import com.example.tiketbantu.data.repository.TicketRepositoryImpl
 import com.example.tiketbantu.domain.repository.AuthRepository
