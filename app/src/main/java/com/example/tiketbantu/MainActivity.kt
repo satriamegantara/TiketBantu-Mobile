@@ -64,7 +64,6 @@ fun MainScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         NavGraph(
             navController = navController,
-            startDestination = Screen.Dashboard,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -72,29 +71,33 @@ fun MainScreen() {
             BottomNavigationBar(
                 currentRoute = selectedNavRoute,
                 onNavigate = { route ->
-                    when (route) {
-                        NavRoutes.HOME -> navController.navigate(Screen.Dashboard) {
-                            popUpTo(Screen.Dashboard) { saveState = true }
+                    val targetScreen: Screen = when (route) {
+                        NavRoutes.HOME -> Screen.Dashboard
+                        NavRoutes.MY_TICKETS -> Screen.MyTickets
+                        NavRoutes.CREATE -> Screen.CreateTicket
+                        NavRoutes.SUPPORTED -> Screen.SupportedTickets
+                        NavRoutes.MONITORING -> Screen.Monitoring
+                        NavRoutes.MANAGE -> Screen.UserManagement
+                        NavRoutes.PROFILE -> Screen.Profile
+                        else -> Screen.Dashboard
+                    }
+                    val popped = when (targetScreen) {
+                        Screen.Profile -> navController.popBackStack<Screen.Profile>(inclusive = false)
+                        Screen.Dashboard -> navController.popBackStack<Screen.Dashboard>(inclusive = false)
+                        Screen.MyTickets -> navController.popBackStack<Screen.MyTickets>(inclusive = false)
+                        Screen.SupportedTickets -> navController.popBackStack<Screen.SupportedTickets>(inclusive = false)
+                        Screen.Monitoring -> navController.popBackStack<Screen.Monitoring>(inclusive = false)
+                        Screen.UserManagement -> navController.popBackStack<Screen.UserManagement>(inclusive = false)
+                        else -> false
+                    }
+
+                    if (!popped) {
+                        navController.navigate(targetScreen) {
+                            popUpTo<Screen.Dashboard> {
+                                saveState = true
+                            }
                             launchSingleTop = true
                             restoreState = true
-                        }
-                        NavRoutes.MY_TICKETS -> navController.navigate(Screen.MyTickets) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.CREATE -> navController.navigate(Screen.CreateTicket) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.SUPPORTED -> navController.navigate(Screen.SupportedTickets) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.MONITORING -> navController.navigate(Screen.Monitoring) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.MANAGE -> navController.navigate(Screen.UserManagement) {
-                            launchSingleTop = true
-                        }
-                        NavRoutes.PROFILE -> navController.navigate(Screen.Profile) {
-                            launchSingleTop = true
                         }
                     }
                 },

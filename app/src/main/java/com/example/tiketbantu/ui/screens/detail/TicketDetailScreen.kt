@@ -170,7 +170,8 @@ fun TicketDetailScreen(
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
 
     val role = DemoSession.role
-    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
+    // Task 4.7 rule: Admin is strictly monitor/read-only for status progression, only AGEN can claim and resolve
+    val canAct = canUpdateStatus || role == AppRole.AGEN
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {
@@ -268,9 +269,9 @@ fun TicketDetailScreen(
     pendingStatus?.let { status ->
         val (dialogTitle, dialogText, confirmBtnText) = when (status) {
             TicketStatus.DIPROSES -> Triple(
-                "Klaim & Kerjakan Aduan?",
-                "Tiket ini akan ditugaskan ke Anda dan statusnya berubah menjadi 'Diproses'.",
-                "Ya, Ambil Tiket"
+                "Konfirmasi Klaim Tugas",
+                "Tiket ini akan ditugaskan ke Anda dan statusnya langsung berubah menjadi 'Diproses'.",
+                "Ya, Klaim Tugas"
             )
             TicketStatus.SELESAI -> Triple(
                 "Tandai Aduan Selesai?",
@@ -316,6 +317,7 @@ fun TicketDetailScreen(
     }
 
     if (confirmDelete) {
+        val context = androidx.compose.ui.platform.LocalContext.current
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             containerColor = Color.White,
@@ -326,6 +328,7 @@ fun TicketDetailScreen(
                     confirmDelete = false
                     scope.launch {
                         runCatching { repository.softDeleteTicket(ticketId) }
+                        android.widget.Toast.makeText(context, "Aduan berhasil dihapus dari publik", android.widget.Toast.LENGTH_SHORT).show()
                         onBack()
                     }
                 }) { Text("Hapus", color = DangerRed, fontWeight = FontWeight.Bold) }
@@ -739,7 +742,7 @@ private fun ActionPanel(
                 Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Bolt, null, tint = Color.White, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Ambil & Kerjakan Aduan", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Klaim Tugas Ini", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         } else {

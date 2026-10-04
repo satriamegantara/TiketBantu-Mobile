@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.tiketbantu.data.local.entity.CategoryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -20,6 +21,9 @@ interface CategoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(categories: List<CategoryEntity>)
+
+    @Update
+    suspend fun updateCategory(category: CategoryEntity)
 
     @Query("SELECT COUNT(*) FROM categories")
     suspend fun countCategories(): Int

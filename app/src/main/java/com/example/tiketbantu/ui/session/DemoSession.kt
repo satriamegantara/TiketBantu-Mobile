@@ -23,6 +23,7 @@ object DemoSession {
     var email by mutableStateOf("emily.johnson@kampus.ac.id")
     var nimNip by mutableStateOf("2021110045")
     var role by mutableStateOf(AppRole.PELAPOR)
+    var myTicketsInitialStatus by mutableStateOf<String?>(null)
 
     val firstName: String get() = name.substringBefore(' ')
 
@@ -36,7 +37,7 @@ object DemoSession {
                 userId = 2L; name = "Joko Santoso"; email = "joko.santoso@kampus.ac.id"; nimNip = "198703122010"
             }
             AppRole.ADMIN -> {
-                userId = 1L; name = "Admin Sarpras"; email = "admin.sarpras@kampus.ac.id"; nimNip = "-"
+                userId = 1L; name = "Admin Sarpras"; email = "admin@kampus.ac.id"; nimNip = "198001012010121001"
             }
         }
         isLoggedIn = true

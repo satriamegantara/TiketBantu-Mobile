@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +52,7 @@ import org.koin.compose.koinInject
 @Composable
 fun MyTicketsScreen(
     onTicketClick: (Long) -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val repository: TicketRepository = koinInject()
@@ -64,7 +71,8 @@ fun MyTicketsScreen(
     val allTickets by ticketsFlow.collectAsState(initial = emptyList())
 
     val statusFilters = listOf("Semua", TicketStatus.DIPROSES, TicketStatus.BARU, TicketStatus.SELESAI)
-    var selectedStatus by remember { mutableStateOf("Semua") }
+    val initial = remember { DemoSession.myTicketsInitialStatus.also { DemoSession.myTicketsInitialStatus = null } }
+    var selectedStatus by remember { mutableStateOf(initial ?: "Semua") }
 
     val filteredTickets = remember(allTickets, selectedStatus, role, currentUserId) {
         val base = if (role == AppRole.AGEN) {
@@ -82,21 +90,34 @@ fun MyTicketsScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)
+                    .padding(start = if (onBack != null) 12.dp else 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (role == AppRole.AGEN) "Tugas Penanganan" else "Aduan Saya",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
-                    color = Ink
-                )
-                Text(
-                    text = if (role == AppRole.AGEN) "Daftar tiket sarpras yang ditugaskan ke Anda" else "Pantau status aduan fasilitas yang Anda kirim",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = InkMuted
-                )
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Kembali",
+                            tint = Ink
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (role == AppRole.AGEN) "Tugas Penanganan" else "Aduan Saya",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
+                        color = Ink
+                    )
+                    Text(
+                        text = if (role == AppRole.AGEN) "Daftar tiket sarpras yang ditugaskan ke Anda" else "Pantau status aduan fasilitas yang Anda kirim",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = InkMuted
+                    )
+                }
             }
 
             // Status filter chips
