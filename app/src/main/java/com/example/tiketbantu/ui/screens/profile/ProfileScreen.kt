@@ -87,6 +87,8 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onLogout: () -> Unit,
     onMyTicketsClick: () -> Unit = {},
+    onSupportedTicketsClick: () -> Unit = {},
+    onDoneTicketsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
@@ -143,13 +145,7 @@ fun ProfileScreen(
             item(key = "role_switcher") {
                 RoleSwitcherCard(
                     onSwitchRole = { targetRole ->
-                        scope.launch {
-                            when (targetRole) {
-                                AppRole.PELAPOR -> authRepository.login("emily.johnson@kampus.ac.id", "password123")
-                                AppRole.AGEN -> authRepository.login("joko.santoso@kampus.ac.id", "password123")
-                                AppRole.ADMIN -> authRepository.login("admin.sarpras@kampus.ac.id", "password123")
-                            }
-                        }
+                        viewModel.switchRoleDemo(targetRole)
                     }
                 )
             }
