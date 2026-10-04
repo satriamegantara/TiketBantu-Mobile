@@ -408,6 +408,46 @@ fun CommentPill(
     }
 }
 
+/**
+ * Neutral, non-interactive metric pill for informational counters (e.g. support count & comment count on Agent/Staff role).
+ * Matches the visual language of CommentPill without click/interaction states.
+ */
+@Composable
+fun InfoCountPill(
+    icon: ImageVector,
+    count: Int,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    tint: Color = InkSoft
+) {
+    val shape = RoundedCornerShape(50)
+    Surface(
+        shape = shape,
+        color = FieldBg,
+        border = BorderStroke(1.dp, Hairline),
+        modifier = modifier.height(40.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                color = Ink,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            )
+        }
+    }
+}
+
 // ═══════════════════════════════════════════════════════
 // Avatars
 // ═══════════════════════════════════════════════════════
