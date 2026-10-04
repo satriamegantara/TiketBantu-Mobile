@@ -13,6 +13,7 @@ import com.example.tiketbantu.domain.repository.CommentRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.domain.usecase.ToggleSupportUseCase
 import com.example.tiketbantu.domain.usecase.UpdateTicketStatusUseCase
+import com.example.tiketbantu.ui.session.DemoSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -180,7 +181,17 @@ class TicketDetailViewModel(
 
     fun updateStatus(newStatus: String) {
         launchSafe {
-            val user = authRepository.getCurrentUser().first()
+            val user = authRepository.getCurrentUser().first() ?: run {
+                if (DemoSession.isLoggedIn) {
+                    User(
+                        id = DemoSession.userId,
+                        name = DemoSession.name,
+                        email = DemoSession.email,
+                        nimNip = DemoSession.nimNip,
+                        role = DemoSession.role.name
+                    )
+                } else null
+            }
             if (user == null) {
                 send(DetailEvent.ShowMessage("Silakan masuk terlebih dahulu."))
                 return@launchSafe

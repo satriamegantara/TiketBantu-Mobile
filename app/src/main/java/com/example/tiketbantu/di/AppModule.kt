@@ -15,6 +15,8 @@ import com.example.tiketbantu.ui.screens.auth.AuthViewModel
 import com.example.tiketbantu.ui.screens.create.CreateTicketViewModel
 import com.example.tiketbantu.ui.screens.detail.TicketDetailViewModel
 import com.example.tiketbantu.ui.screens.feed.FeedViewModel
+import com.example.tiketbantu.ui.screens.monitoring.MonitoringViewModel
+import com.example.tiketbantu.ui.screens.profile.ProfileViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -72,6 +74,13 @@ val appModule = module {
         )
     }
     viewModel { FeedViewModel(get(), get(), get()) }
+    viewModel {
+        ProfileViewModel(
+            authRepository = get(),
+            ticketDao = get(),
+            supportDao = get()
+        )
+    }
     viewModel { (ticketId: Long) ->
         TicketDetailViewModel(
             ticketId = ticketId,
@@ -80,6 +89,13 @@ val appModule = module {
             authRepository = get(),
             toggleSupportUseCase = get(),
             updateTicketStatusUseCase = get()
+        )
+    }
+    viewModel {
+        MonitoringViewModel(
+            ticketRepository = get(),
+            categoryDao = get(),
+            userDao = get()
         )
     }
 }

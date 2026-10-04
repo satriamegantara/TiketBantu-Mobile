@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.tiketbantu.navigation.NavGraph
@@ -82,12 +81,24 @@ fun MainScreen() {
                         NavRoutes.PROFILE -> Screen.Profile
                         else -> Screen.Dashboard
                     }
-                    navController.navigate(targetScreen) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    val popped = when (targetScreen) {
+                        Screen.Profile -> navController.popBackStack<Screen.Profile>(inclusive = false)
+                        Screen.Dashboard -> navController.popBackStack<Screen.Dashboard>(inclusive = false)
+                        Screen.MyTickets -> navController.popBackStack<Screen.MyTickets>(inclusive = false)
+                        Screen.SupportedTickets -> navController.popBackStack<Screen.SupportedTickets>(inclusive = false)
+                        Screen.Monitoring -> navController.popBackStack<Screen.Monitoring>(inclusive = false)
+                        Screen.UserManagement -> navController.popBackStack<Screen.UserManagement>(inclusive = false)
+                        else -> false
+                    }
+
+                    if (!popped) {
+                        navController.navigate(targetScreen) {
+                            popUpTo<Screen.Dashboard> {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 role = DemoSession.role,

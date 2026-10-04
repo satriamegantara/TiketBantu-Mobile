@@ -163,6 +163,9 @@ fun NavGraph(
                 MyTicketsScreen(
                     onTicketClick = { ticketId ->
                         navController.safeNavigate(Screen.Detail(ticketId))
+                    },
+                    onBack = {
+                        navController.safePopBackStack()
                     }
                 )
             }
@@ -179,6 +182,9 @@ fun NavGraph(
                 ProfileScreen(
                     onLogout = {
                         navController.navigateToLoginFromLogout()
+                    },
+                    onMyTicketsClick = {
+                        navController.safeNavigate(Screen.MyTickets)
                     }
                 )
             }
