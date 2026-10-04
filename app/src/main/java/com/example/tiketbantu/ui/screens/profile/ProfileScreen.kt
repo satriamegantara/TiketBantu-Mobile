@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.AddCircleOutline
@@ -31,8 +30,8 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalFireDepartment
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -54,9 +53,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.tiketbantu.data.local.dao.SupportDao
 import com.example.tiketbantu.data.local.dao.TicketDao
 import com.example.tiketbantu.domain.repository.AuthRepository
@@ -70,7 +70,6 @@ import com.example.tiketbantu.ui.theme.BrandCyan
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
-import com.example.tiketbantu.ui.theme.FieldBg
 import com.example.tiketbantu.ui.theme.Hairline
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
@@ -78,35 +77,41 @@ import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessSoftBg
 import com.example.tiketbantu.ui.theme.SuccessText
 import com.example.tiketbantu.ui.theme.SupportOrange
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tiketbantu.ui.theme.FieldBg
+import org.koin.androidx.compose.koinViewModel
 
 /**
- * Profile Screen: User identity, quick action shortcuts, real-time statistics,
- * interactive help guide, campus Sarpras contact info, and system information.
+ * Profile Screen: User info, real-time Role Switcher (Pelapor / Agen / Admin),
+ * statistics, and settings menus.
  */
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
-    onNavigateToMyTickets: (() -> Unit)? = null,
-    onNavigateToSupported: (() -> Unit)? = null,
-    onNavigateToCreate: (() -> Unit)? = null
+    onNavigateToMyTickets: () -> Unit = {},
+    onNavigateToSupported: () -> Unit = {},
+    onNavigateToCreate: () -> Unit = {},
+    onMyTicketsClick: () -> Unit = onNavigateToMyTickets,
+    viewModel: ProfileViewModel = koinViewModel()
 ) {
-    val authRepository: AuthRepository = koinInject()
-    val ticketDao: TicketDao = koinInject()
-    val supportDao: SupportDao = koinInject()
-    val scope = rememberCoroutineScope()
-
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val stats by viewModel.userStats.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
 
-    val myTickets by ticketDao.observeMine(DemoSession.userId).collectAsState(initial = emptyList())
-    val mySupports by supportDao.getSupportedTicketIdsByUser(DemoSession.userId).collectAsState(initial = emptyList())
-    val sentCount = myTickets.size
-    val doneCount = myTickets.count { it.status.equals("SELESAI", ignoreCase = true) }
-    val supportCount = mySupports.size
+    val name = currentUser?.name?.ifBlank { null } ?: DemoSession.name
+    val email = currentUser?.email?.ifBlank { null } ?: DemoSession.email
+    val nimNip = currentUser?.nimNip?.ifBlank { null } ?: DemoSession.nimNip
+    val role = when (currentUser?.role?.uppercase()) {
+        "ADMIN" -> AppRole.ADMIN
+        "AGEN" -> AppRole.AGEN
+        else -> DemoSession.role
+    }
 
     AppBackground(modifier = modifier) {
         LazyColumn(
@@ -130,14 +135,28 @@ fun ProfileScreen(
             }
 
             item(key = "profile_card") {
-                UserProfileCard()
+                UserProfileCard(
+                    name = name,
+                    email = email,
+                    nimNip = nimNip,
+                    role = role
+                )
+            }
+
+            item(key = "role_switcher") {
+                RoleSwitcherCard(
+                    onSwitchRole = { targetRole ->
+                        viewModel.switchRoleDemo(targetRole)
+                    }
+                )
             }
 
             item(key = "stats") {
                 UserStatsCard(
-                    sentCount = sentCount,
-                    supportCount = supportCount,
-                    doneCount = doneCount
+                    sentCount = stats.sentCount,
+                    supportCount = stats.supportCount,
+                    doneCount = stats.doneCount,
+                    onMyTicketsClick = onMyTicketsClick
                 )
             }
 
@@ -156,7 +175,6 @@ fun ProfileScreen(
                 )
             }
 
-
             item(key = "logout_section") {
                 LogoutCard(onLogoutClick = { showLogoutDialog = true })
             }
@@ -172,10 +190,7 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
-                    scope.launch {
-                        authRepository.logout()
-                        onLogout()
-                    }
+                    viewModel.logout(onComplete = onLogout)
                 }) {
                     Text("Ya, Keluar", color = DangerRed, fontWeight = FontWeight.Bold)
                 }
@@ -198,7 +213,12 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun UserProfileCard() {
+private fun UserProfileCard(
+    name: String,
+    email: String,
+    nimNip: String,
+    role: AppRole
+) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -210,7 +230,7 @@ private fun UserProfileCard() {
         ) {
             Box {
                 InitialsAvatar(
-                    name = DemoSession.name,
+                    name = name,
                     size = 64.dp,
                     soft = false
                 )
@@ -219,33 +239,128 @@ private fun UserProfileCard() {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = DemoSession.name,
+                        text = name,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                         color = Ink
                     )
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = DemoSession.email,
+                    text = email,
                     style = MaterialTheme.typography.bodySmall,
                     color = InkMuted
                 )
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val (badgeBg, badgeFg) = when (DemoSession.role) {
+                    val (badgeBg, badgeFg) = when (role) {
                         AppRole.ADMIN -> Color(0xFFF3E8FF) to Color(0xFF7E22CE)
                         AppRole.AGEN -> BrandIndigoSoft to BrandIndigo
                         AppRole.PELAPOR -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
                     }
-                    TagChip(text = DemoSession.role.label, container = badgeBg, content = badgeFg)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "ID: ${DemoSession.nimNip}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = InkSoft
-                    )
+                    TagChip(text = role.label, container = badgeBg, content = badgeFg)
+                    if (nimNip.isNotBlank() && nimNip != "-") {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "ID: $nimNip",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = InkSoft
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RoleSwitcherCard(onSwitchRole: (AppRole) -> Unit) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Sync, contentDescription = null, tint = BrandIndigo, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Simulasi Peran (Multi-Role Preview)",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink
+                )
+                Text(
+                    text = "Ganti peran secara instan untuk menguji alur fitur",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = InkMuted
+                )
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RolePillOption(
+                role = AppRole.PELAPOR,
+                title = "Pelapor",
+                subtitle = "Mahasiswa",
+                selected = DemoSession.role == AppRole.PELAPOR,
+                onClick = { onSwitchRole(AppRole.PELAPOR) },
+                modifier = Modifier.weight(1f)
+            )
+            RolePillOption(
+                role = AppRole.AGEN,
+                title = "Teknisi",
+                subtitle = "Pak Joko",
+                selected = DemoSession.role == AppRole.AGEN,
+                onClick = { onSwitchRole(AppRole.AGEN) },
+                modifier = Modifier.weight(1f)
+            )
+            RolePillOption(
+                role = AppRole.ADMIN,
+                title = "Admin",
+                subtitle = "Sarpras",
+                selected = DemoSession.role == AppRole.ADMIN,
+                onClick = { onSwitchRole(AppRole.ADMIN) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RolePillOption(
+    role: AppRole,
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) BrandIndigo else FieldBg,
+        border = if (selected) null else BorderStroke(1.dp, Hairline),
+        modifier = modifier.height(64.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = if (selected) Color.White else Ink
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = if (selected) Color.White.copy(alpha = 0.8f) else InkMuted
+            )
         }
     }
 }
@@ -254,7 +369,8 @@ private fun UserProfileCard() {
 private fun UserStatsCard(
     sentCount: Int = 0,
     supportCount: Int = 0,
-    doneCount: Int = 0
+    doneCount: Int = 0,
+    onMyTicketsClick: () -> Unit = {}
 ) {
     GlassCard(
         modifier = Modifier
@@ -271,9 +387,25 @@ private fun UserStatsCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            StatItem(icon = Icons.Outlined.ConfirmationNumber, count = sentCount.toString(), label = "Aduan Dikirim", color = BrandIndigo)
-            StatItem(icon = Icons.Outlined.LocalFireDepartment, count = supportCount.toString(), label = "Dukungan Diberi", color = SupportOrange)
-            StatItem(icon = Icons.Outlined.CheckCircle, count = doneCount.toString(), label = "Telah Tuntas", color = Color(0xFF16A34A))
+            StatItem(
+                icon = Icons.Outlined.ConfirmationNumber,
+                count = sentCount.toString(),
+                label = "Aduan Dikirim",
+                color = BrandIndigo,
+                onClick = onMyTicketsClick
+            )
+            StatItem(
+                icon = Icons.Outlined.LocalFireDepartment,
+                count = supportCount.toString(),
+                label = "Dukungan Diberi",
+                color = SupportOrange
+            )
+            StatItem(
+                icon = Icons.Outlined.CheckCircle,
+                count = doneCount.toString(),
+                label = "Telah Tuntas",
+                color = Color(0xFF16A34A)
+            )
         }
     }
 }
@@ -283,29 +415,36 @@ private fun StatItem(
     icon: ImageVector,
     count: String,
     label: String,
-    color: Color
+    color: Color,
+    onClick: (() -> Unit)? = null
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+    Surface(
+        onClick = { onClick?.invoke() },
+        enabled = onClick != null,
+        color = Color.Transparent
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = count,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = Ink
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = InkMuted
+            )
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = count,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-            color = Ink
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = InkMuted
-        )
     }
 }
 

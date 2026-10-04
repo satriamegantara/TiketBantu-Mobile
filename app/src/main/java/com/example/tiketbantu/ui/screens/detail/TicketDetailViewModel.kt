@@ -198,10 +198,8 @@ class TicketDetailViewModel(
     fun updateStatus(newStatus: String) {
         launchSafe {
             val user = authRepository.getCurrentUser().first()
-                ?: User(id = DemoSession.userId, name = DemoSession.name, email = DemoSession.email, role = DemoSession.role.name)
-            val userRole = user.role.uppercase()
-            if (userRole != "AGEN" && userRole != "ADMIN") {
-                send(DetailEvent.ShowMessage("Akses ditolak: Hanya Agen atau Admin yang berwenang mengatur tindakan teknisi."))
+            if (user == null) {
+                send(DetailEvent.ShowMessage("Silakan masuk terlebih dahulu."))
                 return@launchSafe
             }
             updateTicketStatusUseCase(ticketId, newStatus, user)

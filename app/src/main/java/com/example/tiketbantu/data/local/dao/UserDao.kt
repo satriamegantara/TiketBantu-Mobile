@@ -31,6 +31,9 @@ interface UserDao {
     @Update
     suspend fun updateUser(user: UserEntity)
 
+    @Query("UPDATE users SET isActive = :isActive WHERE id = :id")
+    suspend fun updateActiveStatus(id: Long, isActive: Boolean)
+
     @Query("SELECT COUNT(*) FROM users")
     suspend fun countUsers(): Int
 }
