@@ -45,5 +45,10 @@ object DemoSession {
 
     fun logout() {
         isLoggedIn = false
+        role = AppRole.PELAPOR
+        userId = 3L
+        name = "Emily Johnson"
+        email = "emily.johnson@kampus.ac.id"
+        nimNip = "2021110045"
     }
 }

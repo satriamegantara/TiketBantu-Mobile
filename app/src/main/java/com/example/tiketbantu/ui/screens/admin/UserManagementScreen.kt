@@ -85,7 +85,8 @@ import org.koin.compose.koinInject
 @Composable
 fun UserManagementScreen(
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialTab: Int = 0
 ) {
     val userDao = koinInject<UserDao>()
     val categoryDao = koinInject<CategoryDao>()
@@ -119,7 +120,7 @@ fun UserManagementScreen(
         }
     }
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
     val tabs = listOf("Akun Pengguna", "Kategori Masalah")
 
     var showAddUserDialog by remember { mutableStateOf(false) }

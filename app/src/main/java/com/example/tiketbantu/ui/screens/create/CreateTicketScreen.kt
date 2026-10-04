@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -198,8 +200,8 @@ fun CreateTicketScreen(
                 modifier = Modifier
                     .weight(1f)
                     .imePadding(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 item { TransparencyNotice() }
 
@@ -234,14 +236,8 @@ fun CreateTicketScreen(
                         Hint("Pilih kategori penanganan teknisi yang relevan")
                         Spacer(Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            categoriesToDisplay.forEach { category ->
-                                val isSelected = formState.categoryId == category.id
-                                CategoryRow(
-                                    label = category.name,
-                                    icon = getCategoryIcon(category.name),
-                                    selected = isSelected,
-                                    onClick = { viewModel.onCategorySelected(category) }
-                                )
+                            CATEGORIES.forEach { option ->
+                                CategoryRow(option, selected = categoryId == option.id) { categoryId = option.id }
                             }
                         }
                         if (formState.categoryError != null) {

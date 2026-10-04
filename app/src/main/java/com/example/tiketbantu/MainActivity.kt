@@ -21,6 +21,7 @@ import com.example.tiketbantu.ui.components.BottomNavigationBar
 import com.example.tiketbantu.ui.components.NavRoutes
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.TiketBantuTheme
+import org.koin.android.ext.koin.androidContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,7 +78,7 @@ fun MainScreen() {
                         NavRoutes.CREATE -> Screen.CreateTicket
                         NavRoutes.SUPPORTED -> Screen.SupportedTickets
                         NavRoutes.MONITORING -> Screen.Monitoring
-                        NavRoutes.MANAGE -> Screen.UserManagement
+                        NavRoutes.MANAGE -> Screen.UserManagement()
                         NavRoutes.PROFILE -> Screen.Profile
                         else -> Screen.Dashboard
                     }
@@ -107,13 +108,24 @@ fun MainScreen() {
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     if (org.koin.core.context.GlobalContext.getOrNull() == null) {
         org.koin.core.context.startKoin {
+            androidContext(context)
             modules(com.example.tiketbantu.di.appModule)
+        }
+    } else {
+        try {
+            org.koin.core.context.GlobalContext.get().get<android.content.Context>()
+        } catch (_: Exception) {
+            org.koin.core.context.stopKoin()
+            org.koin.core.context.startKoin {
+                androidContext(context)
+                modules(com.example.tiketbantu.di.appModule)
+            }
         }
     }
     TiketBantuTheme {

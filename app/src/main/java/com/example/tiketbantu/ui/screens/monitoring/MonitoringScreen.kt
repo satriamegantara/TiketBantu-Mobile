@@ -98,7 +98,26 @@ fun MonitoringScreen(
     viewModel: MonitoringViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val repository: TicketRepository = koinInject()
+    val currentUserId = DemoSession.userId
+    val ticketsFlow = remember(repository, currentUserId) {
+        repository.getAllTickets(
+            query = "",
+            categoryId = null,
+            status = null,
+            sortByMostLiked = true,
+            currentUserId = currentUserId,
+            limit = 100
+        )
+    }
+    val allTickets by ticketsFlow.collectAsState(initial = emptyList())
+
+    val totalTickets = allTickets.size
+    val inProcessCount = allTickets.count { it.status == TicketStatus.DIPROSES }
+    val completedCount = allTickets.count { it.status == TicketStatus.SELESAI }
+    val totalAffected = allTickets.sumOf { it.supportCount }
+
+    var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
     val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
 
     AppBackground(modifier = modifier) {
@@ -180,7 +199,7 @@ fun MonitoringScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = headerTitle,
+                        text = "Prioritas Dukungan Terbanyak",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = Ink,
                         modifier = Modifier.weight(1f)
@@ -230,16 +249,6 @@ private fun MonitoringHeader(
                 name = DemoSession.name.ifBlank { "Admin Sarpras" },
                 size = 44.dp,
                 soft = false
-            )
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF22C55E))
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -436,17 +445,6 @@ private fun PeriodSection(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                 color = InkMuted
             )
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color(0xFFEEF2FF)
-            ) {
-                Text(
-                    text = "T.A. 2024/2025",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                    color = BrandIndigo,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
         }
         Spacer(Modifier.height(10.dp))
         Row(

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tiketbantu.domain.model.TicketStatus
+import com.example.tiketbantu.domain.repository.AuthRepository
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.FilterPill
@@ -56,10 +57,18 @@ fun MyTicketsScreen(
     modifier: Modifier = Modifier
 ) {
     val repository: TicketRepository = koinInject()
+    val authRepository: AuthRepository = koinInject()
     val scope = rememberCoroutineScope()
-    val role = DemoSession.role
+    val currentUser by authRepository.getCurrentUser().collectAsState(initial = null)
+    val role = currentUser?.let {
+        when (it.role.uppercase()) {
+            "ADMIN" -> AppRole.ADMIN
+            "AGEN" -> AppRole.AGEN
+            else -> AppRole.PELAPOR
+        }
+    } ?: if (DemoSession.isLoggedIn) DemoSession.role else AppRole.PELAPOR
 
-    val currentUserId = DemoSession.userId
+    val currentUserId = currentUser?.id ?: DemoSession.userId
 
     val ticketsFlow = remember(repository, role, currentUserId) {
         if (role == AppRole.AGEN) {

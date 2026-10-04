@@ -28,37 +28,56 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.tiketbantu.R
 import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import com.example.tiketbantu.ui.session.AppRole
+import com.example.tiketbantu.ui.theme.BrandIndigo
+import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.TiketBantuTheme
 
-/** TiketBantu emblem: three connected dots (propeller mark from the reference). */
+/** TiketBantu brand emblem loaded from res/drawable/emblem.png */
 @Composable
-fun BrandEmblem(modifier: Modifier = Modifier, tint: Color = Ink) {
-    Box(modifier = modifier.size(36.dp), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(26.dp)) {
-            val r = size.minDimension * 0.22f
-            val c = Offset(size.width / 2, size.height / 2)
-            drawCircle(tint, r, Offset(c.x, r))
-            drawCircle(tint, r, Offset(r, size.height - r))
-            drawCircle(tint, r, Offset(size.width - r, size.height - r))
-            drawCircle(tint, r * 0.75f, Offset(c.x, c.y + r * 0.35f))
-        }
-    }
+fun BrandEmblem(
+    modifier: Modifier = Modifier,
+    tint: Color? = null
+) {
+    Image(
+        painter = painterResource(id = R.drawable.emblem),
+        contentDescription = "Logo TiketBantu",
+        modifier = Modifier
+            .size(36.dp)
+            .then(modifier),
+        contentScale = ContentScale.Fit
+    )
 }
 
 /**
- * Home header: emblem, notification bell + avatar, and the friendly two-line greeting
- * ("Hi Emily, ada yang bisa / kami bantu hari ini?"). Feature 1.4 (profile bar).
+ * Home header: emblem, notification bell + avatar, and modern rich greeting headline.
  */
 @Composable
 fun UserGreetingHeader(
     userName: String,
     modifier: Modifier = Modifier,
+    role: AppRole = AppRole.PELAPOR,
     onNotificationClick: () -> Unit = {},
     onAvatarClick: () -> Unit = {}
 ) {
+    val firstName = userName.substringBefore(' ').ifBlank { "Pengguna" }
+
+    val (greetingTitle, greetingSubtitle) = when (role) {
+        AppRole.AGEN -> "Siap Menangani Tugas Hari Ini?" to "Pantau aduan yang ditugaskan dan perbarui progres pengerjaannya."
+        AppRole.ADMIN -> "Selamat Datang, Admin! 🛠️" to "Ringkasan & kelola sistem pengawasan sarpras kampus."
+        else -> "Halo, $firstName! 👋" to "Ada kendala fasilitas yang perlu dibantu hari ini?"
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -69,38 +88,75 @@ fun UserGreetingHeader(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BrandEmblem()
-            Spacer(Modifier.weight(1f))
-            CircleIconButton(
-                icon = Icons.Outlined.Notifications,
-                contentDescription = "Notifikasi",
-                onClick = onNotificationClick,
-                showBadge = true
-            )
-            Spacer(Modifier.width(10.dp))
-            androidx.compose.material3.Surface(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                BrandEmblem(modifier = Modifier.size(34.dp))
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Tiket",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 19.sp,
+                                letterSpacing = (-0.5).sp
+                            ),
+                            color = Ink
+                        )
+                        Text(
+                            text = "Bantu",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 19.sp,
+                                letterSpacing = (-0.5).sp
+                            ),
+                            color = BrandIndigo
+                        )
+                    }
+                    Text(
+                        text = "Layanan Sarpras Kampus",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = InkMuted
+                    )
+                }
+            }
+
+            Surface(
                 onClick = onAvatarClick,
-                shape = androidx.compose.foundation.shape.CircleShape,
+                shape = CircleShape,
                 color = Color.Transparent
             ) {
                 InitialsAvatar(name = userName, size = 40.dp, soft = false)
             }
         }
+
         Spacer(Modifier.height(16.dp))
+
         Text(
-            text = buildGreeting(userName.substringBefore(' ')),
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
-            color = InkSoft
-        )
-        Text(
-            text = "kami bantu hari ini?",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
+            text = greetingTitle,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                letterSpacing = (-0.4).sp
+            ),
             color = Ink
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = greetingSubtitle,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            ),
+            color = InkSoft
         )
     }
 }
-
-private fun buildGreeting(first: String) = "Hi $first, ada yang bisa"
 
 /**
  * Sub-page header: circular back button, title + optional subtitle, trailing actions.

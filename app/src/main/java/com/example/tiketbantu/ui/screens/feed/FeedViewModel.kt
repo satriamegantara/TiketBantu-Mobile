@@ -184,6 +184,13 @@ class FeedViewModel(
         resetPaging()
     }
 
+    /** Clear all active search queries and filters back to default. */
+    fun resetFilters() {
+        _filter.value = FeedFilter()
+        _searchInput.value = ""
+        resetPaging()
+    }
+
     /** Pull-to-refresh. Room is already live; this re-runs the query from the first page. */
     fun refresh() {
         _isRefreshing.value = true

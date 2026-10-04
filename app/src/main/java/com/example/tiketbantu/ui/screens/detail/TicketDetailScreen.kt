@@ -36,16 +36,22 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.AccessTime
-import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Engineering
 import androidx.compose.material.icons.outlined.HighlightOff
-import androidx.compose.material.icons.outlined.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Share
@@ -106,7 +112,6 @@ import com.example.tiketbantu.ui.components.TagChip
 import com.example.tiketbantu.ui.components.locationText
 import com.example.tiketbantu.ui.components.relativeTime
 import com.example.tiketbantu.ui.components.ticketCode
-import com.example.tiketbantu.ui.components.urgencyLabel
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.BrandCyan
@@ -170,8 +175,7 @@ fun TicketDetailScreen(
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
 
     val role = DemoSession.role
-    // Task 4.7 rule: Admin is strictly monitor/read-only for status progression, only AGEN can claim and resolve
-    val canAct = canUpdateStatus || role == AppRole.AGEN
+    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
     LaunchedEffect(viewModel) {
@@ -212,7 +216,8 @@ fun TicketDetailScreen(
             val ticket = (ticketState as? UiState.Success)?.data
             DetailTopBar(
                 ticket = ticket,
-                role = role,
+                role = activeRole,
+                currentUserId = currentUser?.id,
                 onBack = onBack,
                 onShare = { toast("Tautan tiket disalin ke clipboard") },
                 onEdit = { showEditDialog = true },
@@ -240,29 +245,34 @@ fun TicketDetailScreen(
                         ticket = state.data,
                         comments = comments,
                         currentUserId = currentUser?.id,
+                        role = activeRole,
                         canAct = canAct,
                         listState = listState,
                         onToggleSupport = viewModel::onToggleSupport,
                         onRequestStatusChange = { pendingStatus = it },
-                        onCall = { toast("Menghubungi teknisi…") }
+                        onZoomPhoto = { path -> zoomedPhotoPath = path }
                     )
                 }
             }
 
             if (ticketState is UiState.Success) {
-                CommentInputBar(
-                    value = commentInput,
-                    isSending = isSending,
-                    onValueChange = viewModel::onCommentInputChange,
-                    onSend = viewModel::sendComment,
-                    onAttach = { toast("Lampiran foto pada komentar segera hadir") }
-                )
+                val ticket = (ticketState as UiState.Success).data
+                if (TicketStatus.isFinished(ticket.status)) {
+                    LockedCommentBar(status = ticket.status)
+                } else {
+                    CommentInputBar(
+                        value = commentInput,
+                        isSending = isSending,
+                        onValueChange = viewModel::onCommentInputChange,
+                        onSend = viewModel::sendComment
+                    )
+                }
             }
         }
 
         SnackbarHost(
             snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 165.dp)
         )
     }
 
@@ -338,6 +348,10 @@ fun TicketDetailScreen(
             }
         )
     }
+
+    zoomedPhotoPath?.let { path ->
+        ZoomablePhotoDialog(imagePath = path, onDismiss = { zoomedPhotoPath = null })
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -348,12 +362,18 @@ fun TicketDetailScreen(
 private fun DetailTopBar(
     ticket: Ticket?,
     role: AppRole,
+    currentUserId: Long?,
     onBack: () -> Unit,
     onShare: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    val activeUserId = currentUserId ?: DemoSession.userId
+    val isOwner = ticket != null && ticket.reporterId == activeUserId
+    val canEdit = ticket?.status == TicketStatus.BARU && isOwner
+    val canDelete = isOwner || role == AppRole.ADMIN
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -381,23 +401,24 @@ private fun DetailTopBar(
             Text("Tiket Penanganan Fasilitas", style = MaterialTheme.typography.bodySmall, color = InkMuted)
         }
         CircleIconButton(Icons.Outlined.Share, "Bagikan", onShare, bordered = false, container = Color.Transparent)
-        Box {
-            CircleIconButton(Icons.Filled.MoreVert, "Lainnya", { menuOpen = true }, bordered = false, container = Color.Transparent)
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Color.White) {
-                val isAuthorOrAdmin = ticket?.reporterId == DemoSession.userId || role == AppRole.ADMIN
-                val canEdit = ticket?.status == TicketStatus.BARU && isAuthorOrAdmin
-                DropdownMenuItem(
-                    text = { Text("Edit Aduan") },
-                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
-                    enabled = canEdit,
-                    onClick = { menuOpen = false; onEdit() }
-                )
-                if (role == AppRole.ADMIN) {
-                    DropdownMenuItem(
-                        text = { Text("Hapus Aduan", color = DangerRed) },
-                        leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = DangerRed) },
-                        onClick = { menuOpen = false; onDelete() }
-                    )
+        if (canEdit || canDelete) {
+            Box {
+                CircleIconButton(Icons.Filled.MoreVert, "Lainnya", { menuOpen = true }, bordered = false, container = Color.Transparent)
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Color.White) {
+                    if (canEdit) {
+                        DropdownMenuItem(
+                            text = { Text("Edit Aduan") },
+                            leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                            onClick = { menuOpen = false; onEdit() }
+                        )
+                    }
+                    if (canDelete) {
+                        DropdownMenuItem(
+                            text = { Text("Hapus Aduan", color = DangerRed) },
+                            leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = DangerRed) },
+                            onClick = { menuOpen = false; onDelete() }
+                        )
+                    }
                 }
             }
         }
@@ -413,23 +434,26 @@ private fun DetailList(
     ticket: Ticket,
     comments: List<Comment>,
     currentUserId: Long?,
+    role: AppRole,
     canAct: Boolean,
     listState: LazyListState,
     onToggleSupport: () -> Unit,
     onRequestStatusChange: (String) -> Unit,
-    onCall: () -> Unit
+    onZoomPhoto: (String) -> Unit
 ) {
     val finished = TicketStatus.isFinished(ticket.status)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 180.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item(key = "status") { StatusCard(ticket, onCall) }
-        item(key = "main") { MainInfoCard(ticket) }
-        item(key = "support") { SupportCard(ticket, onToggleSupport) }
+        item(key = "status") { StatusCard(ticket, role) }
+        item(key = "main") { MainInfoCard(ticket, onZoomPhoto) }
+        item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
+
+        val isStaff = role == AppRole.AGEN || role == AppRole.ADMIN
 
         if (finished) {
             item(key = "locked") {
@@ -448,7 +472,7 @@ private fun DetailList(
                     }
                 }
             }
-        } else if (canAct) {
+        } else if (isStaff && canAct) {
             item(key = "actions") { ActionPanel(ticket, onRequestStatusChange) }
         }
 
@@ -458,7 +482,7 @@ private fun DetailList(
                 Spacer(Modifier.width(8.dp))
                 TagChip("${comments.size} Komentar", container = BrandIndigoSoft, content = BrandIndigo)
                 Spacer(Modifier.weight(1f))
-                TagChip("● Live Stream", container = SuccessSoftBg, content = SuccessText)
+                TagChip("Live Stream", container = SuccessSoftBg, content = SuccessText)
             }
         }
 
@@ -483,10 +507,9 @@ private fun DetailList(
 }
 
 @Composable
-private fun StatusCard(ticket: Ticket, onCall: () -> Unit) {
-    val (urgency, urgencyColor) = urgencyLabel(ticket.supportCount)
+private fun StatusCard(ticket: Ticket, role: AppRole) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
                     "STATUS TIKET",
@@ -496,64 +519,44 @@ private fun StatusCard(ticket: Ticket, onCall: () -> Unit) {
                 Spacer(Modifier.height(6.dp))
                 StatusPill(ticket.status)
             }
-            Column(horizontalAlignment = Alignment.End) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.AccessTime, null, tint = InkMuted, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Diperbarui ${relativeTime(ticket.updatedAt)}", style = MaterialTheme.typography.labelSmall, color = InkSoft)
-                }
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Bolt, null, tint = urgencyColor, modifier = Modifier.size(14.dp))
-                    Text(urgency, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = urgencyColor)
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.AccessTime, null, tint = InkMuted, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Diperbarui ${relativeTime(ticket.updatedAt)}", style = MaterialTheme.typography.labelSmall, color = InkSoft)
             }
         }
-        Spacer(Modifier.height(14.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
-        Spacer(Modifier.height(14.dp))
+        if (role == AppRole.AGEN || role == AppRole.ADMIN) {
+            Spacer(Modifier.height(14.dp))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+            Spacer(Modifier.height(14.dp))
 
-        val assignee = ticket.agentName
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (assignee != null) {
-                Box {
+            val assignee = ticket.agentName
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (assignee != null) {
                     InitialsAvatar(assignee, size = 44.dp, soft = false)
+                } else {
                     Box(
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF22C55E))
-                    )
+                        Modifier.size(44.dp).clip(CircleShape).background(FieldBg),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(Icons.Outlined.Engineering, null, tint = InkMuted) }
                 }
-            } else {
-                Box(
-                    Modifier.size(44.dp).clip(CircleShape).background(FieldBg),
-                    contentAlignment = Alignment.Center
-                ) { Icon(Icons.Outlined.Engineering, null, tint = InkMuted) }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Ditugaskan Kepada:", style = MaterialTheme.typography.labelSmall, color = InkMuted)
-                Text(
-                    assignee ?: "Menunggu diklaim teknisi",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                    color = Ink
-                )
-                Text("Divisi Teknisi Sarana & Prasarana", style = MaterialTheme.typography.bodySmall, color = InkSoft)
-            }
-            if (assignee != null) {
-                CircleIconButton(Icons.Outlined.Phone, "Hubungi", onCall, container = BrandIndigoSoft, tint = BrandIndigo, bordered = false)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Ditugaskan Kepada:", style = MaterialTheme.typography.labelSmall, color = InkMuted)
+                    Text(
+                        assignee ?: "Menunggu diklaim teknisi",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = Ink
+                    )
+                    Text("Divisi Teknisi Sarana & Prasarana", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun MainInfoCard(ticket: Ticket) {
+private fun MainInfoCard(ticket: Ticket, onZoomPhoto: (String) -> Unit) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Text(
             ticket.title,
@@ -573,30 +576,30 @@ private fun MainInfoCard(ticket: Ticket) {
             caption = "Dilaporkan: ${formatDate(ticket.createdAt)}"
         )
 
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.PhotoCamera, null, tint = Ink, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            val hasPhoto = !ticket.imageUrl.isNullOrBlank()
-            Text(
-                "Bukti Lampiran Lapangan (${if (hasPhoto) 1 else 0})",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = Ink,
-                modifier = Modifier.weight(1f)
-            )
-            Text("Format Terverifikasi", style = MaterialTheme.typography.labelSmall, color = InkMuted)
-        }
-        Spacer(Modifier.height(10.dp))
+        if (!ticket.imageUrl.isNullOrBlank()) {
+            val path = ticket.imageUrl
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.PhotoCamera, null, tint = Ink, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "Bukti Lampiran Lapangan (1)",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
+                Text("Format Terverifikasi", style = MaterialTheme.typography.labelSmall, color = InkMuted)
+            }
+            Spacer(Modifier.height(10.dp))
 
-        val path = ticket.imageUrl
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(FieldBg)
-        ) {
-            if (!path.isNullOrBlank()) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(FieldBg)
+                    .clickable { onZoomPhoto(path) }
+            ) {
                 AsyncImage(
                     model = imageModelOf(path),
                     contentDescription = "Foto bukti aduan",
@@ -606,25 +609,19 @@ private fun MainInfoCard(ticket: Ticket) {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))))
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))))
                 )
                 Text(
-                    "Kondisi Lapangan Terkini",
+                    "Kondisi Lapangan Terkini (Ketuk untuk perbesar)",
                     color = Color.White,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier = Modifier.align(Alignment.BottomStart).padding(14.dp)
                 )
                 CircleIconButton(
-                    Icons.Outlined.ZoomIn, "Perbesar", {},
-                    container = Color.White.copy(alpha = 0.9f), bordered = false, size = 36.dp,
+                    Icons.Outlined.ZoomIn, "Perbesar", { onZoomPhoto(path) },
+                    container = Color.White.copy(alpha = 0.9f), bordered = false, size = 38.dp,
                     modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp)
                 )
-            } else {
-                Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Outlined.Image, null, tint = InkMuted, modifier = Modifier.size(36.dp))
-                    Spacer(Modifier.height(6.dp))
-                    Text("Tidak ada foto bukti", style = MaterialTheme.typography.bodySmall, color = InkMuted)
-                }
             }
         }
     }
@@ -657,7 +654,7 @@ private fun InfoTile(icon: ImageVector, label: String, value: String, caption: S
 }
 
 @Composable
-private fun SupportCard(ticket: Ticket, onToggleSupport: () -> Unit) {
+private fun SupportCard(ticket: Ticket, role: AppRole, onToggleSupport: () -> Unit) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
@@ -702,13 +699,20 @@ private fun SupportCard(ticket: Ticket, onToggleSupport: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.width(6.dp))
-                SupportPill(
-                    count = ticket.supportCount,
-                    supported = ticket.isSupportedByMe,
-                    onClick = onToggleSupport,
-                    label = if (ticket.isSupportedByMe) "Didukung" else "Dukung",
-                    enabled = !TicketStatus.isFinished(ticket.status)
-                )
+                if (role == AppRole.AGEN || role == AppRole.ADMIN) {
+                    TagChip(
+                        text = "${ticket.supportCount} Suara",
+                        container = SupportOrangeSoft,
+                        content = SupportOrangeText
+                    )
+                } else {
+                    SupportPill(
+                        count = ticket.supportCount,
+                        supported = ticket.isSupportedByMe,
+                        onClick = onToggleSupport,
+                        enabled = !TicketStatus.isFinished(ticket.status)
+                    )
+                }
             }
         }
     }
@@ -887,7 +891,7 @@ private fun CommentCard(comment: Comment, isMine: Boolean) {
                     InitialsAvatar(name, size = 30.dp)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        name + if (isMine) " (Anda)" else "",
+                        text = name,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = Ink,
                         maxLines = 1,
@@ -907,13 +911,7 @@ private fun CommentCard(comment: Comment, isMine: Boolean) {
 }
 
 @Composable
-private fun CommentInputBar(
-    value: String,
-    isSending: Boolean,
-    onValueChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onAttach: () -> Unit
-) {
+private fun LockedCommentBar(status: String) {
     Surface(
         color = Color.White.copy(alpha = 0.96f),
         shadowElevation = 16.dp,
@@ -926,11 +924,49 @@ private fun CommentInputBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 94.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                Icons.Outlined.Lock,
+                contentDescription = null,
+                tint = InkMuted,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (status == TicketStatus.SELESAI) "Aduan telah dituntaskan. Diskusi komentar dikunci." else "Aduan telah ditutup. Diskusi komentar dikunci.",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = InkMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun CommentInputBar(
+    value: String,
+    isSending: Boolean,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit
+) {
+    val enabled = value.isNotBlank() && !isSending
+    Surface(
+        color = Color.White.copy(alpha = 0.96f),
+        shadowElevation = 16.dp,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .imePadding()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 90.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircleIconButton(Icons.Outlined.AddAPhoto, "Lampirkan", onAttach, tint = InkSoft, size = 42.dp)
-            Spacer(Modifier.width(8.dp))
             TextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -939,6 +975,8 @@ private fun CommentInputBar(
                 maxLines = 4,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = Ink),
                 shape = RoundedCornerShape(50),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { if (enabled) onSend() }),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = FieldBg,
                     unfocusedContainerColor = FieldBg,
@@ -948,29 +986,58 @@ private fun CommentInputBar(
                 )
             )
             Spacer(Modifier.width(8.dp))
-            val enabled = value.isNotBlank() && !isSending
-            Surface(
-                onClick = onSend,
-                enabled = enabled,
-                shape = CircleShape,
-                color = Color.Transparent,
-                modifier = Modifier.size(46.dp)
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (enabled) Brush.linearGradient(listOf(BrandIndigo, BrandCyan))
+                        else Brush.linearGradient(listOf(Color(0xFFCBD5E1), Color(0xFFCBD5E1)))
+                    )
+                    .clickable(enabled = enabled, onClick = onSend),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            if (enabled) Brush.linearGradient(listOf(BrandIndigo, BrandCyan))
-                            else Brush.linearGradient(listOf(Color(0xFFCBD5E1), Color(0xFFCBD5E1)))
-                        ),
-                    contentAlignment = Alignment.Center
+                if (isSending) {
+                    CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.AutoMirrored.Filled.Send, "Kirim", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ZoomablePhotoDialog(imagePath: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.Black.copy(alpha = 0.94f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isSending) {
-                        CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.AutoMirrored.Filled.Send, "Kirim", tint = Color.White, modifier = Modifier.size(20.dp))
+                    Text("Pratinjau Foto Lampiran", color = Color.White, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, "Tutup", tint = Color.White)
                     }
                 }
+                Spacer(Modifier.height(12.dp))
+                AsyncImage(
+                    model = imageModelOf(imagePath),
+                    contentDescription = "Foto bukti diperbesar",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
             }
         }
     }

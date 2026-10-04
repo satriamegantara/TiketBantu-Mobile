@@ -186,36 +186,28 @@ fun NavGraph(
                     },
                     onMyTicketsClick = {
                         navController.safeNavigate(Screen.MyTickets)
-                    },
-                    onSupportedTicketsClick = {
-                        navController.safeNavigate(Screen.SupportedTickets)
-                    },
-                    onDoneTicketsClick = {
-                        DemoSession.myTicketsInitialStatus = TicketStatus.SELESAI
-                        navController.safeNavigate(Screen.MyTickets)
                     }
                 )
             }
 
-            composable<Screen.Monitoring> {
-                MonitoringScreen(
-                    onTicketClick = { ticketId ->
-                        navController.safeNavigate(Screen.Detail(ticketId))
-                    },
-                    onManageUsersClick = {
-                        navController.safeNavigate(Screen.UserManagement)
-                    },
-                    onManageCategoriesClick = {
-                        navController.safeNavigate(Screen.UserManagement)
-                    }
-                )
-            }
+        composable<Screen.Monitoring> {
+            MonitoringScreen(
+                onTicketClick = { ticketId ->
+                    navController.safeNavigate(Screen.Detail(ticketId))
+                },
+                onManageUsersClick = {
+                    navController.safeNavigate(Screen.UserManagement)
+                },
+                onManageCategoriesClick = {
+                    navController.safeNavigate(Screen.UserManagement)
+                }
+            )
+        }
 
-            composable<Screen.UserManagement> {
-                UserManagementScreen(
-                    onBack = { navController.safePopBackStack() }
-                )
-            }
+        composable<Screen.UserManagement> {
+            UserManagementScreen(
+                onBack = { navController.safePopBackStack() }
+            )
         }
     }
 }
