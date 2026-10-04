@@ -12,6 +12,7 @@ import com.example.tiketbantu.domain.usecase.GetFeedUseCase
 import com.example.tiketbantu.domain.usecase.ToggleSupportUseCase
 import com.example.tiketbantu.domain.usecase.UpdateTicketStatusUseCase
 import com.example.tiketbantu.ui.screens.auth.AuthViewModel
+import com.example.tiketbantu.ui.screens.create.CreateTicketViewModel
 import com.example.tiketbantu.ui.screens.detail.TicketDetailViewModel
 import com.example.tiketbantu.ui.screens.feed.FeedViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -62,6 +63,14 @@ val appModule = module {
 
     // ── ViewModel Layer ──────────────────────────────────────────────────────
     viewModel { AuthViewModel(authRepository = get()) }
+    viewModel {
+        CreateTicketViewModel(
+            ticketRepository = get(),
+            categoryDao = get(),
+            sessionManager = get(),
+            context = androidContext()
+        )
+    }
     viewModel { FeedViewModel(get(), get(), get()) }
     viewModel { (ticketId: Long) ->
         TicketDetailViewModel(
