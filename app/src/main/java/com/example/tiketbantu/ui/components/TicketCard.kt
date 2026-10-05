@@ -220,30 +220,52 @@ fun TicketCard(
 
                 Spacer(Modifier.height(10.dp))
 
-                // 3. Location Chip / Pill
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = Color(0xFFE0F7FA),
-                    modifier = Modifier.padding(bottom = 2.dp)
+                // 3. Category & Location Chips
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    val resolvedCategory = ticket.categoryName.ifBlank {
+                        when (ticket.categoryId) {
+                            1L -> "Jaringan"
+                            2L -> "Hardware"
+                            3L -> "Software"
+                            4L -> "Fasilitas"
+                            else -> "Umum"
+                        }
+                    }
+                    CategoryBadge(categoryName = resolvedCategory)
+
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color(0xFFE0F7FA),
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Place,
-                            contentDescription = null,
-                            tint = Color(0xFF00838F),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = ticket.locationText().ifBlank { "Lokasi Fasilitas Kampus" },
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF00838F),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Place,
+                                contentDescription = null,
+                                tint = Color(0xFF00838F),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                text = ticket.locationText().ifBlank { "Lokasi Fasilitas Kampus" },
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.5.sp
+                                ),
+                                color = Color(0xFF00838F),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
 

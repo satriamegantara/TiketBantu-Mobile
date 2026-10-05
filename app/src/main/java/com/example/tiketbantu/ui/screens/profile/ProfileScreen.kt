@@ -53,8 +53,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import com.example.tiketbantu.data.local.dao.SupportDao
 import com.example.tiketbantu.data.local.dao.TicketDao
 import com.example.tiketbantu.domain.repository.AuthRepository
@@ -450,40 +448,36 @@ private fun HelpAndInfoCard(
 
 @Composable
 private fun LogoutCard(onLogoutClick: () -> Unit) {
-    Box(
+    Surface(
+        onClick = onLogoutClick,
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFEF2F2),
+        border = BorderStroke(1.dp, Color(0xFFFEE2E2)),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .height(50.dp)
     ) {
-        Surface(
-            onClick = onLogoutClick,
-            shape = RoundedCornerShape(14.dp),
-            color = Color(0xFFFEF2F2),
-            border = BorderStroke(1.dp, Color(0xFFFEE2E2)),
-            modifier = Modifier.height(44.dp)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = null,
-                    tint = DangerRed,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Keluar Akun",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    ),
-                    color = DangerRed
-                )
-            }
+            Icon(
+                Icons.AutoMirrored.Filled.Logout,
+                contentDescription = null,
+                tint = DangerRed,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Keluar Akun",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                ),
+                color = DangerRed
+            )
         }
     }
 }

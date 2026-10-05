@@ -1,27 +1,60 @@
-### Ringkasan Perbandingan _Outline_ ↔ _Branch **testing**_
+# 📊 Komparasi Fitur: Dokumen Outline vs Kode Branch `testing`
 
-| Bagian / Fitur                                                                  | Terdapat di **Outline** (dokumen `Outline TiketBantu - 4 Anggota.md`)                             | Terdapat di **Kode** (`ProfileScreen.kt` – branch _testing_)                                                                             | Keterangan                                               |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **Profile Screen** (umum)                                                       | ✅ “Profile Screen & Layar _Aduan Saya_” (baris 184‑185)                                           | ✅ Implementasi lengkap `ProfileScreen`                                                                                                   | Kedua dokumen mencakup layar profil.                     |
-| **Quick Shortcuts & Navigasi** (kartu “Aksi Cepat & Navigasi”)                  | ❌ Tidak ada entri yang menyebutkan _QuickShortcuts_, _ShortcutTile_ atau _Aksi Cepat & Navigasi_. | ✅ `QuickShortcutsCard`, `ShortcutTile` (tiga shortcut: _Aduan Saya_, _Aduan Saya Dukung_, _Buat Aduan Baru_) – lihat baris 452‑496.      | **Fitur yang **tidak terdokumentasi** di outline.        |
-| **Statistik kontribusi** (`UserStatsCard`)                                      | ❌ Outline tidak menyebutkan statistik (_sentCount_, _supportCount_, _doneCount_).                 | ✅ `UserStatsCard` (baris 368‑410) menampilkan tiga statistik utama.                                                                      | **Fitur yang **tidak ada** dalam outline.                |
-| **Help & Info** (bantuan & layanan kampus)                                      | ❌ Tidak ada bagian “Bantuan & Layanan” dalam outline.                                             | ✅ `HelpAndInfoCard` (baris 540‑576) dengan dua `ShortcutTile` (Panduan & Kontak).                                                        | **Fitur **tidak terdokumentasi**.                        |
-| **Logout** (konfirmasi keluar)                                                  | ❌ Tidak ada catatan tentang _LogoutCard_ atau dialog logout.                                      | ✅ `LogoutCard` (baris 579‑606) + `AlertDialog` untuk konfirmasi (baris 184‑204).                                                         | **Fitur **tidak ada** di outline.                        |
-| **Guide Dialog** & **Contact Dialog**                                           | ❌ Outline tidak menyebutkan dialog panduan atau kontak.                                           | ✅ `GuideDialog` (baris 608‑632) dan `ContactDialog` (baris 655‑680) yang menampilkan detail panduan pelaporan serta kontak unit sarpras. | **Fitur **tidak terdokumentasi**.                        |
-| **Komponen UI umum** (`GlassCard`, `InitialsAvatar`, `TagChip`, `ShortcutTile`) | ❌ Outline hanya menyebut _Profile Screen_ secara umum, tidak merinci komponen UI khusus.          | ✅ Banyak komponen tambahan (lihat seluruh file).                                                                                         | **Komponen‑komponen ini** tidak tercantum dalam outline. |
-| **Monitoring Dashboard** (Admin)                                         | ❌ Tidak ada dalam outline. | ✅ `MonitoringScreen.kt` – menampilkan header, status sync, periode statistik, distribusi kategori, prioritas tiket, dan aksi master‑data. | **Fitur tidak terdokumentasi** |
-| **Feed List** (daftar tiket)                                            | ❌ Tidak ada dalam outline. | ✅ `FeedScreen.kt` – menampilkan list tiket, filter status, pencarian, dan pull‑to‑refresh. | **Fitur tidak terdokumentasi** |
-| **Buat Aduan (Create Ticket)**                                           | ❌ Tidak ada dalam outline. | ✅ `CreateTicketScreen.kt` – form lengkap dengan image picker, selector lokasi, dan submit button. | **Fitur tidak terdokumentasi** |
-| **Auth Screens (Login / Register)**                                      | ❌ Tidak ada dalam outline. | ✅ `LoginScreen.kt` & `RegisterScreen.kt` – UI login, register, toggle password, error handling. | **Fitur tidak terdokumentasi** |
-| **App Navigation / Top‑Bar & Bottom‑Bar**                               | ❌ Tidak ada dalam outline. | ✅ `AppTopBar.kt`, `BottomNavigationBar.kt` – navigasi utama aplikasi dengan badge tiket. | **Fitur tidak terdokumentasi** |
-| **Design System (warna, tipografi, token spacing)**                     | ❌ Tidak ada dalam outline. | ✅ `DesignSystem.kt` – definisi warna brand, style teks, dimensi, dan komponen dasar. | **Fitur tidak terdokumentasi** |
-#### Daftar Fitur **Tidak Ada di Outline** tetapi **Sudah Ada di Kode (branch _testing_)**
+Dokumen ini menyajikan perbandingan komprehensif antara rencana spesifikasi dalam **`Outline TiketBantu - 4 Anggota.md`** dengan implementasi nyata pada kode basis aplikasi di branch **`testing`**.
 
-1. **QuickShortcutsCard** – kumpulan tiga shortcut “Aduan Saya”, “Aduan Saya Dukung”, “Buat Aduan Baru”.
-2. **ShortcutTile** – komponen UI yang menampilkan ikon, judul, deskripsi, badge‑color, dan aksi navigasi.
-3. **UserStatsCard** – tampilan tiga statistik kontribusi pengguna (aduan dikirim, dukungan, selesai).
-4. **HelpAndInfoCard** – bagian “Bantuan & Layanan Kampus” dengan dua shortcut (Panduan & Kontak).
-5. **GuideDialog** – dialog penjelasan langkah‑langkah pelaporan aduan.
-6. **ContactDialog** – dialog menampilkan informasi kontak unit sarpras (lokasi, jam layanan, email).
-7. **LogoutCard** + **Logout Confirmation AlertDialog** – tombol keluar + dialog konfirmasi.
-8. **Komponen UI tambahan** (`GlassCard`, `InitialsAvatar`, `TagChip`, `StatItem`, `ContactItem`, ds.) yang tidak disebutkan dalam outline.
+---
+
+## 🎯 Ringkasan Status Keseluruhan
+
+| Aspek | Target Outline | Status di Kode (`testing`) | Keterangan |
+|---|---|---|---|
+| **Pondasi Arsitektur** | Clean MVVM, UDF, Room DB, DataStore, DI | ✅ **100% Sesuai** | `BaseViewModel`, `UiState`, Room DB v4, Koin DI (`AppModule.kt`), DataStore session. |
+| **Material Design 3 (M3)** | Color tokens, typography, adaptive layout | ✅ **100% Sesuai** | Palet indigo/slate/emerald, compact (<600dp) & tablet adaptive (≥600dp). |
+| **Feed & Interaksi** | `LazyColumn`, filter, search, Most Liked, tiket selesai di bawah | ✅ **100% Sesuai** | Key-based LazyColumn, toggle "Saya Juga Mengalami", thread komentar. |
+| **Autentikasi 3 Role** | Pelapor, Agen, Admin | ✅ **100% Sesuai** | Login & register, DataStore session, normalisasi email 4 agen resmi. |
+| **Form Buat Aduan** | Dropdown kategori, lokasi berjenjang, foto `filesDir` | ✅ **100% Sesuai** + Enhancement | Auto-support pelapor otomatis dihitung saat tiket pertama dibuat. |
+| **Tugas Agen & Klaim** | Klaim tugas mandiri, linear update `Diproses` → `Selesai` | ✅ **100% Sesuai** + Enhancement | Ada layar khusus `AgentTasksScreen.kt` terbagi tab Ditugaskan & Klaim Baru. |
+| **Admin Monitoring** | Dashboard agregat statistik tanpa backend | ✅ **100% Sesuai** | Filter rentang waktu riil, beban agen, sebaran kategori (tanpa dummy statis). |
+| **Role Switcher Palsu** | Tidak ada di outline | ❌ **Dihapus Total** | Navigasi role murni menggunakan login/logout resmi yang aman. |
+
+---
+
+## 📋 Tabel Komparasi Rinci Fitur & Modul
+
+| No | Modul / Fitur | Spesifikasi di Outline | Implementasi di Kode (`testing`) | Status & Catatan |
+|:---:|---|---|---|:---:|
+| **1** | **Arsitektur & State Management** | Clean MVVM (`data`, `domain`, `ui`), `BaseViewModel`, `UiState<T>`, Flow reactive. | Diimplementasikan di package `core`, `data`, `domain`, `ui` dengan `UiState` terpadu. | ✅ Sesuai |
+| **2** | **Room Database & Migrasi** | SQLite lokal (`users`, `tickets`, `categories`, `ticket_supports`, `comments`). | `AppDatabase.kt` (v4), migration callback, 5 DAO lengkap & reaktif. | ✅ Sesuai |
+| **3** | **Dependency Injection** | DI menggunakan Koin/Hilt untuk DAO, ViewModel, & Repo. | `AppModule.kt` berbasis Koin menginjeksi semua DAO, repo, dan ViewModel. | ✅ Sesuai |
+| **4** | **Type-Safe Navigation** | Navigation Compose dengan `@Serializable` route & adaptive bottom bar. | `NavGraph.kt` & `Screen.kt` type-safe dengan navigasi dinamis per role. | ✅ Sesuai |
+| **5** | **Autentikasi (Login & Register)** | Form multi-role (Pelapor, Agen, Admin), validasi form, DataStore Preferences. | `LoginScreen.kt`, `RegisterScreen.kt`, `AuthRepositoryImpl.kt` dengan sesi tersimpan. | ✅ Sesuai |
+| **6** | **Feed Aduan Publik** | `LazyColumn`, filter status/kategori, sorting Most Liked ("Saya Juga Mengalami"), tiket selesai di posisi bawah. | `FeedScreen.kt` dengan `TicketCard.kt`, pull-to-refresh, search bar, dan sorting reaktif. | ✅ Sesuai |
+| **7** | **Detail Aduan & Komentar** | Info detail, foto bukti, thread komentar, polling coroutine 5s, status linier. | `TicketDetailScreen.kt`, update status Agen mandiri, reactive Room Flow comment thread. | ✅ Sesuai |
+| **8** | **Buat Aduan + Foto** | Judul, deskripsi, lokasi (Gedung, Lantai, Ruang), kategori, simpan foto lokal ke `filesDir`. | `CreateTicketScreen.kt`, kompresi foto internal privat, auto-support pelapor. | 🌟 Disempurnakan |
+| **9** | **Tugas Agen & Klaim** | Agen dapat klaim tiket `Baru` dan mengubah status menjadi `Diproses` hingga `Selesai`. | `AgentTasksScreen.kt` + `TicketDetailScreen.kt` dengan filter kategori spesialisasi agen. | 🌟 Disempurnakan |
+| **10** | **Monitoring Dashboard Admin** | Agregat metrik tiket, sebaran kategori, monitoring operasional tanpa penugasan manual. | `MonitoringScreen.kt` dengan filter waktu dinamis, beban kerja agen, data murni riil Room. | ✅ Sesuai (Clean) |
+| **11** | **Profil & Layar Aduan Saya** | Kartu info user, logout aman (clear session), akses ke daftar riwayat aduan milik user. | `ProfileScreen.kt`, `MyTicketsScreen.kt`, `SupportedTicketsScreen.kt`. | 🌟 Disempurnakan |
+| **12** | **Data Seeder Pengujian** | Mock awal data kampus untuk demo aplikasi. | 10 data dummy realistis mencakup 4 agen resmi, pelapor, dukungan, dan komentar. | 🌟 Disempurnakan |
+
+---
+
+## 🌟 Fitur Tambahan & Penyempurnaan (Beyond Original Outline)
+
+Selain memenuhi semua poin pada outline asli, kode saat ini memiliki penyempurnaan kualitas produksi:
+
+1. **`HeroSummaryCard` pada Feed/Dashboard:**
+   - Ringkasan visual metrik aduan aktif di bagian atas feed untuk aksesibilitas cepat pengguna.
+2. **Auto-Support Pelapor Otomatis:**
+   - Saat pelapor membuat aduan baru di `CreateTicketScreen.kt`, sistem otomatis mencatatkan dukungan awal pelapor ke tabel `ticket_supports`, sehingga aduan langsung memiliki 1 dukungan awal yang valid.
+3. **Statistik Riil di Halaman Profil (`UserStatsCard`):**
+   - Menghitung secara dinamis dari database lokal Room: jumlah tiket yang dikirim user, jumlah tiket yang didukung user, dan jumlah tiket yang telah selesai.
+4. **Bantuan & Layanan Kampus (`HelpAndInfoCard`):**
+   - Dialog interaktif `GuideDialog` (tata cara pelaporan sarpras) dan `ContactDialog` (kontak helpdesk kampus).
+5. **Dukungan Spesialisasi 4 Akun Agen Resmi:**
+   - Akun agen bawaan terkonfigurasi dengan kategori spesialisasi:
+     - `agen.jaringan@tiketbantu.com` → Jaringan & Internet
+     - `agen.hardware@tiketbantu.com` → Perangkat Keras / PC Lab
+     - `agen.software@tiketbantu.com` → Sistem & Aplikasi Kampus
+     - `agen.fasilitas@tiketbantu.com` → Fasilitas & Sarana Kelas
+6. **Keamanan & Integritas Autentikasi (Role Switcher Dihapus):**
+   - Tidak ada tombol pintas ganti peran secara instan tanpa login. Hak akses Pelapor, Agen, dan Admin terlindungi sepenuhnya melalui alur autentikasi resmi.

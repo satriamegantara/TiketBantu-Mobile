@@ -101,9 +101,11 @@ import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.AvatarStack
+import com.example.tiketbantu.ui.components.CategoryBadge
 import com.example.tiketbantu.ui.components.CircleIconButton
 import com.example.tiketbantu.ui.components.FieldLabel
 import com.example.tiketbantu.ui.components.FilterPill
+import com.example.tiketbantu.ui.components.getCategoryStyle
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.components.InfoCountPill
@@ -337,9 +339,10 @@ fun TicketDetailScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
+            shape = RoundedCornerShape(20.dp),
             containerColor = Color.White,
-            title = { Text("Hapus aduan?", fontWeight = FontWeight.Bold) },
-            text = { Text("Aduan akan disembunyikan dari feed publik (soft delete). Data tetap tersimpan untuk audit.") },
+            title = { Text("Hapus Aduan?", fontWeight = FontWeight.Bold) },
+            text = { Text("Yakin ingin menghapus aduan ini?") },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
@@ -347,10 +350,10 @@ fun TicketDetailScreen(
                         runCatching { repository.softDeleteTicket(ticketId) }
                         onBack()
                     }
-                }) { Text("Hapus", color = DangerRed, fontWeight = FontWeight.Bold) }
+                }) { Text("Yakin", color = DangerRed, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Batal", color = InkSoft) }
+                TextButton(onClick = { confirmDelete = false }) { Text("Tidak", color = InkSoft) }
             }
         )
     }
@@ -399,7 +402,16 @@ private fun DetailTopBar(
                 )
                 if (ticket != null) {
                     Spacer(Modifier.width(8.dp))
-                    TagChip(ticket.categoryName.ifBlank { "Umum" }, container = Color(0xFFDDF4FF), content = Color(0xFF0369A1))
+                    val resolvedCategory = ticket.categoryName.ifBlank {
+                        when (ticket.categoryId) {
+                            1L -> "Jaringan"
+                            2L -> "Hardware"
+                            3L -> "Software"
+                            4L -> "Fasilitas"
+                            else -> "Umum"
+                        }
+                    }
+                    CategoryBadge(categoryName = resolvedCategory)
                 }
             }
             Text(
@@ -779,6 +791,7 @@ private fun EditTicketDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
         containerColor = Color.White,
         title = {
             Text("Edit Aduan Kampus", fontWeight = FontWeight.Bold)
@@ -788,40 +801,75 @@ private fun EditTicketDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FieldLabel(text = "Judul Masalah", required = true)
-                AppInput(
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = "Ringkasan kerusakan...",
-                    singleLine = true
-                )
+                Column {
+                    FieldLabel(text = "Judul Masalah", required = true)
+                    Spacer(Modifier.height(4.dp))
+                    AppInput(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = "Ringkasan kerusakan...",
+                        singleLine = true
+                    )
+                }
 
-                FieldLabel(text = "Kategori Fasilitas", required = true)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    categories.forEach { cat ->
-                        FilterPill(
-                            text = cat.name,
-                            selected = selectedCategoryId == cat.id,
-                            onClick = { selectedCategoryId = cat.id }
-                        )
+                Column {
+                    FieldLabel(text = "Kategori Permasalahan", required = true)
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { cat ->
+                            val isSelected = selectedCategoryId == cat.id
+                            val style = getCategoryStyle(cat.name)
+                            Surface(
+                                onClick = { selectedCategoryId = cat.id },
+                                shape = RoundedCornerShape(50),
+                                color = if (isSelected) style.bg else Color.Transparent,
+                                border = BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) style.text else Hairline
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = style.icon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) style.text else InkMuted,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        text = cat.name,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        ),
+                                        color = if (isSelected) style.text else InkSoft
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
-                FieldLabel(text = "Deskripsi Lengkap", required = true)
-                AppInput(
-                    value = description,
-                    onValueChange = { description = it },
-                    placeholder = "Jelaskan permasalahan fasilitas...",
-                    minLines = 3,
-                    singleLine = false
-                )
+                Column {
+                    FieldLabel(text = "Deskripsi Lengkap", required = true)
+                    Spacer(Modifier.height(4.dp))
+                    AppInput(
+                        value = description,
+                        onValueChange = { description = it },
+                        placeholder = "Jelaskan permasalahan fasilitas secara detail...",
+                        minLines = 3,
+                        singleLine = false
+                    )
+                }
 
                 if (errorText != null) {
                     Text(errorText ?: "", color = DangerRed, style = MaterialTheme.typography.bodySmall)

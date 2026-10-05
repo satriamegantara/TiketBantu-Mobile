@@ -45,7 +45,7 @@ import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,11 +55,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -89,6 +92,7 @@ import com.example.tiketbantu.ui.components.FieldLabel
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.components.TagChip
+import com.example.tiketbantu.ui.components.getCategoryStyle
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
@@ -375,19 +379,29 @@ private fun CategoryDropdownSelector(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var anchorWidthPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val anchorWidthDp = with(density) { anchorWidthPx.toDp() }
     val selectedCategory = categories.firstOrNull { it.id == selectedCategoryId }
+    val selectedStyle = selectedCategory?.let { getCategoryStyle(it.name) }
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                anchorWidthPx = coordinates.size.width
+            }
+    ) {
         Surface(
             onClick = { expanded = !expanded },
             shape = RoundedCornerShape(14.dp),
-            color = if (selectedCategory != null) BrandIndigoSoft.copy(alpha = 0.35f) else FieldBg,
+            color = selectedStyle?.bg?.copy(alpha = 0.5f) ?: FieldBg,
             border = BorderStroke(
                 width = if (expanded || selectedCategory != null) 1.5.dp else 1.dp,
                 color = when {
                     isError -> DangerRed
-                    expanded -> BrandIndigo
-                    selectedCategory != null -> BrandIndigo
+                    expanded -> selectedStyle?.text ?: BrandIndigo
+                    selectedStyle != null -> selectedStyle.border
                     else -> Hairline
                 }
             ),
@@ -403,15 +417,15 @@ private fun CategoryDropdownSelector(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(34.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (selectedCategory != null) BrandIndigoSoft else Color.White),
+                        .background(selectedStyle?.bg ?: Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (selectedCategory != null) getCategoryIcon(selectedCategory.name) else Icons.Outlined.Category,
+                        imageVector = selectedStyle?.icon ?: Icons.Outlined.Category,
                         contentDescription = null,
-                        tint = if (selectedCategory != null) BrandIndigo else InkSoft,
+                        tint = selectedStyle?.text ?: InkSoft,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -421,7 +435,7 @@ private fun CategoryDropdownSelector(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = if (selectedCategory != null) FontWeight.SemiBold else FontWeight.Normal
                     ),
-                    color = if (selectedCategory != null) Ink else InkMuted,
+                    color = selectedStyle?.text ?: (if (selectedCategory != null) Ink else InkMuted),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -429,7 +443,7 @@ private fun CategoryDropdownSelector(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Pilih kategori",
-                    tint = if (expanded) BrandIndigo else InkSoft,
+                    tint = if (expanded) (selectedStyle?.text ?: BrandIndigo) else InkSoft,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -439,11 +453,15 @@ private fun CategoryDropdownSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .fillMaxWidth(0.88f)
+                .then(
+                    if (anchorWidthDp > 0.dp) Modifier.width(anchorWidthDp)
+                    else Modifier.fillMaxWidth()
+                )
                 .background(Color.White)
         ) {
             categories.forEach { category ->
                 val isSelected = category.id == selectedCategoryId
+                val catStyle = getCategoryStyle(category.name)
                 DropdownMenuItem(
                     text = {
                         Text(
@@ -451,23 +469,31 @@ private fun CategoryDropdownSelector(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             ),
-                            color = if (isSelected) BrandIndigo else Ink
+                            color = if (isSelected) catStyle.text else Ink
                         )
                     },
                     leadingIcon = {
-                        Icon(
-                            imageVector = getCategoryIcon(category.name),
-                            contentDescription = null,
-                            tint = if (isSelected) BrandIndigo else InkMuted,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(catStyle.bg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = catStyle.icon,
+                                contentDescription = null,
+                                tint = catStyle.text,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     },
                     trailingIcon = if (isSelected) {
                         {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Terpilih",
-                                tint = BrandIndigo,
+                                tint = catStyle.text,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -477,7 +503,7 @@ private fun CategoryDropdownSelector(
                         expanded = false
                     },
                     modifier = Modifier.background(
-                        if (isSelected) BrandIndigoSoft.copy(alpha = 0.5f) else Color.Transparent
+                        if (isSelected) catStyle.bg.copy(alpha = 0.5f) else Color.Transparent
                     )
                 )
             }
@@ -503,29 +529,24 @@ private fun PhotoSection(
         Spacer(Modifier.height(12.dp))
         if (photo != null) {
             Surface(shape = RoundedCornerShape(16.dp), color = FieldBg, border = BorderStroke(1.dp, Hairline)) {
-                Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     AsyncImage(
                         model = photo.uri,
                         contentDescription = "Pratinjau foto",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(58.dp).clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.size(54.dp).clip(RoundedCornerShape(12.dp))
                     )
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                photo.name,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                Icons.Outlined.DeleteOutline, "Hapus foto", tint = DangerRed,
-                                modifier = Modifier.size(20.dp).clip(CircleShape).let { it }
-                                    .then(Modifier)
-                            )
-                        }
+                        Text(
+                            photo.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.CheckCircle, null, tint = SuccessText, modifier = Modifier.size(14.dp))
@@ -536,20 +557,21 @@ private fun PhotoSection(
                                 color = InkSoft
                             )
                         }
-                        Spacer(Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { (photo.sizeBytes.toFloat() / MAX_PHOTO_BYTES).coerceIn(0.02f, 1f) },
-                            color = BrandIndigo,
-                            trackColor = Hairline,
-                            strokeCap = StrokeCap.Round,
-                            modifier = Modifier.fillMaxWidth().height(5.dp)
+                    }
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline,
+                            contentDescription = "Hapus foto",
+                            tint = DangerRed,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
-            TextButton(onClick = onRemove, modifier = Modifier.align(Alignment.End)) {
-                Text("Hapus foto", color = DangerRed, style = MaterialTheme.typography.labelMedium)
-            }
+            Spacer(Modifier.height(10.dp))
         }
         DashedButton(
             text = if (photo != null) "Ganti Foto dari Galeri" else "Pilih Foto dari Galeri",

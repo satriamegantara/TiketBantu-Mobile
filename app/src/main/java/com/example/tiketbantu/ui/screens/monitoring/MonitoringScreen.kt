@@ -492,7 +492,7 @@ private fun StatsGrid(
                 badgeBg = Color(0xFFFFEDD5),
                 badgeFg = Color(0xFFC2410C),
                 value = "%,d".format(affected).replace(',', '.'),
-                label = "Warga Terdampak",
+                label = "Civitas Terdampak",
                 modifier = Modifier.weight(1f)
             )
         }
