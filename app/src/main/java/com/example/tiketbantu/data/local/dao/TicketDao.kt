@@ -85,6 +85,12 @@ abstract class TicketDao {
     )
     abstract fun observeSupported(currentUserId: Long): Flow<List<TicketWithMeta>>
 
+    @Query(
+        "SELECT * FROM (" + TICKET_META_BASE + ") AS m " +
+            "WHERE (m.agentId = :currentUserId OR (m.status = 'BARU' AND m.agentId IS NULL)) ORDER BY m.createdAt DESC"
+    )
+    abstract fun observeAgentTasks(currentUserId: Long): Flow<List<TicketWithMeta>>
+
     @Insert
     abstract suspend fun insertTicket(ticket: TicketEntity): Long
 

@@ -27,7 +27,8 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Person
@@ -83,7 +84,7 @@ private fun itemsFor(role: AppRole): List<BottomNavItem> = buildList {
     when (role) {
         AppRole.PELAPOR -> {
             add(BottomNavItem(NavRoutes.MY_TICKETS, "Aduan Saya", Icons.Filled.ReceiptLong, Icons.Outlined.ReceiptLong))
-            add(BottomNavItem(NavRoutes.SUPPORTED, "Dukungan", Icons.Filled.Bookmark, Icons.Outlined.BookmarkBorder))
+            add(BottomNavItem(NavRoutes.SUPPORTED, "Dukungan", Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder))
         }
         AppRole.AGEN -> add(BottomNavItem(NavRoutes.MY_TICKETS, "Tugas Saya", Icons.Filled.ReceiptLong, Icons.Outlined.ReceiptLong))
         AppRole.ADMIN -> add(BottomNavItem(NavRoutes.MANAGE, "Kelola", Icons.Filled.Tune, Icons.Outlined.Tune))
@@ -106,7 +107,7 @@ fun BottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
     val items = itemsFor(role)
-    val showCreate = role != AppRole.AGEN
+    val showCreate = role == AppRole.PELAPOR
     val left = if (showCreate) items.take((items.size + 1) / 2) else items
     val right = if (showCreate) items.drop((items.size + 1) / 2) else emptyList()
     val shape = RoundedCornerShape(32.dp)

@@ -2,12 +2,12 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="MainActivity (1)">
+      <SelectionState runConfigName="MainActivity">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-10-03T17:47:48.665901276Z">
+        <DropdownSelection timestamp="2026-10-05T04:49:36.540634699Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=h6nbxszhbexksk5t" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RR8R40GYL1F" />
             </handle>
           </Target>
         </DropdownSelection>

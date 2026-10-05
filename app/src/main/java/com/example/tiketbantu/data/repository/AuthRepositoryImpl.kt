@@ -11,8 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Production Room + SessionManager-backed implementation of [AuthRepository].
- * Manages user authentication, registration, local persistence, and session lifecycle.
+ * Concrete implementation of [AuthRepository] using Room [UserDao] and [SessionManager].
+ *
+ * Responsibilities:
+ * - Authenticate user credentials against the local Room DB (supports hashed and plaintext seeders).
+ * - Register new users with default role PELAPOR, rejecting duplicate emails.
+ * - Manage session state persistence via DataStore [SessionManager] and synchronize [DemoSession].
  */
 class AuthRepositoryImpl(
     private val userDao: UserDao,
@@ -24,50 +28,71 @@ class AuthRepositoryImpl(
 
     override suspend fun login(email: String, passwordHash: String): Result<User> {
         val trimmedEmail = email.trim().lowercase()
-
-        // 1. Look up in Room database
-        var entity = userDao.getUserByEmail(trimmedEmail)
-
-        // 2. Fallback aliases for demo accounts if not found by exact string
-        if (entity == null) {
-            when {
-                trimmedEmail.contains("emily") || trimmedEmail == "user@kampus.ac.id" -> {
-                    entity = userDao.getUserByEmail("emily.johnson@kampus.ac.id")
-                        ?: userDao.getUserByEmail("user@kampus.ac.id")
-                }
-                trimmedEmail.contains("joko") || trimmedEmail.contains("budi") || trimmedEmail == "agen@kampus.ac.id" -> {
-                    entity = userDao.getUserByEmail("joko.santoso@kampus.ac.id")
-                        ?: userDao.getUserByEmail("agen@kampus.ac.id")
-                }
-                trimmedEmail.contains("admin") -> {
-                    entity = userDao.getUserByEmail("admin.sarpras@kampus.ac.id")
-                        ?: userDao.getUserByEmail("admin@kampus.ac.id")
-                }
-            }
+        val mappedUnsoed = when {
+            trimmedEmail.endsWith("@unsoed.ac.id") -> trimmedEmail.replace("@unsoed.ac.id", "@kampus.ac.id")
+            trimmedEmail.endsWith("@mhs.unsoed.ac.id") -> trimmedEmail.replace("@mhs.unsoed.ac.id", "@kampus.ac.id")
+            else -> trimmedEmail
         }
 
-        if (entity == null) {
-            return Result.failure(IllegalArgumentException("Akun tidak ditemukan. Pastikan email terdaftar."))
+        // Normalisasi input email agar user dapat login menggunakan domain @unsoed.ac.id, @kampus.ac.id, @tiketbantu.com, maupun shorthand username
+        val normalizedEmail = when (trimmedEmail) {
+            "admin", "admin@tiketbantu.com", "admin@unsoed.ac.id" -> "admin@kampus.ac.id"
+            "agen", "agen.jaringan", "agen@kampus.ac.id", "agen.jaringan@kampus.ac.id", "agen.jaringan@tiketbantu.com", "agen@tiketbantu.com", "agen@unsoed.ac.id", "agen.jaringan@unsoed.ac.id", "joko.santoso@kampus.ac.id" -> "agen.jaringan@tiketbantu.com"
+            "agen.hardware", "agen.hardware@tiketbantu.com", "hardware@kampus.ac.id", "agen.hardware@kampus.ac.id", "agen.hardware@unsoed.ac.id" -> "agen.hardware@tiketbantu.com"
+            "agen.software", "agen.software@tiketbantu.com", "software@kampus.ac.id", "agen.software@kampus.ac.id", "agen.software@unsoed.ac.id" -> "agen.software@tiketbantu.com"
+            "agen.fasilitas", "agen.fasilitas@tiketbantu.com", "fasilitas@kampus.ac.id", "agen.fasilitas@kampus.ac.id", "agen.fasilitas@unsoed.ac.id" -> "agen.fasilitas@tiketbantu.com"
+            "satcarzensyaf", "satriapancarzenasyafa", "satriapancarzenasyafa@kampus.ac.id", "satcarzensyaf@unsoed.ac.id", "satcarzensyaf@mhs.unsoed.ac.id", "emily.johnson@kampus.ac.id", "mahasiswa@kampus.ac.id", "user@kampus.ac.id", "mahasiswa@unsoed.ac.id" -> "satcarzensyaf@kampus.ac.id"
+            "ahmad", "ahmad.fauzi", "ahmad.fauzi@kampus.ac.id", "ahmad.dosen@kampus.ac.id", "ahmad.fauzi@unsoed.ac.id", "dosen@kampus.ac.id", "dosen@unsoed.ac.id", "dosen" -> "ahmad.fauzi@kampus.ac.id"
+            "rina", "rina.kartika", "rina.kartika@kampus.ac.id", "rina.kartika@unsoed.ac.id" -> "rina.kartika@kampus.ac.id"
+            "dimas", "dimas.putra", "dimas.putra@kampus.ac.id", "dimas.putra@unsoed.ac.id" -> "dimas.putra@kampus.ac.id"
+            "nadia", "nadia.safitri", "nadia.safitri@kampus.ac.id", "nadia.safitri@unsoed.ac.id" -> "nadia.safitri@kampus.ac.id"
+            else -> if (!trimmedEmail.contains("@")) "$trimmedEmail@kampus.ac.id" else mappedUnsoed
         }
+
+        val entity = userDao.getUserByEmail(trimmedEmail)
+            ?: userDao.getUserByEmail(normalizedEmail)
+            ?: userDao.getUserByEmail(mappedUnsoed)
+            ?: (when (trimmedEmail) {
+                "agen.jaringan@tiketbantu.com", "agen@tiketbantu.com" -> userDao.getUserByEmail("agen@kampus.ac.id")
+                "agen@kampus.ac.id", "agen.jaringan@kampus.ac.id" -> userDao.getUserByEmail("agen.jaringan@tiketbantu.com")
+                "agen.hardware@tiketbantu.com" -> userDao.getUserByEmail("agen.hardware@kampus.ac.id")
+                "agen.hardware@kampus.ac.id" -> userDao.getUserByEmail("agen.hardware@tiketbantu.com")
+                "agen.software@tiketbantu.com" -> userDao.getUserByEmail("agen.software@kampus.ac.id")
+                "agen.software@kampus.ac.id" -> userDao.getUserByEmail("agen.software@tiketbantu.com")
+                "agen.fasilitas@tiketbantu.com" -> userDao.getUserByEmail("agen.fasilitas@kampus.ac.id")
+                "agen.fasilitas@kampus.ac.id" -> userDao.getUserByEmail("agen.fasilitas@tiketbantu.com")
+                else -> null
+            })
+            ?: return Result.failure(IllegalArgumentException("Email tidak terdaftar"))
 
         if (!entity.isActive) {
             return Result.failure(IllegalStateException("Akun ini telah dinonaktifkan oleh administrator."))
         }
 
-        val domainUser = User(
-            id = entity.id,
-            name = entity.name,
-            email = entity.email,
-            nimNip = entity.nimNip,
-            role = entity.role,
-            isActive = entity.isActive
-        )
+        val stored = entity.passwordHash
+        val isHashed = stored.length == 64 && stored.all { it in '0'..'9' || it in 'a'..'f' }
+        val isPasswordMatch = if (isHashed) {
+            stored == passwordHash
+        } else {
+            hashSha256(stored) == passwordHash || stored == passwordHash
+        }
 
-        // 3. Persist session to DataStore & synchronize DemoSession
+        if (!isPasswordMatch) {
+            return Result.failure(IllegalArgumentException("Kata sandi salah"))
+        }
+
+        val domainUser = entity.toDomain()
+
         sessionManager.saveSession(domainUser)
         syncDemoSession(domainUser)
 
         return Result.success(domainUser)
+    }
+
+    private fun hashSha256(input: String): String {
+        val bytes = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     override suspend fun register(
@@ -79,31 +104,20 @@ class AuthRepositoryImpl(
         val trimmedEmail = email.trim().lowercase()
         val existing = userDao.getUserByEmail(trimmedEmail)
         if (existing != null) {
-            return Result.failure(IllegalArgumentException("Email sudah terdaftar. Silakan login."))
+            return Result.failure(IllegalArgumentException("Email sudah terdaftar"))
         }
 
-        val newId = userDao.insertUser(
-            UserEntity(
-                name = name.trim(),
-                email = trimmedEmail,
-                nimNip = nimNip?.trim(),
-                passwordHash = passwordHash,
-                role = "PELAPOR",
-                isActive = true
-            )
-        )
-
-        val domainUser = User(
-            id = newId,
+        val newUserEntity = UserEntity(
             name = name.trim(),
             email = trimmedEmail,
-            nimNip = nimNip?.trim(),
+            nimNip = nimNip?.trim()?.ifBlank { null },
+            passwordHash = passwordHash,
             role = "PELAPOR",
             isActive = true
         )
 
-        sessionManager.saveSession(domainUser)
-        syncDemoSession(domainUser)
+        val newId = userDao.insertUser(newUserEntity)
+        val domainUser = newUserEntity.copy(id = newId).toDomain()
 
         return Result.success(domainUser)
     }
@@ -128,4 +142,13 @@ class AuthRepositoryImpl(
         }
         DemoSession.isLoggedIn = true
     }
+
+    private fun UserEntity.toDomain(): User = User(
+        id = id,
+        name = name,
+        email = email,
+        nimNip = nimNip,
+        role = role,
+        isActive = isActive
+    )
 }

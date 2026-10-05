@@ -26,8 +26,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -58,6 +61,7 @@ import com.example.tiketbantu.ui.theme.AppBg
 import com.example.tiketbantu.ui.theme.AvatarPalette
 import com.example.tiketbantu.ui.theme.BrandCyan
 import com.example.tiketbantu.ui.theme.BrandIndigo
+import com.example.tiketbantu.ui.theme.BrandViolet
 import com.example.tiketbantu.ui.theme.ChipBaruBg
 import com.example.tiketbantu.ui.theme.ChipBaruFg
 import com.example.tiketbantu.ui.theme.ChipProsesBg
@@ -84,7 +88,7 @@ import kotlin.math.abs
 // Layout primitives
 // ═══════════════════════════════════════════════════════
 
-/** Screen background: soft cool white with two blurred lavender / cyan glows at the top. */
+/** Screen background: clean app background with subtle top wash. */
 @Composable
 fun AppBackground(
     modifier: Modifier = Modifier,
@@ -95,45 +99,38 @@ fun AppBackground(
             .fillMaxSize()
             .background(AppBg)
             .drawBehind {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0x33A5B4FC), Color.Transparent),
-                        center = Offset(size.width * 0.1f, 0f),
-                        radius = size.width * 0.9f
-                    ),
-                    radius = size.width * 0.9f,
-                    center = Offset(size.width * 0.1f, 0f)
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0x2667E8F9), Color.Transparent),
-                        center = Offset(size.width, size.height * 0.08f),
-                        radius = size.width * 0.7f
-                    ),
-                    radius = size.width * 0.7f,
-                    center = Offset(size.width, size.height * 0.08f)
+                // Subtle top-to-bottom wash (very light, clean)
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFF3F4F6),
+                            AppBg
+                        ),
+                        startY = 0f,
+                        endY = size.height * 0.4f
+                    )
                 )
             },
         content = content
     )
 }
 
-/** White "glass" card with hairline border and a very soft shadow. */
+/** Translucent glass card with floating ambient shadow and crisp hairline border. */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(22.dp),
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    shape: Shape = RoundedCornerShape(20.dp),
+    contentPadding: PaddingValues = PaddingValues(18.dp),
     containerColor: Color = Color.White,
-    borderColor: Color = Hairline,
+    borderColor: Color = Color(0xFFF1F5F9),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val base = modifier.shadow(
-        elevation = 6.dp,
+        elevation = 3.dp,
         shape = shape,
-        ambientColor = Color(0xFF6366F1).copy(alpha = 0.05f),
-        spotColor = Color(0xFF6366F1).copy(alpha = 0.08f)
+        ambientColor = Color.Black.copy(alpha = 0.04f),
+        spotColor = Color.Black.copy(alpha = 0.06f)
     )
     if (onClick != null) {
         Surface(
@@ -195,24 +192,20 @@ fun statusColors(status: String): Pair<Color, Color> = when (status) {
 fun statusLabel(status: String): String = when (status) {
     TicketStatus.BARU -> "Baru"
     TicketStatus.DIPROSES -> "Diproses"
-    TicketStatus.SELESAI -> "✓ Selesai"
+    TicketStatus.SELESAI -> "Selesai"
     TicketStatus.DITUTUP -> "Ditutup"
     else -> status.lowercase().replaceFirstChar { it.uppercase() }
 }
 
-/** Status pill with a leading dot (Baru / Diproses) or check (Selesai). */
+/** Clean Status Pill badge without leading dot or checkmark. */
 @Composable
 fun StatusPill(status: String, modifier: Modifier = Modifier) {
     val (bg, fg) = statusColors(status)
     Surface(shape = RoundedCornerShape(50), color = bg, modifier = modifier) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (status != TicketStatus.SELESAI) {
-                Box(Modifier.size(6.dp).clip(CircleShape).background(fg))
-                Spacer(Modifier.width(6.dp))
-            }
             Text(
                 text = statusLabel(status),
                 color = fg,
@@ -307,59 +300,150 @@ fun GradientButton(
     }
 }
 
-/** Orange "Saya Juga Mengalami (n)" support pill — feature 3.3.1. */
+/**
+ * Red/Orange Love Heart button for ticket support — Requirements 32-37.
+ * - Unsupported: ♡ Outline heart + count text (e.g. ♡ 12).
+ * - Supported: ♥ Filled heart + soft rose container + count (e.g. ♥ 13).
+ */
 @Composable
 fun SupportPill(
     count: Int,
     supported: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "Saya Juga Mengalami",
     enabled: Boolean = true
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (supported) 1.03f else 1f,
+        targetValue = if (supported) 1.08f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "supportScale"
     )
-    val fg by animateColorAsState(if (supported) Color.White else SupportOrangeText, label = "supportFg")
+    val heartColor by animateColorAsState(
+        if (supported) Color(0xFFE11D48) else InkSoft,
+        label = "heartColor"
+    )
+    val containerBg by animateColorAsState(
+        if (supported) Color(0xFFFFF1F2) else FieldBg,
+        label = "containerBg"
+    )
+    val borderColor by animateColorAsState(
+        if (supported) Color(0xFFFECDD3) else Hairline,
+        label = "borderColor"
+    )
+    val textColor by animateColorAsState(
+        if (supported) Color(0xFFBE123C) else Ink,
+        label = "textColor"
+    )
+
     val shape = RoundedCornerShape(50)
     Surface(
         onClick = onClick,
         enabled = enabled,
         shape = shape,
-        color = Color.Transparent,
-        border = if (supported) null else BorderStroke(1.dp, SupportOrange.copy(alpha = 0.25f)),
+        color = containerBg,
+        border = BorderStroke(1.dp, borderColor),
         modifier = modifier
             .scale(scale)
             .height(40.dp)
     ) {
-        Box(
-            modifier = Modifier.background(
-                if (supported) Brush.horizontalGradient(listOf(SupportOrange, SupportOrangeLight))
-                else Brush.horizontalGradient(listOf(SupportOrangeSoft, SupportOrangeSoft))
-            ),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (supported) Icons.Default.Check else Icons.Default.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = fg,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "$label ($count)",
-                    color = fg,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Icon(
+                imageVector = if (supported) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = if (supported) "Dukungan diberikan" else "Dukung aduan",
+                tint = heartColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                color = textColor,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            )
+        }
+    }
+}
+
+/**
+ * Matching circular/pill button for comment interaction — Requirements 32 & 36.
+ * Styled symmetrically with [SupportPill].
+ */
+@Composable
+fun CommentPill(
+    count: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val shape = RoundedCornerShape(50)
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = shape,
+        color = FieldBg,
+        border = BorderStroke(1.dp, Hairline),
+        modifier = modifier.height(40.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Chat,
+                contentDescription = "Buka diskusi komentar",
+                tint = InkSoft,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                color = Ink,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            )
+        }
+    }
+}
+
+/**
+ * Neutral, non-interactive metric pill for informational counters (e.g. support count & comment count on Agent/Staff role).
+ * Matches the visual language of CommentPill without click/interaction states.
+ */
+@Composable
+fun InfoCountPill(
+    icon: ImageVector,
+    count: Int,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    tint: Color = InkSoft
+) {
+    val shape = RoundedCornerShape(50)
+    Surface(
+        shape = shape,
+        color = FieldBg,
+        border = BorderStroke(1.dp, Hairline),
+        modifier = modifier.height(40.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                color = Ink,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            )
         }
     }
 }
@@ -545,12 +629,6 @@ fun relativeTime(millis: Long, now: Long = System.currentTimeMillis()): String {
     }
 }
 
-/** Urgency derived purely from supporters (feature 3.2.5 — no manual priority). */
-fun urgencyLabel(supportCount: Int): Pair<String, Color> = when {
-    supportCount >= 5 -> "Prioritas Tinggi" to Color(0xFF2563EB)
-    supportCount >= 3 -> "Prioritas Sedang" to Color(0xFFD97706)
-    else -> "Prioritas Normal" to InkMuted
-}
 
 @Composable
 fun VerticalSpace(height: Dp) = Spacer(Modifier.height(height))
@@ -560,7 +638,7 @@ fun DotDivider(modifier: Modifier = Modifier) {
     Box(modifier.size(3.dp).clip(CircleShape).background(InkMuted))
 }
 
-/** Pill for horizontally scrolling filter rows (black when selected, white otherwise). */
+/** Pill for horizontally scrolling filter rows with vibrant active brand gradient. */
 @Composable
 fun FilterPill(
     text: String,
@@ -570,30 +648,41 @@ fun FilterPill(
     icon: ImageVector? = null,
     iconTint: Color = SupportOrange
 ) {
-    val bg by animateColorAsState(if (selected) Ink else Color.White, label = "pillBg")
-    val fg by animateColorAsState(if (selected) Color.White else InkSoft, label = "pillFg")
+    val shape = RoundedCornerShape(50)
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(50),
-        color = bg,
+        shape = shape,
+        color = Color.Transparent,
         border = if (selected) null else BorderStroke(1.dp, Hairline),
-        modifier = modifier.height(38.dp)
+        modifier = modifier
+            .height(38.dp)
+            .shadow(if (selected) 6.dp else 0.dp, shape, ambientColor = BrandIndigo, spotColor = BrandIndigo)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    if (selected) Brush.horizontalGradient(listOf(BrandIndigo, BrandViolet))
+                    else Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f), Color.White.copy(alpha = 0.94f)))
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            if (icon != null) {
-                Icon(icon, contentDescription = null, tint = if (selected) Color.White else iconTint, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = if (selected) Color.White else iconTint, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    text = text,
+                    color = if (selected) Color.White else InkSoft,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
             }
-            Text(
-                text = text,
-                color = fg,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
         }
     }
 }

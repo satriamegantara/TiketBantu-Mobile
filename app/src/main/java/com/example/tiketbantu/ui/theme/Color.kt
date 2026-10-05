@@ -57,6 +57,10 @@ val DangerRed = Color(0xFFEF4444)
 val CatIT = Color(0xFF14B8A6)
 val CatRuangan = Color(0xFF6366F1)
 val CatUmum = Color(0xFF22D3EE)
+val CatJaringan = Color(0xFF0EA5E9)   // Sky blue
+val CatHardware = Color(0xFFF59E0B)   // Amber
+val CatSoftware = Color(0xFF6366F1)   // Indigo
+val CatFasilitas = Color(0xFF10B981)  // Emerald
 
 // Avatar palette (initials)
 val AvatarPalette = listOf(
@@ -107,7 +111,7 @@ val OnErrorContainer = Color(0xFF7F1D1D)
 // Legacy tokens (kept for backward compatibility)
 // ═══════════════════════════════════════════════════════
 val StatusBadgeBaru = Color(0xFFF59E0B)
-val StatusBadgeDiproses = Color(0xFF7C3AED)
+val StatusBadgeDiproses = Color(0xFFD97706)
 val StatusBadgeSelesai = Color(0xFF10B981)
 val StatusBadgeDitutup = Color(0xFF94A3B8)
 

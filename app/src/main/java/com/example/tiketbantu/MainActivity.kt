@@ -13,15 +13,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.navigation.NavGraph
 import com.example.tiketbantu.navigation.Screen
 import com.example.tiketbantu.ui.components.BottomNavigationBar
 import com.example.tiketbantu.ui.components.NavRoutes
+import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.TiketBantuTheme
+import org.koin.android.ext.koin.androidContext
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +50,15 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route.orEmpty()
 
+    val sessionManager: SessionManager = koinInject()
+    val sessionState by sessionManager.sessionState.collectAsState()
+    val activeRole = when (sessionState.currentUser?.role?.uppercase()) {
+        "ADMIN" -> AppRole.ADMIN
+        "AGEN" -> AppRole.AGEN
+        "PELAPOR" -> AppRole.PELAPOR
+        else -> DemoSession.role
+    }
+
     val selectedNavRoute = when {
         currentRoute.contains("Dashboard") -> NavRoutes.HOME
         currentRoute.contains("MyTickets") -> NavRoutes.MY_TICKETS
@@ -59,13 +72,12 @@ fun MainScreen() {
 
     val showBottomBar = !currentRoute.contains("Login") &&
             !currentRoute.contains("Register") &&
-            !currentRoute.contains("TicketDetail") &&
+            !currentRoute.contains("Detail") &&
             !currentRoute.contains("CreateTicket")
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavGraph(
             navController = navController,
-            startDestination = Screen.Dashboard,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -79,31 +91,54 @@ fun MainScreen() {
                         NavRoutes.CREATE -> Screen.CreateTicket
                         NavRoutes.SUPPORTED -> Screen.SupportedTickets
                         NavRoutes.MONITORING -> Screen.Monitoring
-                        NavRoutes.MANAGE -> Screen.UserManagement
+                        NavRoutes.MANAGE -> Screen.UserManagement()
                         NavRoutes.PROFILE -> Screen.Profile
                         else -> Screen.Dashboard
                     }
-                    navController.navigate(targetScreen) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    val popped = when (targetScreen) {
+                        Screen.Profile -> navController.popBackStack<Screen.Profile>(inclusive = false)
+                        Screen.Dashboard -> navController.popBackStack<Screen.Dashboard>(inclusive = false)
+                        Screen.MyTickets -> navController.popBackStack<Screen.MyTickets>(inclusive = false)
+                        Screen.SupportedTickets -> navController.popBackStack<Screen.SupportedTickets>(inclusive = false)
+                        Screen.Monitoring -> navController.popBackStack<Screen.Monitoring>(inclusive = false)
+                        Screen.UserManagement -> navController.popBackStack<Screen.UserManagement>(inclusive = false)
+                        else -> false
+                    }
+
+                    if (!popped) {
+                        navController.navigate(targetScreen) {
+                            popUpTo<Screen.Dashboard> {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
-                role = DemoSession.role,
+                role = activeRole,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     if (org.koin.core.context.GlobalContext.getOrNull() == null) {
         org.koin.core.context.startKoin {
+            androidContext(context)
             modules(com.example.tiketbantu.di.appModule)
+        }
+    } else {
+        try {
+            org.koin.core.context.GlobalContext.get().get<android.content.Context>()
+        } catch (_: Exception) {
+            org.koin.core.context.stopKoin()
+            org.koin.core.context.startKoin {
+                androidContext(context)
+                modules(com.example.tiketbantu.di.appModule)
+            }
         }
     }
     TiketBantuTheme {

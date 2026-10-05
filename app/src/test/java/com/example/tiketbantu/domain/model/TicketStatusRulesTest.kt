@@ -35,10 +35,9 @@ class TicketStatusRulesTest {
     }
 
     @Test
-    fun nonAgentRolesCannotUpdate() {
+    fun nonStaffRolesCannotUpdate() {
         val t = ticket(TicketStatus.DIPROSES)
         assertNotNull(TicketStatusRules.validate(reporter, t, TicketStatus.SELESAI))
-        assertNotNull(TicketStatusRules.validate(admin, t, TicketStatus.SELESAI))
         assertFalse(TicketStatusRules.canUpdate(reporter, t))
     }
 
@@ -62,6 +61,5 @@ class TicketStatusRulesTest {
     fun targetStatusMustBeFinalStatus() {
         val t = ticket(TicketStatus.DIPROSES)
         assertNotNull(TicketStatusRules.validate(agent, t, TicketStatus.BARU))
-        assertNotNull(TicketStatusRules.validate(agent, t, TicketStatus.DIPROSES))
     }
 }

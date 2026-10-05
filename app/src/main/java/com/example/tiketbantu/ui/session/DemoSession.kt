@@ -18,31 +18,21 @@ enum class AppRole(val label: String) {
  */
 object DemoSession {
     var isLoggedIn by mutableStateOf(false)
-    var userId by mutableStateOf(3L)
-    var name by mutableStateOf("Emily Johnson")
-    var email by mutableStateOf("emily.johnson@kampus.ac.id")
-    var nimNip by mutableStateOf("2021110045")
+    var userId by mutableStateOf(0L)
+    var name by mutableStateOf("")
+    var email by mutableStateOf("")
+    var nimNip by mutableStateOf("")
     var role by mutableStateOf(AppRole.PELAPOR)
+    var myTicketsInitialStatus by mutableStateOf<String?>(null)
 
     val firstName: String get() = name.substringBefore(' ')
 
-    fun loginAs(role: AppRole) {
-        this.role = role
-        when (role) {
-            AppRole.PELAPOR -> {
-                userId = 3L; name = "Emily Johnson"; email = "emily.johnson@kampus.ac.id"; nimNip = "2021110045"
-            }
-            AppRole.AGEN -> {
-                userId = 2L; name = "Joko Santoso"; email = "joko.santoso@kampus.ac.id"; nimNip = "198703122010"
-            }
-            AppRole.ADMIN -> {
-                userId = 1L; name = "Admin Sarpras"; email = "admin.sarpras@kampus.ac.id"; nimNip = "-"
-            }
-        }
-        isLoggedIn = true
-    }
-
     fun logout() {
         isLoggedIn = false
+        role = AppRole.PELAPOR
+        userId = 0L
+        name = ""
+        email = ""
+        nimNip = ""
     }
 }

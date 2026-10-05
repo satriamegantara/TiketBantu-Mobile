@@ -1,8 +1,6 @@
 package com.example.tiketbantu.ui.screens.create
 
-import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,25 +22,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.VerifiedUser
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -50,14 +54,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -67,7 +73,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -78,15 +83,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.tiketbantu.domain.model.Ticket
-import com.example.tiketbantu.domain.repository.TicketRepository
+import com.example.tiketbantu.base.UiState
+import com.example.tiketbantu.data.local.entity.CategoryEntity
+import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.FieldLabel
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.components.TagChip
+import com.example.tiketbantu.ui.components.getCategoryStyle
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
@@ -99,99 +107,75 @@ import com.example.tiketbantu.ui.theme.Ink
 import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessText
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
-import java.io.File
 import java.util.Locale
 
 private const val TITLE_MAX = 80
 private const val MAX_PHOTO_BYTES = 5L * 1024 * 1024
 
-private data class CategoryOption(val id: Long, val label: String, val icon: ImageVector)
-
-private val CATEGORIES = listOf(
-    CategoryOption(1, "Teknologi & IT", Icons.Outlined.Computer),
-    CategoryOption(2, "Fasilitas Ruangan", Icons.Outlined.MeetingRoom),
-    CategoryOption(3, "Infrastruktur Umum", Icons.Outlined.Apartment)
+private val FALLBACK_CATEGORIES = listOf(
+    CategoryEntity(id = 1, name = "Jaringan"),
+    CategoryEntity(id = 2, name = "Hardware"),
+    CategoryEntity(id = 3, name = "Software"),
+    CategoryEntity(id = 4, name = "Fasilitas")
 )
 
-private data class PickedPhoto(val uri: Uri, val name: String, val sizeBytes: Long, val ext: String)
+private fun getCategoryIcon(name: String): ImageVector = when {
+    name.contains("Jaringan", ignoreCase = true) || name.contains("WiFi", ignoreCase = true) || name.contains("Internet", ignoreCase = true) -> Icons.Outlined.Computer
+    name.contains("Hardware", ignoreCase = true) || name.contains("Komputer", ignoreCase = true) || name.contains("Perangkat", ignoreCase = true) -> Icons.Outlined.Computer
+    name.contains("Software", ignoreCase = true) || name.contains("Sistem", ignoreCase = true) || name.contains("Aplikasi", ignoreCase = true) -> Icons.Outlined.Lightbulb
+    name.contains("Fasilitas", ignoreCase = true) || name.contains("Gedung", ignoreCase = true) || name.contains("Ruang", ignoreCase = true) -> Icons.Outlined.Apartment
+    else -> Icons.Outlined.Category
+}
 
 /**
- * Buat Aduan Publik (features 3.1.1, 3.2.1–3.2.4, 3.5.1–3.5.2).
- * Saves through [TicketRepository] (currently the in-memory fake) and returns the new id.
+ * Buat Aduan Publik (features 3.1.1, 3.2.1–3.2.4, 3.5.1–3.5.2 & Task 4.3).
+ * Stateless screen driven by [CreateTicketViewModel].
  */
 @Composable
 fun CreateTicketScreen(
     onCancel: () -> Unit,
     onCreated: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: CreateTicketViewModel = koinViewModel()
 ) {
-    val context = LocalContext.current
-    val repository = koinInject<TicketRepository>()
-    val scope = rememberCoroutineScope()
+    val formState by viewModel.formState.collectAsStateWithLifecycle()
+    val submitState by viewModel.submitState.collectAsStateWithLifecycle()
+    val dbCategories by viewModel.categories.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
-    var title by rememberSaveable { mutableStateOf("") }
-    var categoryId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var building by rememberSaveable { mutableStateOf("") }
-    var floor by rememberSaveable { mutableStateOf("") }
-    var room by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
-    var agreed by rememberSaveable { mutableStateOf(false) }
-    var photo by remember { mutableStateOf<PickedPhoto?>(null) }
-    var submitting by remember { mutableStateOf(false) }
-    var showErrors by remember { mutableStateOf(false) }
+    val sessionManager: SessionManager = koinInject()
+    val sessionState by sessionManager.sessionState.collectAsStateWithLifecycle()
+    val currentRole = sessionState.currentUser?.role ?: DemoSession.role.name
+    val isRestrictedRole = currentRole.equals("ADMIN", ignoreCase = true) || currentRole.equals("AGEN", ignoreCase = true)
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        val info = readPhoto(context, uri)
-        when {
-            info == null -> scope.launch { snackbar.showSnackbar("Foto tidak dapat dibaca") }
-            info.ext !in listOf("JPG", "JPEG", "PNG") -> scope.launch { snackbar.showSnackbar("Format harus JPG atau PNG") }
-            info.sizeBytes > MAX_PHOTO_BYTES -> scope.launch { snackbar.showSnackbar("Ukuran foto melebihi 5 MB") }
-            else -> photo = info
+    val categoriesToDisplay = if (dbCategories.isNotEmpty()) dbCategories else FALLBACK_CATEGORIES
+    val isSubmitting = submitState is UiState.Loading
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.onPhotoSelected(uri)
         }
     }
 
-    val isValid = title.isNotBlank() && categoryId != null && building.isNotBlank() &&
-        floor.isNotBlank() && room.isNotBlank() && description.isNotBlank() && agreed
-
-    fun submit() {
-        if (!isValid) {
-            showErrors = true
-            scope.launch {
-                snackbar.showSnackbar(if (!agreed && title.isNotBlank()) "Centang pernyataan terlebih dahulu" else "Lengkapi semua kolom wajib (*)")
-            }
-            return
+    LaunchedEffect(formState.photoError) {
+        formState.photoError?.let {
+            snackbar.showSnackbar(it)
         }
-        submitting = true
-        scope.launch {
-            try {
-                val category = CATEGORIES.first { it.id == categoryId }
-                val savedImagePath = photo?.let { savePhotoToInternal(context, it.uri) }
-                val id = repository.createTicket(
-                    Ticket(
-                        title = title.trim(),
-                        description = description.trim(),
-                        categoryId = category.id,
-                        categoryName = category.label,
-                        locationBuilding = building.trim(),
-                        locationFloor = floor.trim(),
-                        locationRoom = room.trim(),
-                        imageUrl = savedImagePath,
-                        reporterId = DemoSession.userId,
-                        reporterName = DemoSession.name
-                    )
-                )
-                submitting = false
-                onCreated(id)
-            } catch (e: Exception) {
-                submitting = false
-                snackbar.showSnackbar("Gagal menyimpan aduan: ${e.localizedMessage ?: "Terjadi kesalahan"}")
+    }
+
+    LaunchedEffect(submitState) {
+        when (val state = submitState) {
+            is UiState.Success -> {
+                snackbar.showSnackbar("Aduan berhasil dibuat")
+                viewModel.resetSubmitState()
+                onCreated(state.data)
             }
+            is UiState.Error -> {
+                snackbar.showSnackbar(state.message)
+            }
+            else -> Unit
         }
     }
 
@@ -218,14 +202,14 @@ fun CreateTicketScreen(
                     modifier = Modifier.weight(1f)
                 )
                 Surface(
-                    onClick = ::submit,
-                    enabled = !submitting,
+                    onClick = { if (!isRestrictedRole) viewModel.submitTicket(onSuccess = onCreated) },
+                    enabled = !isSubmitting && !isRestrictedRole,
                     shape = RoundedCornerShape(50),
-                    color = BrandIndigo,
+                    color = if (isSubmitting || isRestrictedRole) BrandIndigo.copy(alpha = 0.4f) else BrandIndigo,
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text(
-                        "Kirim Laporan",
+                        if (isSubmitting) "Mengirim..." else if (isRestrictedRole) "Hanya Pelapor" else "Kirim Laporan",
                         color = Color.White,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
@@ -237,28 +221,51 @@ fun CreateTicketScreen(
                 modifier = Modifier
                     .weight(1f)
                     .imePadding(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                item { TransparencyNotice() }
-
+                if (isRestrictedRole) {
+                    item {
+                        GlassCard(
+                            containerColor = Color(0xFFFEF3C7),
+                            borderColor = Color(0xFFFDE68A)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Info, null, tint = Color(0xFFD97706), modifier = Modifier.size(22.dp))
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = if (currentRole.equals("ADMIN", ignoreCase = true))
+                                        "Mode Pemantauan Admin: Administrator bertindak sebagai pemantau sistem dan tidak dapat mengajukan aduan baru."
+                                    else
+                                        "Mode Petugas Agen: Teknisi bertindak menangani tugas sarpras dan tidak dapat mengajukan aduan baru.",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Color(0xFF92400E)
+                                )
+                            }
+                        }
+                    }
+                }
                 // Judul
                 item {
                     GlassCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             FieldLabel("Judul Aduan", required = true, modifier = Modifier.weight(1f))
-                            TagChip("${title.length}/$TITLE_MAX", container = FieldBg, content = InkMuted)
+                            TagChip("${formState.title.length}/$TITLE_MAX", container = FieldBg, content = InkMuted)
                         }
                         Spacer(Modifier.height(10.dp))
                         AppInput(
-                            value = title,
-                            onValueChange = { if (it.length <= TITLE_MAX) title = it },
+                            value = formState.title,
+                            onValueChange = viewModel::onTitleChanged,
                             placeholder = "Contoh: Proyektor R.301 Rusak / Lampu Mati",
-                            isError = showErrors && title.isBlank(),
+                            isError = formState.titleError != null,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                         )
-                        Spacer(Modifier.height(8.dp))
-                        Hint("Tuliskan nama fasilitas dan kendala pokok secara singkat.")
+                        if (formState.titleError != null) {
+                            ErrorText(formState.titleError!!)
+                        } else {
+                            Spacer(Modifier.height(8.dp))
+                            Hint("Tuliskan nama fasilitas dan kendala pokok secara singkat.")
+                        }
                     }
                 }
 
@@ -266,14 +273,16 @@ fun CreateTicketScreen(
                 item {
                     GlassCard {
                         FieldLabel("Kategori Permasalahan", required = true)
-                        Hint("Pilih kategori penanganan teknisi yang relevan")
-                        Spacer(Modifier.height(12.dp))
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CATEGORIES.forEach { option ->
-                                CategoryRow(option, selected = categoryId == option.id) { categoryId = option.id }
-                            }
+                        Spacer(Modifier.height(6.dp))
+                        CategoryDropdownSelector(
+                            categories = categoriesToDisplay,
+                            selectedCategoryId = formState.categoryId,
+                            onCategorySelected = viewModel::onCategorySelected,
+                            isError = formState.categoryError != null
+                        )
+                        if (formState.categoryError != null) {
+                            ErrorText(formState.categoryError!!)
                         }
-                        if (showErrors && categoryId == null) ErrorText("Pilih salah satu kategori")
                     }
                 }
 
@@ -294,22 +303,43 @@ fun CreateTicketScreen(
                         Spacer(Modifier.height(14.dp))
                         FieldLabel("Gedung / Fakultas", required = true)
                         Spacer(Modifier.height(6.dp))
-                        AppInput(building, { building = it }, "Misal: Gedung FTI (Teknologi Informasi)", isError = showErrors && building.isBlank())
+                        AppInput(
+                            value = formState.building,
+                            onValueChange = viewModel::onBuildingChanged,
+                            placeholder = "Misal: Gedung FTI (Teknologi Informasi)",
+                            isError = formState.buildingError != null
+                        )
+                        if (formState.buildingError != null) {
+                            ErrorText(formState.buildingError!!)
+                        }
                         Spacer(Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Column(Modifier.weight(1f)) {
                                 FieldLabel("Lantai", required = true)
                                 Spacer(Modifier.height(6.dp))
                                 AppInput(
-                                    floor, { floor = it }, "Misal: Lantai 2",
-                                    isError = showErrors && floor.isBlank(),
+                                    value = formState.floor,
+                                    onValueChange = viewModel::onFloorChanged,
+                                    placeholder = "Misal: Lantai 2",
+                                    isError = formState.floorError != null,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                                 )
+                                if (formState.floorError != null) {
+                                    ErrorText(formState.floorError!!)
+                                }
                             }
                             Column(Modifier.weight(1f)) {
                                 FieldLabel("Ruangan / Titik", required = true)
                                 Spacer(Modifier.height(6.dp))
-                                AppInput(room, { room = it }, "Misal: R. Teater 301", isError = showErrors && room.isBlank())
+                                AppInput(
+                                    value = formState.room,
+                                    onValueChange = viewModel::onRoomChanged,
+                                    placeholder = "Misal: R. Teater 301",
+                                    isError = formState.roomError != null
+                                )
+                                if (formState.roomError != null) {
+                                    ErrorText(formState.roomError!!)
+                                }
                             }
                         }
                     }
@@ -321,51 +351,36 @@ fun CreateTicketScreen(
                         FieldLabel("Deskripsi Lengkap Masalah", required = true)
                         Spacer(Modifier.height(10.dp))
                         AppInput(
-                            value = description,
-                            onValueChange = { description = it },
+                            value = formState.description,
+                            onValueChange = viewModel::onDescriptionChanged,
                             placeholder = "Jelaskan detail kerusakan fasilitas yang dialami. Contoh: Port HDMI longgar dan kabel power proyektor mengeluarkan bunyi.",
                             singleLine = false,
                             minLines = 4,
-                            isError = showErrors && description.isBlank(),
+                            isError = formState.descriptionError != null,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                         )
+                        if (formState.descriptionError != null) {
+                            ErrorText(formState.descriptionError!!)
+                        }
                     }
                 }
 
                 // Foto
                 item {
                     PhotoSection(
-                        photo = photo,
+                        photo = formState.photo,
                         onPick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                        onRemove = { photo = null }
+                        onRemove = viewModel::onRemovePhoto
                     )
                 }
 
-                // Pernyataan
-                item {
-                    GlassCard(contentPadding = PaddingValues(12.dp)) {
-                        Row(verticalAlignment = Alignment.Top) {
-                            Checkbox(
-                                checked = agreed,
-                                onCheckedChange = { agreed = it },
-                                colors = CheckboxDefaults.colors(checkedColor = BrandIndigo, uncheckedColor = if (showErrors && !agreed) DangerRed else InkMuted)
-                            )
-                            Text(
-                                "Saya menyatakan bahwa data yang dilaporkan adalah fasilitas kampus yang sebenarnya dan dapat dipertanggungjawabkan kepada biro sarana prasarana.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = InkSoft,
-                                modifier = Modifier.padding(top = 12.dp, end = 6.dp)
-                            )
-                        }
-                    }
-                }
 
                 item {
                     GradientButton(
-                        text = if (submitting) "Mempublikasikan..." else "Publikasikan Aduan",
+                        text = if (isSubmitting) "Mempublikasikan..." else if (isRestrictedRole) "Hanya Akun Pelapor yang Dapat Melapor" else "Publikasikan Aduan",
                         icon = Icons.AutoMirrored.Filled.Send,
-                        onClick = ::submit,
-                        enabled = !submitting,
+                        onClick = { if (!isRestrictedRole) viewModel.submitTicket(onSuccess = onCreated) },
+                        enabled = !isSubmitting && !isRestrictedRole,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(10.dp))
@@ -386,69 +401,153 @@ fun CreateTicketScreen(
 }
 
 @Composable
-private fun TransparencyNotice() {
-    GlassCard(containerColor = Color.White) {
-        Row(verticalAlignment = Alignment.Top) {
-            Box(
-                Modifier.size(42.dp).clip(CircleShape).background(InfoBlue),
-                contentAlignment = Alignment.Center
-            ) { Icon(Icons.Outlined.Lightbulb, null, tint = Color.White, modifier = Modifier.size(22.dp)) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Transparansi Fasilitas Kampus",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    TagChip("PUBLIK", fontSize = 10.sp)
+private fun CategoryDropdownSelector(
+    categories: List<CategoryEntity>,
+    selectedCategoryId: Long?,
+    onCategorySelected: (CategoryEntity) -> Unit,
+    isError: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var anchorWidthPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val anchorWidthDp = with(density) { anchorWidthPx.toDp() }
+    val selectedCategory = categories.firstOrNull { it.id == selectedCategoryId }
+    val selectedStyle = selectedCategory?.let { getCategoryStyle(it.name) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                anchorWidthPx = coordinates.size.width
+            }
+    ) {
+        Surface(
+            onClick = { expanded = !expanded },
+            shape = RoundedCornerShape(14.dp),
+            color = selectedStyle?.bg?.copy(alpha = 0.5f) ?: FieldBg,
+            border = BorderStroke(
+                width = if (expanded || selectedCategory != null) 1.5.dp else 1.dp,
+                color = when {
+                    isError -> DangerRed
+                    expanded -> selectedStyle?.text ?: BrandIndigo
+                    selectedStyle != null -> selectedStyle.border
+                    else -> Hairline
                 }
-                Spacer(Modifier.height(4.dp))
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(selectedStyle?.bg ?: Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = selectedStyle?.icon ?: Icons.Outlined.Category,
+                        contentDescription = null,
+                        tint = selectedStyle?.text ?: InkSoft,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
                 Text(
-                    buildAnnotatedString {
-                        append("Semua laporan di TiketBantu bersifat ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ink)) { append("100% Terbuka") }
-                        append(". Pastikan cek isu serupa di feed dengan ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = DangerRed)) { append("\"Saya Juga Mengalami\"") }
-                        append(" agar percepat verifikasi!")
+                    text = selectedCategory?.name ?: "Pilih kategori permasalahan…",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (selectedCategory != null) FontWeight.SemiBold else FontWeight.Normal
+                    ),
+                    color = selectedStyle?.text ?: (if (selectedCategory != null) Ink else InkMuted),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Pilih kategori",
+                    tint = if (expanded) (selectedStyle?.text ?: BrandIndigo) else InkSoft,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .then(
+                    if (anchorWidthDp > 0.dp) Modifier.width(anchorWidthDp)
+                    else Modifier.fillMaxWidth()
+                )
+                .background(Color.White)
+        ) {
+            categories.forEach { category ->
+                val isSelected = category.id == selectedCategoryId
+                val catStyle = getCategoryStyle(category.name)
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            ),
+                            color = if (isSelected) catStyle.text else Ink
+                        )
                     },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InkSoft
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(catStyle.bg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = catStyle.icon,
+                                contentDescription = null,
+                                tint = catStyle.text,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    },
+                    trailingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Terpilih",
+                                tint = catStyle.text,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else null,
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    },
+                    modifier = Modifier.background(
+                        if (isSelected) catStyle.bg.copy(alpha = 0.5f) else Color.Transparent
+                    )
                 )
             }
         }
     }
 }
 
-@Composable
-private fun CategoryRow(option: CategoryOption, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) BrandIndigoSoft else Color.White,
-        border = BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) BrandIndigo else Hairline),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(if (selected) Color.White else FieldBg),
-                contentAlignment = Alignment.Center
-            ) { Icon(option.icon, null, tint = if (selected) BrandIndigo else InkSoft, modifier = Modifier.size(18.dp)) }
-            Spacer(Modifier.width(12.dp))
-            Text(
-                option.label,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
-                color = if (selected) BrandIndigo else Ink,
-                modifier = Modifier.weight(1f)
-            )
-            if (selected) Icon(Icons.Filled.CheckCircle, null, tint = BrandIndigo, modifier = Modifier.size(22.dp))
-        }
-    }
-}
 
 @Composable
-private fun PhotoSection(photo: PickedPhoto?, onPick: () -> Unit, onRemove: () -> Unit) {
+private fun PhotoSection(
+    photo: PickedPhotoState?,
+    onPick: () -> Unit,
+    onRemove: () -> Unit
+) {
     GlassCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -460,29 +559,24 @@ private fun PhotoSection(photo: PickedPhoto?, onPick: () -> Unit, onRemove: () -
         Spacer(Modifier.height(12.dp))
         if (photo != null) {
             Surface(shape = RoundedCornerShape(16.dp), color = FieldBg, border = BorderStroke(1.dp, Hairline)) {
-                Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     AsyncImage(
                         model = photo.uri,
                         contentDescription = "Pratinjau foto",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(58.dp).clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.size(54.dp).clip(RoundedCornerShape(12.dp))
                     )
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                photo.name,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                Icons.Outlined.DeleteOutline, "Hapus foto", tint = DangerRed,
-                                modifier = Modifier.size(20.dp).clip(CircleShape).let { it }
-                                    .then(Modifier)
-                            )
-                        }
+                        Text(
+                            photo.name,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.CheckCircle, null, tint = SuccessText, modifier = Modifier.size(14.dp))
@@ -493,20 +587,21 @@ private fun PhotoSection(photo: PickedPhoto?, onPick: () -> Unit, onRemove: () -
                                 color = InkSoft
                             )
                         }
-                        Spacer(Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { (photo.sizeBytes.toFloat() / MAX_PHOTO_BYTES).coerceIn(0.02f, 1f) },
-                            color = BrandIndigo,
-                            trackColor = Hairline,
-                            strokeCap = StrokeCap.Round,
-                            modifier = Modifier.fillMaxWidth().height(5.dp)
+                    }
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline,
+                            contentDescription = "Hapus foto",
+                            tint = DangerRed,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
-            TextButton(onClick = onRemove, modifier = Modifier.align(Alignment.End)) {
-                Text("Hapus foto", color = DangerRed, style = MaterialTheme.typography.labelMedium)
-            }
+            Spacer(Modifier.height(10.dp))
         }
         DashedButton(
             text = if (photo != null) "Ganti Foto dari Galeri" else "Pilih Foto dari Galeri",
@@ -549,35 +644,3 @@ private fun ErrorText(text: String) {
 }
 
 private fun formatMb(bytes: Long): String = String.format(Locale.US, "%.1f MB", bytes / (1024f * 1024f))
-
-private fun readPhoto(context: Context, uri: Uri): PickedPhoto? = runCatching {
-    var name = "foto_bukti.jpg"
-    var size = 0L
-    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
-        val nameIdx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        val sizeIdx = c.getColumnIndex(OpenableColumns.SIZE)
-        if (c.moveToFirst()) {
-            if (nameIdx >= 0) name = c.getString(nameIdx) ?: name
-            if (sizeIdx >= 0) size = c.getLong(sizeIdx)
-        }
-    }
-    val mime = context.contentResolver.getType(uri).orEmpty()
-    val ext = when {
-        mime.endsWith("png") -> "PNG"
-        mime.endsWith("jpeg") || mime.endsWith("jpg") -> "JPG"
-        else -> name.substringAfterLast('.', "").uppercase()
-    }
-    PickedPhoto(uri, name, size, ext)
-}.getOrNull()
-
-private suspend fun savePhotoToInternal(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
-    val dir = File(context.filesDir, "ticket_photos").apply { if (!exists()) mkdirs() }
-    val filename = "ticket_${System.currentTimeMillis()}.jpg"
-    val destFile = File(dir, filename)
-    context.contentResolver.openInputStream(uri)?.use { input ->
-        destFile.outputStream().use { output ->
-            input.copyTo(output)
-        }
-    }
-    destFile.absolutePath
-}

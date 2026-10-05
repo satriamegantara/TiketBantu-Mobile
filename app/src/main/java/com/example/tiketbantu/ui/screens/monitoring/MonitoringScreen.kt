@@ -20,10 +20,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -38,6 +40,8 @@ import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import org.koin.androidx.compose.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -57,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tiketbantu.domain.model.Ticket
 import com.example.tiketbantu.domain.model.TicketStatus
-import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.CircleIconButton
 import com.example.tiketbantu.ui.components.FilterPill
@@ -83,7 +86,6 @@ import com.example.tiketbantu.ui.theme.SuccessText
 import com.example.tiketbantu.ui.theme.SupportOrange
 import com.example.tiketbantu.ui.theme.SupportOrangeSoft
 import com.example.tiketbantu.ui.theme.SupportOrangeText
-import org.koin.compose.koinInject
 
 /**
  * Monitoring Sistem screen (Admin Dashboard) matching the reference design.
@@ -94,29 +96,11 @@ fun MonitoringScreen(
     onTicketClick: (Long) -> Unit = {},
     onManageUsersClick: () -> Unit = {},
     onManageCategoriesClick: () -> Unit = {},
+    viewModel: MonitoringViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val repository: TicketRepository = koinInject()
-    val currentUserId = DemoSession.userId
-    val ticketsFlow = remember(repository, currentUserId) {
-        repository.getAllTickets(
-            query = "",
-            categoryId = null,
-            status = null,
-            sortByMostLiked = true,
-            currentUserId = currentUserId,
-            limit = 100
-        )
-    }
-    val allTickets by ticketsFlow.collectAsState(initial = emptyList())
-
-    val totalTickets = allTickets.size
-    val inProcessCount = allTickets.count { it.status == TicketStatus.DIPROSES }
-    val completedCount = allTickets.count { it.status == TicketStatus.SELESAI }
-    val totalAffected = allTickets.sumOf { it.supportCount }
-
-    var selectedPeriod by remember { mutableStateOf("Minggu Ini") }
-    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini", "Semester Genap")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val periods = listOf("Hari Ini", "Minggu Ini", "Bulan Ini")
 
     AppBackground(modifier = modifier) {
         LazyColumn(
@@ -126,37 +110,56 @@ fun MonitoringScreen(
         ) {
             item(key = "header") {
                 MonitoringHeader(
-                    onRefresh = {},
-                    onSearch = {}
+                    onRefresh = viewModel::refresh,
+                    onSearch = viewModel::toggleSearch,
+                    isSearchActive = uiState.isSearchActive
                 )
             }
 
+            if (uiState.isSearchActive) {
+                item(key = "search_bar") {
+                    AdminSearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::onSearchQueryChange,
+                        selectedStatus = uiState.selectedStatus,
+                        onStatusSelect = viewModel::onStatusFilterChange
+                    )
+                }
+            }
+
             item(key = "sync_status") {
-                SyncStatusBar(totalEntities = totalTickets)
+                SyncStatusBar(totalEntities = uiState.total)
             }
 
             item(key = "period_selector") {
                 PeriodSection(
-                    selectedPeriod = selectedPeriod,
+                    selectedPeriod = uiState.selectedPeriod,
                     periods = periods,
-                    onSelect = { selectedPeriod = it }
+                    onSelect = viewModel::onPeriodChange
                 )
             }
 
             item(key = "stats_grid") {
                 StatsGrid(
-                    total = totalTickets,
-                    inProcess = inProcessCount,
-                    completed = completedCount,
-                    affected = totalAffected
+                    total = uiState.total,
+                    baruCount = uiState.baruCount,
+                    inProcess = uiState.inProcessCount,
+                    activeAgents = uiState.activeAgentCount,
+                    completed = uiState.completedCount,
+                    completedPct = uiState.completedPct,
+                    affected = uiState.totalAffected
                 )
             }
 
             item(key = "category_distribution") {
-                CategoryDistributionCard(tickets = allTickets)
+                CategoryDistributionCard(categories = uiState.categories)
             }
 
             item(key = "priority_header") {
+                val isFiltering = uiState.isSearchActive || uiState.selectedStatus != null
+                val headerTitle = if (isFiltering) "Hasil Penelusuran Aduan" else "Prioritas Dukungan Terbanyak"
+                val badgeLabel = if (isFiltering) "${uiState.displayedTickets.size} Tiket" else "${uiState.displayedTickets.size} Prioritas"
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -164,35 +167,37 @@ fun MonitoringScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning,
+                        imageVector = if (isFiltering) Icons.Outlined.Search else Icons.Default.Warning,
                         contentDescription = null,
-                        tint = Color(0xFFF59E0B),
+                        tint = if (isFiltering) BrandIndigo else Color(0xFFF59E0B),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Prioritas Dukungan Terbanyak",
+                        text = headerTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = Ink,
                         modifier = Modifier.weight(1f)
                     )
                     TagChip(
-                        text = "3 Kritis",
-                        container = Color(0xFFE0F2FE),
-                        content = Color(0xFF0284C7)
+                        text = badgeLabel,
+                        container = if (isFiltering) BrandIndigoSoft else Color(0xFFE0F2FE),
+                        content = if (isFiltering) BrandIndigo else Color(0xFF0284C7)
                     )
                 }
             }
 
             item(key = "priority_list") {
                 PriorityTicketList(
-                    tickets = allTickets,
+                    tickets = uiState.displayedTickets,
+                    isFiltering = uiState.isSearchActive || uiState.selectedStatus != null,
                     onTicketClick = onTicketClick
                 )
             }
 
             item(key = "master_data_actions") {
                 MasterDataActionCard(
+                    activeAgentCount = uiState.activeAgentCount,
                     onManageCategories = onManageCategoriesClick,
                     onManageUsers = onManageUsersClick
                 )
@@ -204,7 +209,8 @@ fun MonitoringScreen(
 @Composable
 private fun MonitoringHeader(
     onRefresh: () -> Unit,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    isSearchActive: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -213,69 +219,121 @@ private fun MonitoringHeader(
             .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
-            InitialsAvatar(
-                name = DemoSession.name.ifBlank { "Admin Sarpras" },
-                size = 44.dp,
-                soft = false
-            )
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF22C55E))
-            )
-        }
-        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Monitoring Sistem",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 20.sp),
+                text = "Statistik",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 26.sp,
+                    letterSpacing = (-0.4).sp
+                ),
                 color = Ink
             )
-            Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = BrandIndigo,
-                    modifier = Modifier.padding(end = 6.dp)
-                ) {
-                    Text(
-                        text = "ADMIN",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pantau data operasional sarana & prasarana kampus",
+                style = MaterialTheme.typography.bodyMedium,
+                color = InkMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    selectedStatus: String?,
+    onStatusSelect: (String?) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = FieldBg,
+            border = BorderStroke(1.dp, Hairline),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = null,
+                    tint = InkMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Ink),
+                    decorationBox = { innerTextField ->
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "Cari judul, lokasi, atau deskripsi...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = InkMuted
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+                if (query.isNotEmpty()) {
+                    CircleIconButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = "Hapus",
+                        onClick = { onQueryChange("") },
+                        size = 28.dp,
+                        bordered = false,
+                        container = Color.Transparent,
+                        tint = InkMuted
                     )
                 }
-                Text(
-                    text = "Ruang Operasional Sarpras & Infrastruktur",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = InkMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
-        CircleIconButton(
-            icon = Icons.Outlined.Refresh,
-            contentDescription = "Refresh",
-            onClick = onRefresh,
-            bordered = false,
-            container = Color.Transparent,
-            tint = InkSoft
-        )
-        CircleIconButton(
-            icon = Icons.Outlined.Search,
-            contentDescription = "Search",
-            onClick = onSearch,
-            bordered = false,
-            container = Color.Transparent,
-            tint = InkSoft
-        )
+
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterPill(
+                text = "Semua Status",
+                selected = selectedStatus == null,
+                onClick = { onStatusSelect(null) }
+            )
+            FilterPill(
+                text = "Menunggu",
+                selected = selectedStatus == TicketStatus.BARU,
+                onClick = { onStatusSelect(TicketStatus.BARU) }
+            )
+            FilterPill(
+                text = "Diproses",
+                selected = selectedStatus == TicketStatus.DIPROSES,
+                onClick = { onStatusSelect(TicketStatus.DIPROSES) }
+            )
+            FilterPill(
+                text = "Selesai",
+                selected = selectedStatus == TicketStatus.SELESAI,
+                onClick = { onStatusSelect(TicketStatus.SELESAI) }
+            )
+            FilterPill(
+                text = "Ditolak / Ditutup",
+                selected = selectedStatus == TicketStatus.DITUTUP,
+                onClick = { onStatusSelect(TicketStatus.DITUTUP) }
+            )
+        }
     }
 }
 
@@ -326,17 +384,6 @@ private fun PeriodSection(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                 color = InkMuted
             )
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color(0xFFEEF2FF)
-            ) {
-                Text(
-                    text = "T.A. 2024/2025",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                    color = BrandIndigo,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
         }
         Spacer(Modifier.height(10.dp))
         Row(
@@ -357,8 +404,11 @@ private fun PeriodSection(
 @Composable
 private fun StatsGrid(
     total: Int,
+    baruCount: Int,
     inProcess: Int,
+    activeAgents: Int,
     completed: Int,
+    completedPct: Int,
     affected: Int
 ) {
     Column(
@@ -399,9 +449,9 @@ private fun StatsGrid(
                 icon = Icons.Outlined.ConfirmationNumber,
                 iconBg = Color(0xFFE0F7FA),
                 iconTint = Color(0xFF00838F),
-                badgeText = "+12%",
-                badgeBg = Color(0xFFDCFCE7),
-                badgeFg = Color(0xFF15803D),
+                badgeText = if (baruCount > 0) "+$baruCount Baru" else "Stabil",
+                badgeBg = if (baruCount > 0) Color(0xFFDCFCE7) else Color(0xFFF1F5F9),
+                badgeFg = if (baruCount > 0) Color(0xFF15803D) else InkMuted,
                 value = "$total",
                 label = "Total Aduan Masuk",
                 modifier = Modifier.weight(1f)
@@ -410,7 +460,7 @@ private fun StatsGrid(
                 icon = Icons.Outlined.Engineering,
                 iconBg = Color(0xFFEDE9FE),
                 iconTint = BrandIndigo,
-                badgeText = "6 Tim",
+                badgeText = "$activeAgents Tim",
                 badgeBg = Color(0xFFEDE9FE),
                 badgeFg = BrandIndigo,
                 value = "$inProcess",
@@ -427,7 +477,7 @@ private fun StatsGrid(
                 icon = Icons.Outlined.CheckCircle,
                 iconBg = Color(0xFFDCFCE7),
                 iconTint = Color(0xFF15803D),
-                badgeText = "70.2%",
+                badgeText = "$completedPct%",
                 badgeBg = Color(0xFFDCFCE7),
                 badgeFg = Color(0xFF15803D),
                 value = "$completed",
@@ -442,7 +492,7 @@ private fun StatsGrid(
                 badgeBg = Color(0xFFFFEDD5),
                 badgeFg = Color(0xFFC2410C),
                 value = "%,d".format(affected).replace(',', '.'),
-                label = "Warga Terdampak",
+                label = "Civitas Terdampak",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -509,20 +559,7 @@ private fun StatCard(
 }
 
 @Composable
-private fun CategoryDistributionCard(tickets: List<Ticket> = emptyList()) {
-    val total = tickets.size.coerceAtLeast(1)
-    val itCount = tickets.count { it.categoryId == 1L || it.categoryName.contains("IT", ignoreCase = true) }
-    val ruanganCount = tickets.count { it.categoryId == 2L || it.categoryName.contains("Ruangan", ignoreCase = true) }
-    val umumCount = tickets.count { it.categoryId == 3L || it.categoryName.contains("Umum", ignoreCase = true) }
-
-    val itPct = if (tickets.isEmpty()) 45 else (itCount * 100) / total
-    val ruanganPct = if (tickets.isEmpty()) 35 else (ruanganCount * 100) / total
-    val umumPct = if (tickets.isEmpty()) 20 else (100 - itPct - ruanganPct).coerceAtLeast(0)
-
-    val wIt = if (tickets.isEmpty()) 0.45f else (itCount.toFloat() / total).coerceAtLeast(0.05f)
-    val wRuangan = if (tickets.isEmpty()) 0.35f else (ruanganCount.toFloat() / total).coerceAtLeast(0.05f)
-    val wUmum = if (tickets.isEmpty()) 0.20f else (umumCount.toFloat() / total).coerceAtLeast(0.05f)
-
+private fun CategoryDistributionCard(categories: List<CategoryStat> = emptyList()) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -563,18 +600,30 @@ private fun CategoryDistributionCard(tickets: List<Ticket> = emptyList()) {
                 .height(8.dp)
                 .clip(RoundedCornerShape(50))
         ) {
-            Box(Modifier.weight(wIt).fillMaxSize().background(CatIT))
-            Box(Modifier.weight(wRuangan).fillMaxSize().background(CatRuangan))
-            Box(Modifier.weight(wUmum).fillMaxSize().background(CatUmum))
+            if (categories.isNotEmpty() && categories.any { it.count > 0 }) {
+                categories.forEach { cat ->
+                    Box(Modifier.weight(cat.weight).fillMaxSize().background(cat.color))
+                }
+            } else {
+                Box(Modifier.fillMaxWidth().fillMaxSize().background(Hairline))
+            }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        CategoryRow(color = CatIT, name = "Teknologi & IT (Lab & WiFi)", percent = "$itPct%", count = "$itCount tiket")
-        Spacer(Modifier.height(10.dp))
-        CategoryRow(color = CatRuangan, name = "Fasilitas Ruangan (AC, Kursi, Proyektor)", percent = "$ruanganPct%", count = "$ruanganCount tiket")
-        Spacer(Modifier.height(10.dp))
-        CategoryRow(color = CatUmum, name = "Infrastruktur Kampus & Sanitasi", percent = "$umumPct%", count = "$umumCount tiket")
+        if (categories.isNotEmpty()) {
+            categories.forEachIndexed { index, cat ->
+                if (index > 0) Spacer(Modifier.height(10.dp))
+                CategoryRow(color = cat.color, name = cat.name, percent = "${cat.percent}%", count = "${cat.count} tiket")
+            }
+        } else {
+            Text(
+                text = "Belum ada data kategori.",
+                style = MaterialTheme.typography.bodySmall,
+                color = InkMuted,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
     }
 }
 
@@ -621,64 +670,34 @@ private fun CategoryRow(
 @Composable
 private fun PriorityTicketList(
     tickets: List<Ticket>,
+    isFiltering: Boolean = false,
     onTicketClick: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        val priorityItems = if (tickets.isNotEmpty()) {
-            tickets.take(3)
-        } else {
-            listOf(
-                Ticket(
-                    id = 101,
-                    title = "Proyektor Lab Multimedia Mati Total Saat Ujian Praktikum",
-                    description = "Kendala lampu mati mendadak saat praktikum.",
-                    categoryId = 1,
-                    categoryName = "Teknologi & IT",
-                    locationBuilding = "Gedung Thomas Aquinas",
-                    locationFloor = "3",
-                    locationRoom = "Ruang 304",
-                    status = TicketStatus.BARU,
-                    reporterId = 5,
-                    reporterName = "BEM FTI",
-                    supportCount = 428
-                ),
-                Ticket(
-                    id = 102,
-                    title = "AC Sentral Gedung Kuliah Bersama Bocor & Berisik",
-                    description = "Air menetes ke selasar utama.",
-                    categoryId = 2,
-                    categoryName = "Fasilitas Ruangan",
-                    locationBuilding = "GKB 1",
-                    locationFloor = "2",
-                    locationRoom = "Selasar Barat",
-                    status = TicketStatus.DIPROSES,
-                    reporterId = 6,
-                    reporterName = "Mahasiswa",
-                    agentName = "Pak Bambang (MEP)",
-                    supportCount = 312
-                ),
-                Ticket(
-                    id = 103,
-                    title = "Koneksi Access Point Eduroam Perpustakaan Pusat Putus-Nyambung",
-                    description = "Sinyal hilang timbul saat banyak pengunjung.",
-                    categoryId = 1,
-                    categoryName = "Teknologi & IT",
-                    locationBuilding = "Perpustakaan Pusat",
-                    locationFloor = "1",
-                    locationRoom = "Area Baca",
-                    status = TicketStatus.BARU,
-                    reporterId = 7,
-                    reporterName = "Tim Mahasiswa Skripsi",
-                    supportCount = 289
+        if (tickets.isEmpty()) {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = if (isFiltering) {
+                        "Tidak ada aduan yang sesuai dengan filter atau kata kunci pencarian."
+                    } else {
+                        "Belum ada aduan yang terdaftar."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkMuted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 18.dp)
                 )
-            )
-        }
-
-        priorityItems.forEach { ticket ->
-            PriorityTicketCard(ticket = ticket, onClick = { onTicketClick(ticket.id) })
+            }
+        } else {
+            val priorityItems = if (isFiltering) tickets else tickets.take(3)
+            priorityItems.forEach { ticket ->
+                PriorityTicketCard(ticket = ticket, onClick = { onTicketClick(ticket.id) })
+            }
         }
     }
 }
@@ -785,6 +804,7 @@ private fun PriorityTicketCard(
 
 @Composable
 private fun MasterDataActionCard(
+    activeAgentCount: Int = 0,
     onManageCategories: () -> Unit,
     onManageUsers: () -> Unit
 ) {
@@ -832,18 +852,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Kategori",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "Atur 12 klasifikasi masalah sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Kategori",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
@@ -880,18 +894,12 @@ private fun MasterDataActionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Kelola Akun Agen & Teknisi",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Ink
-                    )
-                    Text(
-                        text = "18 teknisi aktif unit pemeliharaan sarpras",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = InkMuted
-                    )
-                }
+                Text(
+                    text = "Kelola Akun Agen & Teknisi",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Ink,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,

@@ -1,6 +1,7 @@
 package com.example.tiketbantu.data.repository
 
 import com.example.tiketbantu.data.local.dao.TicketDao
+import com.example.tiketbantu.data.local.entity.TicketSupportEntity
 import com.example.tiketbantu.domain.model.Ticket
 import com.example.tiketbantu.domain.repository.TicketRepository
 import kotlinx.coroutines.flow.Flow
@@ -34,8 +35,19 @@ class TicketRepositoryImpl(
     override fun getSupportedTickets(userId: Long): Flow<List<Ticket>> =
         ticketDao.observeSupported(userId).map { rows -> rows.map { it.toDomain() } }
 
-    override suspend fun createTicket(ticket: Ticket): Long =
-        ticketDao.insertTicket(ticket.toEntity())
+    override suspend fun createTicket(ticket: Ticket): Long {
+        val ticketId = ticketDao.insertTicket(ticket.toEntity())
+        if (ticket.reporterId > 0L) {
+            ticketDao.insertSupport(
+                TicketSupportEntity(
+                    ticketId = ticketId,
+                    userId = ticket.reporterId,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+        }
+        return ticketId
+    }
 
     override suspend fun updateTicketStatus(ticketId: Long, status: String, agentId: Long?) {
         ticketDao.updateStatus(ticketId, status, agentId, System.currentTimeMillis())
