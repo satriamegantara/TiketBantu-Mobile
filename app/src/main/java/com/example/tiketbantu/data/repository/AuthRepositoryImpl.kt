@@ -28,24 +28,30 @@ class AuthRepositoryImpl(
 
     override suspend fun login(email: String, passwordHash: String): Result<User> {
         val trimmedEmail = email.trim().lowercase()
-
-        // Normalisasi input email agar user dapat login menggunakan domain @kampus.ac.id, @tiketbantu.com, maupun shorthand username
-        val normalizedEmail = when (trimmedEmail) {
-            "admin", "admin@tiketbantu.com" -> "admin@kampus.ac.id"
-            "agen", "agen.jaringan", "agen@kampus.ac.id", "agen.jaringan@kampus.ac.id", "agen.jaringan@tiketbantu.com", "agen@tiketbantu.com", "joko.santoso@kampus.ac.id" -> "agen.jaringan@tiketbantu.com"
-            "agen.hardware", "agen.hardware@tiketbantu.com", "hardware@kampus.ac.id", "agen.hardware@kampus.ac.id" -> "agen.hardware@tiketbantu.com"
-            "agen.software", "agen.software@tiketbantu.com", "software@kampus.ac.id", "agen.software@kampus.ac.id" -> "agen.software@tiketbantu.com"
-            "agen.fasilitas", "agen.fasilitas@tiketbantu.com", "fasilitas@kampus.ac.id", "agen.fasilitas@kampus.ac.id" -> "agen.fasilitas@tiketbantu.com"
-            "satcarzensyaf", "satriapancarzenasyafa", "satriapancarzenasyafa@kampus.ac.id", "emily.johnson@kampus.ac.id", "mahasiswa@kampus.ac.id", "user@kampus.ac.id" -> "satcarzensyaf@kampus.ac.id"
-            "ahmad", "ahmad.fauzi", "ahmad.fauzi@kampus.ac.id", "ahmad.dosen@kampus.ac.id", "dosen@kampus.ac.id", "dosen" -> "ahmad.fauzi@kampus.ac.id"
-            "rina", "rina.kartika", "rina.kartika@kampus.ac.id" -> "rina.kartika@kampus.ac.id"
-            "dimas", "dimas.putra", "dimas.putra@kampus.ac.id" -> "dimas.putra@kampus.ac.id"
-            "nadia", "nadia.safitri", "nadia.safitri@kampus.ac.id" -> "nadia.safitri@kampus.ac.id"
-            else -> if (!trimmedEmail.contains("@")) "$trimmedEmail@kampus.ac.id" else trimmedEmail
+        val mappedUnsoed = when {
+            trimmedEmail.endsWith("@unsoed.ac.id") -> trimmedEmail.replace("@unsoed.ac.id", "@kampus.ac.id")
+            trimmedEmail.endsWith("@mhs.unsoed.ac.id") -> trimmedEmail.replace("@mhs.unsoed.ac.id", "@kampus.ac.id")
+            else -> trimmedEmail
         }
 
-        val entity = userDao.getUserByEmail(normalizedEmail)
-            ?: userDao.getUserByEmail(trimmedEmail)
+        // Normalisasi input email agar user dapat login menggunakan domain @unsoed.ac.id, @kampus.ac.id, @tiketbantu.com, maupun shorthand username
+        val normalizedEmail = when (trimmedEmail) {
+            "admin", "admin@tiketbantu.com", "admin@unsoed.ac.id" -> "admin@kampus.ac.id"
+            "agen", "agen.jaringan", "agen@kampus.ac.id", "agen.jaringan@kampus.ac.id", "agen.jaringan@tiketbantu.com", "agen@tiketbantu.com", "agen@unsoed.ac.id", "agen.jaringan@unsoed.ac.id", "joko.santoso@kampus.ac.id" -> "agen.jaringan@tiketbantu.com"
+            "agen.hardware", "agen.hardware@tiketbantu.com", "hardware@kampus.ac.id", "agen.hardware@kampus.ac.id", "agen.hardware@unsoed.ac.id" -> "agen.hardware@tiketbantu.com"
+            "agen.software", "agen.software@tiketbantu.com", "software@kampus.ac.id", "agen.software@kampus.ac.id", "agen.software@unsoed.ac.id" -> "agen.software@tiketbantu.com"
+            "agen.fasilitas", "agen.fasilitas@tiketbantu.com", "fasilitas@kampus.ac.id", "agen.fasilitas@kampus.ac.id", "agen.fasilitas@unsoed.ac.id" -> "agen.fasilitas@tiketbantu.com"
+            "satcarzensyaf", "satriapancarzenasyafa", "satriapancarzenasyafa@kampus.ac.id", "satcarzensyaf@unsoed.ac.id", "satcarzensyaf@mhs.unsoed.ac.id", "emily.johnson@kampus.ac.id", "mahasiswa@kampus.ac.id", "user@kampus.ac.id", "mahasiswa@unsoed.ac.id" -> "satcarzensyaf@kampus.ac.id"
+            "ahmad", "ahmad.fauzi", "ahmad.fauzi@kampus.ac.id", "ahmad.dosen@kampus.ac.id", "ahmad.fauzi@unsoed.ac.id", "dosen@kampus.ac.id", "dosen@unsoed.ac.id", "dosen" -> "ahmad.fauzi@kampus.ac.id"
+            "rina", "rina.kartika", "rina.kartika@kampus.ac.id", "rina.kartika@unsoed.ac.id" -> "rina.kartika@kampus.ac.id"
+            "dimas", "dimas.putra", "dimas.putra@kampus.ac.id", "dimas.putra@unsoed.ac.id" -> "dimas.putra@kampus.ac.id"
+            "nadia", "nadia.safitri", "nadia.safitri@kampus.ac.id", "nadia.safitri@unsoed.ac.id" -> "nadia.safitri@kampus.ac.id"
+            else -> if (!trimmedEmail.contains("@")) "$trimmedEmail@kampus.ac.id" else mappedUnsoed
+        }
+
+        val entity = userDao.getUserByEmail(trimmedEmail)
+            ?: userDao.getUserByEmail(normalizedEmail)
+            ?: userDao.getUserByEmail(mappedUnsoed)
             ?: (when (trimmedEmail) {
                 "agen.jaringan@tiketbantu.com", "agen@tiketbantu.com" -> userDao.getUserByEmail("agen@kampus.ac.id")
                 "agen@kampus.ac.id", "agen.jaringan@kampus.ac.id" -> userDao.getUserByEmail("agen.jaringan@tiketbantu.com")

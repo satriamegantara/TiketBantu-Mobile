@@ -175,20 +175,24 @@ class AuthViewModel(
             hasError = true
         }
 
-        // 2. NIM/NIP: Opsional, jika diisi hanya huruf dan angka, 5 sampai 20 karakter
-        if (nimNip.isNotBlank()) {
-            if (!ALPHANUMERIC_NIM_NIP_REGEX.matches(nimNip)) {
-                nimNipError = "NIM/NIP harus berupa huruf atau angka (5 sampai 20 karakter)"
-                hasError = true
-            }
+        // 2. NIM/NIP: Wajib diisi, hanya huruf dan angka, 5 sampai 20 karakter
+        if (nimNip.isBlank()) {
+            nimNipError = "NIM/NIP wajib diisi"
+            hasError = true
+        } else if (!ALPHANUMERIC_NIM_NIP_REGEX.matches(nimNip)) {
+            nimNipError = "NIM/NIP harus berupa huruf atau angka (5 sampai 20 karakter)"
+            hasError = true
         }
 
-        // 3. Email: Wajib, format email valid
+        // 3. Email: Wajib, format email valid, dan domain harus unsoed.ac.id
         if (email.isBlank()) {
             emailError = "Email wajib diisi"
             hasError = true
         } else if (!EMAIL_REGEX.matches(email)) {
             emailError = "Format email tidak valid"
+            hasError = true
+        } else if (!email.endsWith("@unsoed.ac.id", ignoreCase = true) && !email.endsWith(".unsoed.ac.id", ignoreCase = true)) {
+            emailError = "Email harus menggunakan domain unsoed.ac.id"
             hasError = true
         }
 

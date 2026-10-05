@@ -55,6 +55,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -267,6 +268,8 @@ fun TicketDetailScreen(
                 val ticket = (ticketState as UiState.Success).data
                 if (TicketStatus.isFinished(ticket.status)) {
                     LockedCommentBar(status = ticket.status)
+                } else if (activeRole == AppRole.ADMIN) {
+                    AdminMonitoringBar()
                 } else {
                     CommentInputBar(
                         value = commentInput,
@@ -497,8 +500,6 @@ private fun DetailList(
                 Text("Thread Penanganan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = Ink)
                 Spacer(Modifier.width(8.dp))
                 TagChip("${comments.size} Komentar", container = BrandIndigoSoft, content = BrandIndigo)
-                Spacer(Modifier.weight(1f))
-                TagChip("Live Stream", container = SuccessSoftBg, content = SuccessText)
             }
         }
 
@@ -541,7 +542,7 @@ private fun StatusCard(ticket: Ticket, role: AppRole) {
                 Text("Diperbarui ${relativeTime(ticket.updatedAt)}", style = MaterialTheme.typography.labelSmall, color = InkSoft)
             }
         }
-        if (role == AppRole.AGEN || role == AppRole.ADMIN) {
+        if (ticket.agentName != null || role == AppRole.AGEN || role == AppRole.ADMIN) {
             Spacer(Modifier.height(14.dp))
             Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
             Spacer(Modifier.height(14.dp))
@@ -891,17 +892,16 @@ private fun EditTicketDialog(
     )
 }
 
-private fun roleChip(role: String): Triple<String, Color, Color> = when (role.uppercase()) {
-    "AGEN" -> Triple("Teknisi Resmi", BrandIndigoSoft, BrandIndigo)
+private fun roleChip(role: String): Triple<String, Color, Color>? = when (role.uppercase()) {
     "ADMIN" -> Triple("Admin", Color(0xFFF3E8FF), Color(0xFF7E22CE))
     "PELAPOR_UTAMA" -> Triple("Pelapor", Color(0xFFDDF4FF), Color(0xFF0369A1))
-    else -> Triple("Mahasiswa", FieldBg, InkSoft)
+    else -> null
 }
 
 @Composable
 private fun CommentCard(comment: Comment, isMine: Boolean) {
     val isAgent = comment.userRole.equals("AGEN", ignoreCase = true)
-    val (label, chipBg, chipFg) = roleChip(comment.userRole)
+    val chip = roleChip(comment.userRole)
     val name = comment.userName.ifBlank { "Pengguna" }
 
     Surface(
@@ -923,17 +923,52 @@ private fun CommentCard(comment: Comment, isMine: Boolean) {
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = Ink,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(Modifier.width(6.dp))
-                    TagChip(label, container = chipBg, content = chipFg, fontSize = 10.sp)
+                    if (chip != null) {
+                        Spacer(Modifier.width(6.dp))
+                        TagChip(chip.first, container = chip.second, content = chip.third, fontSize = 10.sp)
+                    }
                     Spacer(Modifier.weight(1f))
                     Text(formatTime(comment.createdAt), style = MaterialTheme.typography.labelSmall, color = InkMuted)
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(comment.content, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp), color = Ink)
             }
+        }
+    }
+}
+
+@Composable
+private fun AdminMonitoringBar() {
+    Surface(
+        color = Color.White.copy(alpha = 0.96f),
+        shadowElevation = 16.dp,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .imePadding()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                Icons.Outlined.Visibility,
+                contentDescription = null,
+                tint = InkMuted,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Mode Pemantauan Admin (Hanya Baca)",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = InkMuted
+            )
         }
     }
 }

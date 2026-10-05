@@ -107,7 +107,7 @@ fun LoginScreen(
                 AppInput(
                     value = formState.email,
                     onValueChange = viewModel::onLoginEmailChanged,
-                    placeholder = "nama@kampus.ac.id",
+                    placeholder = "nama@unsoed.ac.id",
                     leadingIcon = { Icon(Icons.Outlined.Email, null, tint = InkMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     isError = formState.emailError != null
@@ -128,7 +128,7 @@ fun LoginScreen(
                 AppInput(
                     value = formState.password,
                     onValueChange = viewModel::onLoginPasswordChanged,
-                    placeholder = "••••••••",
+                    placeholder = "Kata sandi",
                     leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = InkMuted) },
                     trailingIcon = {
                         IconButton(onClick = viewModel::toggleLoginPasswordVisibility) {

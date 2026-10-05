@@ -185,6 +185,9 @@ fun NavGraph(
                     },
                     onNavigateToMyTickets = {
                         navController.safeNavigate(Screen.MyTickets)
+                    },
+                    onNavigateToSupported = {
+                        navController.safeNavigate(Screen.SupportedTickets)
                     }
                 )
             }

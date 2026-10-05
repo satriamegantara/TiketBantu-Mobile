@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +82,13 @@ fun MyTicketsScreen(
     val statusFilters = listOf("Semua", TicketStatus.DIPROSES, TicketStatus.BARU, TicketStatus.SELESAI)
     val initial = remember { DemoSession.myTicketsInitialStatus.also { DemoSession.myTicketsInitialStatus = null } }
     var selectedStatus by remember { mutableStateOf(initial ?: "Semua") }
+
+    LaunchedEffect(Unit) {
+        DemoSession.myTicketsInitialStatus?.let {
+            selectedStatus = it
+            DemoSession.myTicketsInitialStatus = null
+        }
+    }
 
     val filteredTickets = remember(allTickets, selectedStatus, role, currentUserId) {
         val base = if (role == AppRole.AGEN) {

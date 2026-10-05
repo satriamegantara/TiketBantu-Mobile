@@ -158,6 +158,10 @@ class TicketDetailViewModel(
                     send(DetailEvent.ShowMessage("Silakan masuk terlebih dahulu."))
                     return@launchSafe
                 }
+                if (user.role.equals("ADMIN", ignoreCase = true)) {
+                    send(DetailEvent.ShowMessage("Admin dalam mode monitoring dan tidak dapat mengirim komentar."))
+                    return@launchSafe
+                }
                 commentRepository.addComment(ticketId, user.id, content)
                 _commentInput.value = ""
                 _comments.value = commentRepository.getComments(ticketId)

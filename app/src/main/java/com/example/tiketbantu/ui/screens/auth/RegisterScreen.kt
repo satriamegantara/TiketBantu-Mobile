@@ -109,7 +109,7 @@ fun RegisterScreen(
                 AppInput(
                     value = formState.name,
                     onValueChange = viewModel::onRegisterNameChanged,
-                    placeholder = "Misal: Budi Pratama",
+                    placeholder = "Nama lengkap",
                     leadingIcon = { Icon(Icons.Outlined.Person, null, tint = InkMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
                     isError = formState.nameError != null
@@ -125,12 +125,12 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                FieldLabel(text = "Nomor Induk Mahasiswa (NIM / NIP)", required = false)
+                FieldLabel(text = "Nomor Induk Mahasiswa (NIM / NIP)", required = true)
                 Spacer(Modifier.height(6.dp))
                 AppInput(
                     value = formState.nimNip,
                     onValueChange = viewModel::onRegisterNimNipChanged,
-                    placeholder = "Misal: 20210801001 (opsional)",
+                    placeholder = "NIM atau NIP",
                     leadingIcon = { Icon(Icons.Outlined.Badge, null, tint = InkMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next),
                     isError = formState.nimNipError != null
@@ -151,7 +151,7 @@ fun RegisterScreen(
                 AppInput(
                     value = formState.email,
                     onValueChange = viewModel::onRegisterEmailChanged,
-                    placeholder = "nim@mhs.kampus.ac.id",
+                    placeholder = "nama@unsoed.ac.id",
                     leadingIcon = { Icon(Icons.Outlined.Email, null, tint = InkMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     isError = formState.emailError != null
@@ -209,7 +209,7 @@ fun RegisterScreen(
 
                 GradientButton(
                     text = if (isLoading) "Mendaftarkan Akun..." else "Daftar Akun",
-                    enabled = !isLoading && formState.name.isNotBlank() && formState.email.isNotBlank() && formState.password.isNotBlank(),
+                    enabled = !isLoading && formState.name.isNotBlank() && formState.nimNip.isNotBlank() && formState.email.isNotBlank() && formState.password.isNotBlank(),
                     onClick = viewModel::register,
                     modifier = Modifier.fillMaxWidth()
                 )

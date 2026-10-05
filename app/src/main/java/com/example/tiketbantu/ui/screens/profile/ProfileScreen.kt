@@ -2,7 +2,7 @@ package com.example.tiketbantu.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,48 +21,45 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.outlined.Apartment
-import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.SupportAgent
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tiketbantu.data.local.dao.SupportDao
-import com.example.tiketbantu.data.local.dao.TicketDao
-import com.example.tiketbantu.domain.repository.AuthRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.GlassCard
-import com.example.tiketbantu.ui.components.InitialsAvatar
 import com.example.tiketbantu.ui.components.TagChip
 import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
-import com.example.tiketbantu.ui.theme.BrandCyan
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
@@ -72,13 +69,16 @@ import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessSoftBg
 import com.example.tiketbantu.ui.theme.SuccessText
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.tiketbantu.ui.theme.FieldBg
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * Profile Screen: User info, statistics, quick shortcuts, help & info,
- * and session logout.
+ * Profile Screen:
+ * - Standard top page title matching other screens.
+ * - Circular avatar and User Name centered.
+ * - User details card (NIM/ID, Email, Role, Status) displayed above.
+ * - Activity summary section ("My documents" style) with 3 clickable cards below:
+ *   Aduan Dikirim, Didukung, and Telah Tuntas.
+ * - Secure logout action.
  */
 @Composable
 fun ProfileScreen(
@@ -93,8 +93,6 @@ fun ProfileScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val stats by viewModel.userStats.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var showGuideDialog by remember { mutableStateOf(false) }
-    var showContactDialog by remember { mutableStateOf(false) }
 
     val name = currentUser?.name?.ifBlank { null } ?: DemoSession.name
     val email = currentUser?.email?.ifBlank { null } ?: DemoSession.email
@@ -102,56 +100,218 @@ fun ProfileScreen(
     val role = when (currentUser?.role?.uppercase()) {
         "ADMIN" -> AppRole.ADMIN
         "AGEN" -> AppRole.AGEN
+        "PELAPOR" -> AppRole.PELAPOR
         else -> DemoSession.role
     }
 
     AppBackground(modifier = modifier) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 1. Standard Top Bar Title (Samakan dengan page lain)
             item(key = "header") {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)
                 ) {
                     Text(
                         text = "Profil",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 26.sp
+                        ),
                         color = Ink
                     )
                 }
             }
 
-            item(key = "profile_card") {
-                UserProfileCard(
-                    name = name,
-                    email = email,
-                    nimNip = nimNip,
-                    role = role
-                )
+            // 2. Avatar & Name (Centered)
+            item(key = "avatar_and_name") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(92.dp)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = CircleShape,
+                                spotColor = BrandIndigo.copy(alpha = 0.2f)
+                            )
+                            .background(Color.White, CircleShape)
+                            .padding(3.dp)
+                            .border(1.5.dp, BrandIndigo.copy(alpha = 0.3f), CircleShape)
+                            .clip(CircleShape)
+                            .background(BrandIndigoSoft),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Avatar Pengguna",
+                            tint = BrandIndigo,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp
+                        ),
+                        color = Ink,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
-            item(key = "stats") {
-                UserStatsCard(
-                    role = role,
-                    sentCount = stats.sentCount,
-                    supportCount = stats.supportCount,
-                    doneCount = stats.doneCount,
-                    onMyTicketsClick = onMyTicketsClick
-                )
+            // 3. User Details Card (Nama, Email, ID, Role di atas)
+            item(key = "user_details_card") {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        ProfileInfoRow(
+                            icon = Icons.Outlined.Badge,
+                            label = "NOMOR INDUK (NIM / NIP)",
+                            value = if (nimNip.isNotBlank() && nimNip != "-") nimNip else "Belum diatur"
+                        )
+
+                        HorizontalDivider(
+                            color = Hairline,
+                            modifier = Modifier.padding(start = 48.dp, top = 10.dp, bottom = 10.dp)
+                        )
+
+                        ProfileInfoRow(
+                            icon = Icons.Outlined.Email,
+                            label = "EMAIL RESMI",
+                            value = email
+                        )
+
+                        HorizontalDivider(
+                            color = Hairline,
+                            modifier = Modifier.padding(start = 48.dp, top = 10.dp, bottom = 10.dp)
+                        )
+
+                        ProfileInfoRow(
+                            icon = Icons.Outlined.Person,
+                            label = "PERAN PENGGUNA",
+                            customContent = {
+                                val (badgeBg, badgeFg) = when (role) {
+                                    AppRole.ADMIN -> Color(0xFFF3E8FF) to Color(0xFF7E22CE)
+                                    AppRole.AGEN -> BrandIndigoSoft to BrandIndigo
+                                    AppRole.PELAPOR -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
+                                }
+                                TagChip(text = role.label, container = badgeBg, content = badgeFg)
+                            }
+                        )
+
+                        HorizontalDivider(
+                            color = Hairline,
+                            modifier = Modifier.padding(start = 48.dp, top = 10.dp, bottom = 10.dp)
+                        )
+
+                        ProfileInfoRow(
+                            icon = Icons.Outlined.CheckCircle,
+                            iconTint = SuccessText,
+                            iconBg = SuccessSoftBg,
+                            label = "STATUS AKUN",
+                            value = "Aktif (Terverifikasi)",
+                            valueColor = SuccessText
+                        )
+                    }
+                }
             }
 
-            item(key = "help_info") {
-                HelpAndInfoCard(
-                    onOpenGuide = { showGuideDialog = true },
-                    onOpenContact = { showContactDialog = true }
-                )
+            // 4. Section Header & Activity Cards (Hanya untuk Agen & Pelapor, Admin = Pure Monitoring)
+            if (role != AppRole.ADMIN) {
+                item(key = "activity_section_header") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 22.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (role == AppRole.AGEN) "Aktivitas Penanganan" else "Aktivitas Aduan",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            ),
+                            color = Ink
+                        )
+
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = InkMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // 5. Activity Row (Agen: Tugas & Telah Tuntas; Pelapor: Aduan Dikirim, Didukung, Telah Tuntas)
+                item(key = "activity_cards_row") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        ActivityDocCard(
+                            modifier = Modifier.weight(1f),
+                            icon = if (role == AppRole.AGEN) Icons.AutoMirrored.Outlined.Assignment else Icons.Outlined.ConfirmationNumber,
+                            title = if (role == AppRole.AGEN) "Tugas" else "Aduan Dikirim",
+                            count = "${stats.sentCount} tiket",
+                            iconTint = BrandIndigo,
+                            iconBg = BrandIndigoSoft,
+                            onClick = {
+                                DemoSession.myTicketsInitialStatus = null
+                                onMyTicketsClick()
+                            }
+                        )
+
+                        if (role != AppRole.AGEN) {
+                            ActivityDocCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Outlined.FavoriteBorder,
+                                title = "Didukung",
+                                count = "${stats.supportCount} aduan",
+                                iconTint = Color(0xFFE11D48),
+                                iconBg = Color(0xFFFEE2E2),
+                                onClick = onNavigateToSupported
+                            )
+                        }
+
+                        ActivityDocCard(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Outlined.CheckCircle,
+                            title = "Telah Tuntas",
+                            count = "${stats.doneCount} selesai",
+                            iconTint = Color(0xFF16A34A),
+                            iconBg = Color(0xFFDCFCE7),
+                            onClick = {
+                                DemoSession.myTicketsInitialStatus = TicketStatus.SELESAI
+                                onMyTicketsClick()
+                            }
+                        )
+                    }
+                }
             }
 
+            // 6. Logout Section
             item(key = "logout_section") {
                 LogoutCard(onLogoutClick = { showLogoutDialog = true })
             }
@@ -179,272 +339,140 @@ fun ProfileScreen(
             }
         )
     }
-
-    if (showGuideDialog) {
-        GuideDialog(onDismiss = { showGuideDialog = false })
-    }
-
-    if (showContactDialog) {
-        ContactDialog(onDismiss = { showContactDialog = false })
-    }
 }
 
+/**
+ * Single detail item in the User Info card.
+ */
 @Composable
-private fun UserProfileCard(
-    name: String,
-    email: String,
-    nimNip: String,
-    role: AppRole
-) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                InitialsAvatar(
-                    name = name,
-                    size = 64.dp,
-                    soft = false
-                )
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Ink
-                    )
-                }
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InkMuted
-                )
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val (badgeBg, badgeFg) = when (role) {
-                        AppRole.ADMIN -> Color(0xFFF3E8FF) to Color(0xFF7E22CE)
-                        AppRole.AGEN -> BrandIndigoSoft to BrandIndigo
-                        AppRole.PELAPOR -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
-                    }
-                    TagChip(text = role.label, container = badgeBg, content = badgeFg)
-                    if (nimNip.isNotBlank() && nimNip != "-") {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "ID: $nimNip",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = InkSoft
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun UserStatsCard(
-    role: AppRole,
-    sentCount: Int = 0,
-    supportCount: Int = 0,
-    doneCount: Int = 0,
-    onMyTicketsClick: () -> Unit = {}
-) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Text(
-            text = if (role == AppRole.AGEN) "Aktivitas Penanganan" else "Aktivitas Aduan",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = Ink
-        )
-        Spacer(Modifier.height(14.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            when (role) {
-                AppRole.AGEN -> {
-                    StatItem(
-                        icon = Icons.Outlined.Assignment,
-                        count = sentCount.toString(),
-                        label = "Tugas Ditangani",
-                        color = BrandIndigo,
-                        onClick = onMyTicketsClick
-                    )
-                    StatItem(
-                        icon = Icons.Outlined.CheckCircle,
-                        count = doneCount.toString(),
-                        label = "Telah Tuntas",
-                        color = Color(0xFF16A34A)
-                    )
-                }
-                AppRole.ADMIN -> {
-                    StatItem(
-                        icon = Icons.Outlined.ConfirmationNumber,
-                        count = sentCount.toString(),
-                        label = "Total Aduan",
-                        color = BrandIndigo,
-                        onClick = onMyTicketsClick
-                    )
-                    StatItem(
-                        icon = Icons.Outlined.CheckCircle,
-                        count = doneCount.toString(),
-                        label = "Telah Tuntas",
-                        color = Color(0xFF16A34A)
-                    )
-                }
-                else -> {
-                    StatItem(
-                        icon = Icons.Outlined.ConfirmationNumber,
-                        count = sentCount.toString(),
-                        label = "Aduan Dikirim",
-                        color = BrandIndigo,
-                        onClick = onMyTicketsClick
-                    )
-                    StatItem(
-                        icon = Icons.Outlined.FavoriteBorder,
-                        count = supportCount.toString(),
-                        label = "Didukung",
-                        color = Color(0xFFE11D48)
-                    )
-                    StatItem(
-                        icon = Icons.Outlined.CheckCircle,
-                        count = doneCount.toString(),
-                        label = "Telah Tuntas",
-                        color = Color(0xFF16A34A)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatItem(
+private fun ProfileInfoRow(
     icon: ImageVector,
-    count: String,
     label: String,
-    color: Color,
+    value: String = "",
+    valueColor: Color = Ink,
+    iconTint: Color = BrandIndigo,
+    iconBg: Color = BrandIndigoSoft,
+    customContent: (@Composable () -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(iconBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = InkMuted
+            )
+            Spacer(Modifier.height(2.dp))
+            if (customContent != null) {
+                customContent()
+            } else {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = valueColor
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 3-Card Activity item inspired by "My documents" in reference design.
+ */
+@Composable
+private fun ActivityDocCard(
+    icon: ImageVector,
+    title: String,
+    count: String,
+    iconTint: Color,
+    iconBg: Color,
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
     Surface(
         onClick = { onClick?.invoke() },
         enabled = onClick != null,
-        color = Color.Transparent
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = count,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                color = Ink
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = InkMuted
-            )
-        }
-    }
-}
-
-@Composable
-private fun ShortcutTile(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    badgeColor: Color,
-    iconColor: Color,
-    onClick: (() -> Unit)?
-) {
-    Surface(
-        onClick = { onClick?.invoke() },
-        enabled = onClick != null,
-        shape = RoundedCornerShape(14.dp),
-        color = FieldBg,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
         border = BorderStroke(1.dp, Hairline),
-        modifier = Modifier.fillMaxWidth()
+        shadowElevation = 1.dp,
+        modifier = modifier
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
-                Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(badgeColor),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(18.dp)
+                )
             }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Ink)
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = InkMuted)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = InkMuted, modifier = Modifier.size(20.dp))
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                ),
+                color = Ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(2.dp))
+
+            Text(
+                text = count,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    color = InkMuted,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
-
-@Composable
-private fun HelpAndInfoCard(
-    onOpenGuide: () -> Unit,
-    onOpenContact: () -> Unit
-) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Text(
-            text = "Bantuan & Layanan Kampus",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = Ink
-        )
-        Spacer(Modifier.height(12.dp))
-
-        ShortcutTile(
-            icon = Icons.Outlined.HelpOutline,
-            title = "Panduan & Alur Pelaporan",
-            subtitle = "Petunjuk alur pengajuan & penanganan aduan",
-            badgeColor = BrandIndigoSoft,
-            iconColor = BrandIndigo,
-            onClick = onOpenGuide
-        )
-        Spacer(Modifier.height(8.dp))
-
-        ShortcutTile(
-            icon = Icons.Outlined.SupportAgent,
-            title = "Kontak Unit Sarpras",
-            subtitle = "Jam operasional kantor & helpdesk pemeliharaan",
-            badgeColor = Color(0xFFE0F2FE),
-            iconColor = Color(0xFF0369A1),
-            onClick = onOpenContact
-        )
-    }
-}
-
 
 @Composable
 private fun LogoutCard(onLogoutClick: () -> Unit) {
@@ -455,7 +483,7 @@ private fun LogoutCard(onLogoutClick: () -> Unit) {
         border = BorderStroke(1.dp, Color(0xFFFEE2E2)),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
             .height(50.dp)
     ) {
         Row(
@@ -478,92 +506,6 @@ private fun LogoutCard(onLogoutClick: () -> Unit) {
                 ),
                 color = DangerRed
             )
-        }
-    }
-}
-
-@Composable
-private fun GuideDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = BrandIndigo)
-                Spacer(Modifier.width(8.dp))
-                Text("Panduan Pelaporan Aduan", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                GuideStep(number = "1", title = "Buat Laporan Aduan", desc = "Pilih lokasi sarpras, deskripsikan kendala yang terjadi, dan lampirkan foto bukti.")
-                GuideStep(number = "2", title = "Beri Dukungan", desc = "Tekan tombol hati pada aduan fasilitas publik untuk mendukung prioritas perbaikan.")
-                GuideStep(number = "3", title = "Penanganan Teknisi", desc = "Teknisi sarpras akan memverifikasi, menangani perbaikan fisik di lokasi, dan menyelesaikan tiket.")
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Mengerti", color = BrandIndigo, fontWeight = FontWeight.Bold)
-            }
-        }
-    )
-}
-
-@Composable
-private fun GuideStep(number: String, title: String, desc: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Box(
-            Modifier
-                .size(26.dp)
-                .clip(CircleShape)
-                .background(BrandIndigoSoft),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(number, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = BrandIndigo)
-        }
-        Spacer(Modifier.width(10.dp))
-        Column {
-            Text(title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Ink)
-            Text(desc, style = MaterialTheme.typography.bodySmall, color = InkSoft)
-        }
-    }
-}
-
-@Composable
-private fun ContactDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.SupportAgent, contentDescription = null, tint = BrandIndigo)
-                Spacer(Modifier.width(8.dp))
-                Text("Kontak Unit Sarpras Kampus", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ContactItem(icon = Icons.Outlined.Apartment, label = "Kantor Operasional", valText = "Gedung Rektorat Lt. 1 - Unit Pemeliharaan Sarana & Prasarana")
-                ContactItem(icon = Icons.Outlined.Schedule, label = "Jam Layanan Teknisi", valText = "Senin - Jumat: 08.00 - 16.00 WIB")
-                ContactItem(icon = Icons.Outlined.Email, label = "Email Helpdesk", valText = "helpdesk.sarpras@kampus.ac.id")
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Tutup", color = BrandIndigo, fontWeight = FontWeight.Bold)
-            }
-        }
-    )
-}
-
-@Composable
-private fun ContactItem(icon: ImageVector, label: String, valText: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Icon(icon, contentDescription = null, tint = InkMuted, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(10.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = InkMuted)
-            Text(valText, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = Ink)
         }
     }
 }
