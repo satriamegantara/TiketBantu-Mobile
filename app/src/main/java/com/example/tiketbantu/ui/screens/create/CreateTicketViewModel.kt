@@ -212,8 +212,13 @@ class CreateTicketViewModel(
                 // 1. Resolve photo internal storage path (Task 4.4: filesDir/ticket_photos/)
                 val savedImagePath = current.photo?.let { saveAndCompressPhoto(it.uri) }
 
-                // 2. Resolve current user identity
+                // 2. Resolve current user identity and enforce Role-Based Access Control
                 val sessionUser = sessionManager.sessionState.firstOrNull()?.currentUser
+                val currentRole = sessionUser?.role ?: DemoSession.role.name
+                if (currentRole.equals("ADMIN", ignoreCase = true) || currentRole.equals("AGEN", ignoreCase = true)) {
+                    _submitState.value = UiState.Error("Akun Administrator dan Teknisi tidak dapat mengajukan aduan baru. Hanya akun Pelapor (Mahasiswa/Dosen) yang dapat membuat aduan.")
+                    return@launchSafe
+                }
                 val reporterId = sessionUser?.id ?: if (DemoSession.userId > 0) DemoSession.userId else 1L
                 val reporterName = sessionUser?.name?.ifBlank { null } ?: DemoSession.name.ifBlank { "Pengguna" }
 

@@ -15,8 +15,8 @@ object TicketStatusRules {
     /** @return null when the transition is allowed, otherwise a user-facing reason (Indonesian). */
     fun validate(user: User, ticket: Ticket, newStatus: String): String? {
         val userRole = user.role.uppercase()
-        if (userRole != ROLE_AGEN && userRole != ROLE_ADMIN) {
-            return "Hanya Agen atau Admin yang dapat memperbarui status aduan."
+        if (userRole != ROLE_AGEN) {
+            return "Hanya Agen Teknisi yang dapat mengklaim atau memperbarui status aduan."
         }
         if (TicketStatus.isFinished(ticket.status)) {
             return "Aduan sudah selesai atau ditutup dan tidak dapat diubah lagi."
@@ -31,7 +31,7 @@ object TicketStatusRules {
         if (ticket.status != TicketStatus.DIPROSES) {
             return "Aduan harus diklaim dan diproses terlebih dahulu sebelum ditutup/selesai."
         }
-        if (userRole != ROLE_ADMIN && ticket.agentId != null && ticket.agentId != user.id) {
+        if (ticket.agentId != null && ticket.agentId != user.id) {
             return "Aduan ini sedang ditangani oleh teknisi lain."
         }
         if (newStatus != TicketStatus.SELESAI && newStatus != TicketStatus.DITUTUP) {
@@ -44,11 +44,10 @@ object TicketStatusRules {
     fun canUpdate(user: User, ticket: Ticket): Boolean {
         if (TicketStatus.isFinished(ticket.status)) return false
         val userRole = user.role.uppercase()
-        val isStaff = userRole == ROLE_AGEN || userRole == ROLE_ADMIN
-        if (!isStaff) return false
+        if (userRole != ROLE_AGEN) return false
         if (ticket.status == TicketStatus.BARU) return true
         if (ticket.status == TicketStatus.DIPROSES) {
-            return userRole == ROLE_ADMIN || ticket.agentId == user.id || ticket.agentId == null
+            return ticket.agentId == user.id || ticket.agentId == null
         }
         return false
     }

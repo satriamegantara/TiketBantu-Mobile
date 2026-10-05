@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Place
@@ -86,6 +87,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.tiketbantu.base.UiState
 import com.example.tiketbantu.data.local.entity.CategoryEntity
+import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
 import com.example.tiketbantu.ui.components.FieldLabel
@@ -93,6 +95,7 @@ import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
 import com.example.tiketbantu.ui.components.TagChip
 import com.example.tiketbantu.ui.components.getCategoryStyle
+import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.BrandIndigo
 import com.example.tiketbantu.ui.theme.BrandIndigoSoft
 import com.example.tiketbantu.ui.theme.DangerRed
@@ -105,6 +108,7 @@ import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessText
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import java.util.Locale
 
 private const val TITLE_MAX = 80
@@ -140,6 +144,11 @@ fun CreateTicketScreen(
     val submitState by viewModel.submitState.collectAsStateWithLifecycle()
     val dbCategories by viewModel.categories.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+
+    val sessionManager: SessionManager = koinInject()
+    val sessionState by sessionManager.sessionState.collectAsStateWithLifecycle()
+    val currentRole = sessionState.currentUser?.role ?: DemoSession.role.name
+    val isRestrictedRole = currentRole.equals("ADMIN", ignoreCase = true) || currentRole.equals("AGEN", ignoreCase = true)
 
     val categoriesToDisplay = if (dbCategories.isNotEmpty()) dbCategories else FALLBACK_CATEGORIES
     val isSubmitting = submitState is UiState.Loading
@@ -193,14 +202,14 @@ fun CreateTicketScreen(
                     modifier = Modifier.weight(1f)
                 )
                 Surface(
-                    onClick = { viewModel.submitTicket(onSuccess = onCreated) },
-                    enabled = !isSubmitting,
+                    onClick = { if (!isRestrictedRole) viewModel.submitTicket(onSuccess = onCreated) },
+                    enabled = !isSubmitting && !isRestrictedRole,
                     shape = RoundedCornerShape(50),
-                    color = if (isSubmitting) BrandIndigo.copy(alpha = 0.5f) else BrandIndigo,
+                    color = if (isSubmitting || isRestrictedRole) BrandIndigo.copy(alpha = 0.4f) else BrandIndigo,
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text(
-                        if (isSubmitting) "Mengirim..." else "Kirim Laporan",
+                        if (isSubmitting) "Mengirim..." else if (isRestrictedRole) "Hanya Pelapor" else "Kirim Laporan",
                         color = Color.White,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
@@ -215,6 +224,27 @@ fun CreateTicketScreen(
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
+                if (isRestrictedRole) {
+                    item {
+                        GlassCard(
+                            containerColor = Color(0xFFFEF3C7),
+                            borderColor = Color(0xFFFDE68A)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Info, null, tint = Color(0xFFD97706), modifier = Modifier.size(22.dp))
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = if (currentRole.equals("ADMIN", ignoreCase = true))
+                                        "Mode Pemantauan Admin: Administrator bertindak sebagai pemantau sistem dan tidak dapat mengajukan aduan baru."
+                                    else
+                                        "Mode Petugas Agen: Teknisi bertindak menangani tugas sarpras dan tidak dapat mengajukan aduan baru.",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = Color(0xFF92400E)
+                                )
+                            }
+                        }
+                    }
+                }
                 // Judul
                 item {
                     GlassCard {
@@ -347,10 +377,10 @@ fun CreateTicketScreen(
 
                 item {
                     GradientButton(
-                        text = if (isSubmitting) "Mempublikasikan..." else "Publikasikan Aduan",
+                        text = if (isSubmitting) "Mempublikasikan..." else if (isRestrictedRole) "Hanya Akun Pelapor yang Dapat Melapor" else "Publikasikan Aduan",
                         icon = Icons.AutoMirrored.Filled.Send,
-                        onClick = { viewModel.submitTicket(onSuccess = onCreated) },
-                        enabled = !isSubmitting,
+                        onClick = { if (!isRestrictedRole) viewModel.submitTicket(onSuccess = onCreated) },
+                        enabled = !isSubmitting && !isRestrictedRole,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(10.dp))

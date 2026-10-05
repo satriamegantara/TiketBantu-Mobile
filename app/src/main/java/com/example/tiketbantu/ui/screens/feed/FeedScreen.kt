@@ -109,11 +109,12 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-/** Category ids follow the seed: 1 = IT, 2 = Ruangan, 3 = Umum (feature 3.2.2). */
+/** Category ids follow the seed: 1 = Jaringan, 2 = Hardware, 3 = Software, 4 = Fasilitas (sesuai spesialisasi agen). */
 private val CATEGORY_FILTERS = listOf(
-    1L to "Teknologi & IT",
-    2L to "Fasilitas Ruangan",
-    3L to "Infrastruktur Umum"
+    1L to "Jaringan",
+    2L to "Hardware",
+    3L to "Software",
+    4L to "Fasilitas"
 )
 
 private val STATUS_FILTERS: List<Pair<String?, String>> = listOf(
@@ -426,7 +427,7 @@ fun FeedContent(
                             onClick = { onTicketClick(ticket.id) },
                             onToggleSupport = { onToggleSupport(ticket.id) },
                             role = role,
-                            onClaimClick = { onClaim(ticket.id) },
+                            onClaimClick = if (role == AppRole.AGEN) { { onClaim(ticket.id) } } else null,
                             commentCount = commentCountOf(ticket.id),
                             modifier = Modifier.padding(horizontal = 20.dp)
                         )

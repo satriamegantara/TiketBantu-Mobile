@@ -15,13 +15,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import com.example.tiketbantu.data.preferences.SessionManager
 import com.example.tiketbantu.navigation.NavGraph
 import com.example.tiketbantu.navigation.Screen
 import com.example.tiketbantu.ui.components.BottomNavigationBar
 import com.example.tiketbantu.ui.components.NavRoutes
+import com.example.tiketbantu.ui.session.AppRole
 import com.example.tiketbantu.ui.session.DemoSession
 import com.example.tiketbantu.ui.theme.TiketBantuTheme
 import org.koin.android.ext.koin.androidContext
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +49,15 @@ fun MainScreen() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route.orEmpty()
+
+    val sessionManager: SessionManager = koinInject()
+    val sessionState by sessionManager.sessionState.collectAsState()
+    val activeRole = when (sessionState.currentUser?.role?.uppercase()) {
+        "ADMIN" -> AppRole.ADMIN
+        "AGEN" -> AppRole.AGEN
+        "PELAPOR" -> AppRole.PELAPOR
+        else -> DemoSession.role
+    }
 
     val selectedNavRoute = when {
         currentRoute.contains("Dashboard") -> NavRoutes.HOME
@@ -102,7 +115,7 @@ fun MainScreen() {
                         }
                     }
                 },
-                role = DemoSession.role,
+                role = activeRole,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

@@ -107,7 +107,7 @@ fun BottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
     val items = itemsFor(role)
-    val showCreate = role != AppRole.AGEN
+    val showCreate = role == AppRole.PELAPOR
     val left = if (showCreate) items.take((items.size + 1) / 2) else items
     val right = if (showCreate) items.drop((items.size + 1) / 2) else emptyList()
     val shape = RoundedCornerShape(32.dp)

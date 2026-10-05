@@ -184,7 +184,7 @@ fun TicketDetailScreen(
         else -> DemoSession.role
     }
     val role = activeRole
-    val canAct = canUpdateStatus || role == AppRole.AGEN || role == AppRole.ADMIN
+    val canAct = canUpdateStatus && role == AppRole.AGEN
     var zoomedPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     // 3.5 polling: refresh the thread every 5 seconds while this screen is in composition.
@@ -472,7 +472,7 @@ private fun DetailList(
         item(key = "main") { MainInfoCard(ticket, onZoomPhoto) }
         item(key = "support") { SupportCard(ticket, role, onToggleSupport) }
 
-        val isStaff = role == AppRole.AGEN || role == AppRole.ADMIN
+        val isStaff = role == AppRole.AGEN
 
         if (finished) {
             item(key = "locked") {
