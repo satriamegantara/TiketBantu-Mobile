@@ -127,7 +127,7 @@ abstract class AppDatabase : RoomDatabase() {
                 SeedUser(1, "Admin Sarpras", "admin@kampus.ac.id", "198001012010121001", "admin123", "ADMIN"),
                 SeedUser(2, "Agen Jaringan", "agen.jaringan@tiketbantu.com", "198703122010", "agen123", "AGEN"),
                 SeedUser(3, "satcarzensyaf", "satcarzensyaf@kampus.ac.id", "2021110045", "user123", "PELAPOR"),
-                SeedUser(4, "Ahmad Dosen", "dosen@kampus.ac.id", "198505052012011003", "dosen123", "PELAPOR"),
+                SeedUser(4, "Ahmad Fauzi", "ahmad.fauzi@kampus.ac.id", "2021110012", "user123", "PELAPOR"),
                 SeedUser(5, "Agen Hardware", "agen.hardware@tiketbantu.com", "198901012015011005", "agen123", "AGEN"),
                 SeedUser(6, "Agen Software", "agen.software@tiketbantu.com", "199002022016021006", "agen123", "AGEN"),
                 SeedUser(7, "Agen Fasilitas", "agen.fasilitas@tiketbantu.com", "199103032017031007", "agen123", "AGEN"),
@@ -145,6 +145,7 @@ abstract class AppDatabase : RoomDatabase() {
                     WHERE id = ${u.id}
                 """)
             }
+            db.execSQL("UPDATE users SET name = 'Ahmad Fauzi', email = 'ahmad.fauzi@kampus.ac.id', nimNip = '2021110012', passwordHash = 'user123' WHERE id = 4")
         }
 
         fun seedInitialData(db: SupportSQLiteDatabase) {
@@ -177,7 +178,7 @@ abstract class AppDatabase : RoomDatabase() {
             // Tiket 2: Hardware - Diproses oleh Agen Hardware (id: 5)
             db.execSQL("""
                 INSERT OR IGNORE INTO tickets (id, title, description, categoryId, locationBuilding, locationFloor, locationRoom, status, imageUrl, reporterId, agentId, createdAt, updatedAt, deletedAt)
-                VALUES (2, 'Proyektor Ruang 304 Mati Total Saat Perkuliahan Praktikum', 'Proyektor plafon di Ruang 304 tidak mau menyala saat saklar diaktifkan. Lampu indikator berkedip merah dan kipas terdengar mendengung kasar sebelum akhirnya padam. Kabel HDMI di meja dosen juga terlihat longgar.', 2, 'Gedung Thomas Aquinas', 'Lantai 3', 'Ruang Teori 304', 'DIPROSES', NULL, 4, 5, $day2, $hour2, NULL)
+                VALUES (2, 'Proyektor Ruang 304 Mati Total Saat Perkuliahan Praktikum', 'Proyektor plafon di Ruang 304 tidak mau menyala saat saklar diaktifkan. Lampu indikator berkedip merah dan kipas terdengar mendengung kasar sebelum akhirnya padam. Kabel HDMI di meja depan juga terlihat longgar.', 2, 'Gedung Thomas Aquinas', 'Lantai 3', 'Ruang Teori 304', 'DIPROSES', NULL, 4, 5, $day2, $hour2, NULL)
             """)
 
             // Tiket 3: Software - Selesai oleh Agen Software (id: 6)

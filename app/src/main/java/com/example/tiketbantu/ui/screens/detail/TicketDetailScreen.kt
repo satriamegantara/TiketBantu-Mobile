@@ -55,7 +55,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -229,7 +228,6 @@ fun TicketDetailScreen(
                 role = activeRole,
                 currentUserId = currentUser?.id,
                 onBack = onBack,
-                onShare = { toast("Tautan tiket disalin ke clipboard") },
                 onEdit = { showEditDialog = true },
                 onDelete = { confirmDelete = true }
             )
@@ -373,7 +371,6 @@ private fun DetailTopBar(
     role: AppRole,
     currentUserId: Long?,
     onBack: () -> Unit,
-    onShare: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -420,7 +417,6 @@ private fun DetailTopBar(
                 color = InkMuted
             )
         }
-        CircleIconButton(Icons.Outlined.Share, "Bagikan", onShare, bordered = false, container = Color.Transparent)
         if (canEdit || canDelete) {
             Box {
                 CircleIconButton(Icons.Filled.MoreVert, "Lainnya", { menuOpen = true }, bordered = false, container = Color.Transparent)

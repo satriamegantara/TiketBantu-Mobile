@@ -45,7 +45,7 @@ class DummySeedValidationTest {
             title = "Proyektor Ruang 304 Mati Total Saat Perkuliahan Praktikum",
             categoryId = 2L, // Hardware
             status = "DIPROSES",
-            reporterId = 4L, // Ahmad Dosen
+            reporterId = 4L, // Ahmad Fauzi
             agentId = 5L, // Agen Hardware
             supportUserIds = listOf(4L, 3L, 8L, 9L),
             commentCount = 2
@@ -95,7 +95,7 @@ class DummySeedValidationTest {
             title = "Software MATLAB & SPSS pada Komputer Lab Statistik Belum Diaktivasi Lisensi",
             categoryId = 3L, // Software
             status = "BARU",
-            reporterId = 4L, // Ahmad Dosen
+            reporterId = 4L, // Ahmad Fauzi
             agentId = null, // Unassigned
             supportUserIds = listOf(4L, 8L),
             commentCount = 0 // Empty comment state

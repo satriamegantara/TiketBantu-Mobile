@@ -37,7 +37,7 @@ class AuthRepositoryImpl(
             "agen.software", "agen.software@tiketbantu.com", "software@kampus.ac.id", "agen.software@kampus.ac.id" -> "agen.software@tiketbantu.com"
             "agen.fasilitas", "agen.fasilitas@tiketbantu.com", "fasilitas@kampus.ac.id", "agen.fasilitas@kampus.ac.id" -> "agen.fasilitas@tiketbantu.com"
             "satcarzensyaf", "satriapancarzenasyafa", "satriapancarzenasyafa@kampus.ac.id", "emily.johnson@kampus.ac.id", "mahasiswa@kampus.ac.id", "user@kampus.ac.id" -> "satcarzensyaf@kampus.ac.id"
-            "dosen", "ahmad.dosen@kampus.ac.id" -> "dosen@kampus.ac.id"
+            "ahmad", "ahmad.fauzi", "ahmad.fauzi@kampus.ac.id", "ahmad.dosen@kampus.ac.id", "dosen@kampus.ac.id", "dosen" -> "ahmad.fauzi@kampus.ac.id"
             "rina", "rina.kartika", "rina.kartika@kampus.ac.id" -> "rina.kartika@kampus.ac.id"
             "dimas", "dimas.putra", "dimas.putra@kampus.ac.id" -> "dimas.putra@kampus.ac.id"
             "nadia", "nadia.safitri", "nadia.safitri@kampus.ac.id" -> "nadia.safitri@kampus.ac.id"
