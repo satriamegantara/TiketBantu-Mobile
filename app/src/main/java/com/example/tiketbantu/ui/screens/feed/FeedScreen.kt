@@ -391,10 +391,7 @@ fun FeedContent(
                 SectionTitle(
                     title = "Feed Aduan Terkini",
                     icon = Icons.Outlined.RssFeed,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp),
-                    trailing = {
-                        Text("Pembaruan otomatis", style = MaterialTheme.typography.labelSmall, color = InkMuted)
-                    }
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp)
                 )
             }
 
