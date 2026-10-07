@@ -29,11 +29,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -100,11 +98,9 @@ import com.example.tiketbantu.domain.model.TicketStatus
 import com.example.tiketbantu.domain.repository.TicketRepository
 import com.example.tiketbantu.ui.components.AppBackground
 import com.example.tiketbantu.ui.components.AppInput
-import com.example.tiketbantu.ui.components.AvatarStack
 import com.example.tiketbantu.ui.components.CategoryBadge
 import com.example.tiketbantu.ui.components.CircleIconButton
 import com.example.tiketbantu.ui.components.FieldLabel
-import com.example.tiketbantu.ui.components.FilterPill
 import com.example.tiketbantu.ui.components.getCategoryStyle
 import com.example.tiketbantu.ui.components.GlassCard
 import com.example.tiketbantu.ui.components.GradientButton
@@ -129,9 +125,6 @@ import com.example.tiketbantu.ui.theme.InkMuted
 import com.example.tiketbantu.ui.theme.InkSoft
 import com.example.tiketbantu.ui.theme.SuccessSoftBg
 import com.example.tiketbantu.ui.theme.SuccessText
-import com.example.tiketbantu.ui.theme.SupportOrange
-import com.example.tiketbantu.ui.theme.SupportOrangeSoft
-import com.example.tiketbantu.ui.theme.SupportOrangeText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -144,8 +137,6 @@ import java.util.Locale
 
 /** Comment thread refresh interval (APP_FLOW alur 7: poll every ~5 seconds). */
 private const val COMMENT_POLL_INTERVAL_MS = 5_000L
-
-private val supporterNames = listOf("Rina Kartika", "Dimas Putra", "Ayu Lestari", "Bagas Wira", "Nadia Safitri")
 
 internal fun imageModelOf(path: String): Any =
     if (path.startsWith("content:") || path.startsWith("file:") || path.startsWith("http")) path else File(path)

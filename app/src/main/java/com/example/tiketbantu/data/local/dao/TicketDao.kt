@@ -120,15 +120,6 @@ abstract class TicketDao {
     @Query("UPDATE tickets SET deletedAt = :deletedAt WHERE id = :ticketId")
     abstract suspend fun softDelete(ticketId: Long, deletedAt: Long = System.currentTimeMillis())
 
-    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL AND status = :status")
-    abstract fun countByStatus(status: String): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM tickets WHERE deletedAt IS NULL")
-    abstract fun countTotalActive(): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM tickets")
-    abstract suspend fun countAll(): Int
-
     // ── "Saya Juga Mengalami" ────────────────────────────────────────────────
 
     /** Returns the new row id, or -1 when (ticketId, userId) already exists (UNIQUE index). */

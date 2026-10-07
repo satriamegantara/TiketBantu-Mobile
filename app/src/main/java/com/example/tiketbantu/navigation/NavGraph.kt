@@ -23,7 +23,7 @@ import com.example.tiketbantu.ui.screens.admin.UserManagementScreen
 import com.example.tiketbantu.ui.screens.auth.LoginScreen
 import com.example.tiketbantu.ui.screens.auth.RegisterScreen
 import com.example.tiketbantu.ui.screens.create.CreateTicketScreen
-import com.example.tiketbantu.ui.screens.dashboard.DashboardScreen
+import com.example.tiketbantu.ui.screens.feed.FeedScreen
 import com.example.tiketbantu.ui.screens.detail.TicketDetailScreen
 import com.example.tiketbantu.ui.screens.monitoring.MonitoringScreen
 import com.example.tiketbantu.ui.screens.mytickets.MyTicketsScreen
@@ -130,7 +130,7 @@ fun NavGraph(
             }
 
             composable<Screen.Dashboard> {
-                DashboardScreen(
+                FeedScreen(
                     onTicketClick = { ticketId ->
                         navController.safeNavigate(Screen.Detail(ticketId))
                     },

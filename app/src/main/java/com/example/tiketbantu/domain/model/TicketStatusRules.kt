@@ -10,7 +10,6 @@ package com.example.tiketbantu.domain.model
 object TicketStatusRules {
 
     private const val ROLE_AGEN = "AGEN"
-    private const val ROLE_ADMIN = "ADMIN"
 
     /** @return null when the transition is allowed, otherwise a user-facing reason (Indonesian). */
     fun validate(user: User, ticket: Ticket, newStatus: String): String? {
@@ -22,11 +21,13 @@ object TicketStatusRules {
             return "Aduan sudah selesai atau ditutup dan tidak dapat diubah lagi."
         }
         if (newStatus == TicketStatus.DIPROSES) {
-            return if (ticket.status == TicketStatus.BARU || ticket.status == TicketStatus.DIPROSES) {
-                null
-            } else {
-                "Hanya aduan berstatus Baru yang dapat diproses."
+            if (ticket.status != TicketStatus.BARU && ticket.status != TicketStatus.DIPROSES) {
+                return "Hanya aduan berstatus Baru yang dapat diproses."
             }
+            if (ticket.agentId != null && ticket.agentId != user.id) {
+                return "Aduan ini sedang ditangani oleh teknisi lain."
+            }
+            return null
         }
         if (ticket.status != TicketStatus.DIPROSES) {
             return "Aduan harus diklaim dan diproses terlebih dahulu sebelum ditutup/selesai."

@@ -55,6 +55,7 @@ class TicketStatusRulesTest {
     @Test
     fun otherAgentCannotTakeOverTicket() {
         assertNotNull(TicketStatusRules.validate(otherAgent, ticket(TicketStatus.DIPROSES), TicketStatus.SELESAI))
+        assertNotNull(TicketStatusRules.validate(otherAgent, ticket(TicketStatus.DIPROSES), TicketStatus.DIPROSES))
     }
 
     @Test

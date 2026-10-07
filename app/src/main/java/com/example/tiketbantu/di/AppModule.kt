@@ -78,8 +78,7 @@ val appModule = module {
     viewModel {
         ProfileViewModel(
             authRepository = get(),
-            ticketDao = get(),
-            supportDao = get()
+            ticketDao = get()
         )
     }
     viewModel { (ticketId: Long) ->

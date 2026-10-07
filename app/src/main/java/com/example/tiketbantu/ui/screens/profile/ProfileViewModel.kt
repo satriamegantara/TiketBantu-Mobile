@@ -2,7 +2,6 @@ package com.example.tiketbantu.ui.screens.profile
 
 import androidx.lifecycle.viewModelScope
 import com.example.tiketbantu.base.BaseViewModel
-import com.example.tiketbantu.data.local.dao.SupportDao
 import com.example.tiketbantu.data.local.dao.TicketDao
 import com.example.tiketbantu.domain.model.User
 import com.example.tiketbantu.domain.repository.AuthRepository
@@ -37,7 +36,6 @@ data class ProfileUserStats(
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val ticketDao: TicketDao,
-    private val supportDao: SupportDao
 ) : BaseViewModel() {
 
     val currentUser: StateFlow<User?> = authRepository.getCurrentUser()

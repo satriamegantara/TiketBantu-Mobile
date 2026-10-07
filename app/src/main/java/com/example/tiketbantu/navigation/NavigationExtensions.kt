@@ -64,7 +64,6 @@ fun NavController.safePopBackStack(): Boolean {
 
 /**
  * Navigates to [Screen.Dashboard] and clears the authentication backstack (Login & Register).
- * Ensures that pressing the system back button on Dashboard exits the app instead of returning to Login.
  */
 fun NavController.navigateToDashboardFromAuth() {
     safeNavigate(Screen.Dashboard) {
@@ -76,8 +75,7 @@ fun NavController.navigateToDashboardFromAuth() {
 }
 
 /**
- * Navigates to [Screen.Login] and clears the entire backstack.
- * Used upon user logout to prevent navigating back to private screens.
+ * Navigates to [Screen.Login] and clears the entire backstack upon user logout.
  */
 fun NavController.navigateToLoginFromLogout() {
     safeNavigate(Screen.Login) {

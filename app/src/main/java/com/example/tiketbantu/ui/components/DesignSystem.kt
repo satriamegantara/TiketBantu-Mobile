@@ -489,35 +489,6 @@ fun InitialsAvatar(
     }
 }
 
-/** Overlapping avatar stack with "+n" counter (supporters). */
-@Composable
-fun AvatarStack(names: List<String>, extra: Int, modifier: Modifier = Modifier, size: Dp = 28.dp) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        names.take(3).forEachIndexed { index, n ->
-            InitialsAvatar(
-                name = n,
-                size = size,
-                soft = false,
-                modifier = Modifier
-                    .offset(x = (-8 * index).dp)
-                    .border(2.dp, Color.White, CircleShape)
-            )
-        }
-        if (extra > 0) {
-            Box(
-                modifier = Modifier
-                    .offset(x = (-8 * names.take(3).size).dp)
-                    .size(size)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE2E8F0))
-                    .border(2.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("+$extra", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp), color = InkSoft)
-            }
-        }
-    }
-}
 
 // ═══════════════════════════════════════════════════════
 // Text helpers
@@ -557,20 +528,6 @@ fun FieldLabel(text: String, modifier: Modifier = Modifier, required: Boolean = 
     }
 }
 
-@Composable
-fun MetaRow(icon: ImageVector, text: String, modifier: Modifier = Modifier, tint: Color = InkMuted) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = InkSoft,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
 
 /** Rounded light input used by every form in the app. */
 @Composable
@@ -630,13 +587,6 @@ fun relativeTime(millis: Long, now: Long = System.currentTimeMillis()): String {
 }
 
 
-@Composable
-fun VerticalSpace(height: Dp) = Spacer(Modifier.height(height))
-
-@Composable
-fun DotDivider(modifier: Modifier = Modifier) {
-    Box(modifier.size(3.dp).clip(CircleShape).background(InkMuted))
-}
 
 /** Pill for horizontally scrolling filter rows with vibrant active brand gradient. */
 @Composable
